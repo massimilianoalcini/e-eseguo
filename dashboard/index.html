@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E.ESEGUO · Dashboard Coordinatore</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a1628;--card:rgba(255,255,255,0.06);--card-border:rgba(255,255,255,0.1);--text:#f0f0f0;--dim:rgba(255,255,255,0.45);--mid:rgba(255,255,255,0.7);--accent:#0A84FF;--green:#30D158;--orange:#FF9F0A;--red:#FF453A;--radius:14px}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif;color:var(--text);background:linear-gradient(145deg,#0a1628 0%,#0f2445 40%,#0d2240 100%);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
+
+/* Login */
+.login-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9000}
+.login-overlay.hidden{display:none}
+.login-box{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:24px;padding:36px 28px;width:380px;text-align:center;backdrop-filter:blur(40px)}
+.login-box img{height:60px;margin-bottom:8px}
+.login-box h2{font-size:1.4em;margin-bottom:2px}
+.login-box .sub{color:var(--dim);font-size:.85em;margin-bottom:24px}
+.login-box input{width:100%;padding:13px 16px;border:1px solid rgba(255,255,255,0.12);border-radius:12px;font-size:1em;margin-bottom:10px;outline:none;background:rgba(255,255,255,0.06);color:white}
+.login-box input::placeholder{color:rgba(255,255,255,0.3)}
+.login-box input:focus{border-color:var(--accent)}
+.login-box button{width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:12px;font-size:1em;font-weight:700;cursor:pointer;margin-top:4px}
+.login-box .err{color:var(--red);font-size:.85em;margin-top:10px;min-height:20px}
+
+/* Top bar */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;background:rgba(10,22,40,0.5);backdrop-filter:blur(20px)}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-left img{height:30px}
+.topbar-left h1{font-size:1.15em;font-weight:700}
+.topbar-left .version{font-size:.7em;color:var(--dim)}
+.topbar-right{display:flex;align-items:center;gap:16px}
+.user-badge{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);padding:6px 14px 6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,0.08)}
+.user-badge .avatar{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#5E5CE6);color:white;display:flex;align-items:center;justify-content:center;font-size:.7em;font-weight:700}
+.user-badge .name{font-size:.85em;font-weight:600}
+.btn-logout{background:rgba(255,69,58,0.12);border:1px solid rgba(255,69,58,0.25);color:var(--red);padding:7px 14px;border-radius:10px;font-size:.82em;font-weight:700;cursor:pointer}
+
+/* Layout */
+.main{flex:1;display:flex;overflow:hidden}
+.sidebar{width:260px;border-right:1px solid rgba(255,255,255,0.08);padding:16px;overflow-y:auto;flex-shrink:0;background:rgba(10,22,40,0.3)}
+.content{flex:1;overflow-y:auto;padding:20px 24px}
+
+/* Sidebar nav */
+.nav-section{font-size:.7em;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;padding:12px 12px 6px}
+.nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border:none;background:transparent;color:var(--mid);font-size:.9em;font-weight:600;cursor:pointer;border-radius:10px;margin-bottom:2px}
+.nav-btn:hover{background:rgba(255,255,255,0.06)}
+.nav-btn.active{background:rgba(10,132,255,0.15);color:var(--accent)}
+.nav-btn svg{width:20px;height:20px;flex-shrink:0}
+
+/* Stats cards */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:18px 20px}
+.stat-card .label{font-size:.75em;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.stat-card .value{font-size:1.8em;font-weight:800;margin-top:4px}
+.stat-card .value.blue{color:var(--accent)}.stat-card .value.green{color:var(--green)}.stat-card .value.orange{color:var(--orange)}
+
+/* Filters */
+.filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-select{padding:9px 14px;border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:rgba(255,255,255,0.06);color:white;font-size:.88em;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='rgba(255,255,255,0.5)' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+.filter-select option{background:#1a2a4a;color:white}
+.filter-input{padding:9px 14px;border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:rgba(255,255,255,0.06);color:white;font-size:.88em;outline:none;width:200px}
+.filter-input::placeholder{color:rgba(255,255,255,0.3)}
+.filter-input:focus,.filter-select:focus{border-color:var(--accent)}
+
+/* Table */
+.table-wrap{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:12px 16px;font-size:.75em;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03)}
+td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:.88em;color:var(--mid)}
+tr:hover{background:rgba(255,255,255,0.03)}
+tr:last-child td{border-bottom:none}
+.td-code{font-weight:700;color:var(--accent)}
+.td-date{font-size:.82em;color:var(--dim)}
+.badge{display:inline-block;padding:3px 10px;border-radius:8px;font-size:.75em;font-weight:700}
+.badge-foto{background:rgba(10,132,255,0.12);color:var(--accent)}
+.badge-importo{background:rgba(48,209,88,0.12);color:var(--green)}
+.badge-no{background:rgba(255,159,10,0.12);color:var(--orange)}
+.btn-action{padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:var(--text);font-size:.78em;font-weight:600;cursor:pointer;margin-right:4px}
+.btn-action:hover{background:rgba(255,255,255,0.12)}
+.btn-action.primary{background:rgba(10,132,255,0.15);border-color:rgba(10,132,255,0.3);color:var(--accent)}
+
+/* Importo modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:5000}
+.modal-bg.open{display:flex}
+.modal{background:rgba(20,30,50,0.95);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:28px;width:400px;max-width:90vw;backdrop-filter:blur(40px)}
+.modal h3{margin-bottom:4px;font-size:1.1em}
+.modal .modal-sub{color:var(--dim);font-size:.88em;margin-bottom:18px}
+.modal label{font-size:.78em;font-weight:700;color:var(--dim);text-transform:uppercase;display:block;margin-bottom:6px}
+.modal input{width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:rgba(255,255,255,0.06);color:white;font-size:1.1em;font-weight:700;outline:none;margin-bottom:16px}
+.modal input:focus{border-color:var(--accent)}
+.modal-buttons{display:flex;gap:10px}
+.modal-buttons button{flex:1;padding:12px;border-radius:10px;font-weight:700;font-size:.92em;cursor:pointer;border:none}
+.modal-buttons .btn-cancel{background:rgba(255,255,255,0.08);color:var(--mid)}
+.modal-buttons .btn-save{background:var(--accent);color:white}
+
+/* Foto viewer */
+.foto-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:10px 0}
+.foto-thumb{border-radius:10px;overflow:hidden;aspect-ratio:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);cursor:pointer;position:relative}
+.foto-thumb img{width:100%;height:100%;object-fit:cover}
+.foto-loading{color:var(--dim);font-size:.85em;text-align:center;padding:30px}
+
+/* Page sections */
+.page-section{display:none}
+.page-section.active{display:block}
+.section-header{font-size:1.2em;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+
+/* Empty state */
+.empty-state{text-align:center;padding:60px 20px;color:var(--dim)}
+.empty-state svg{margin-bottom:12px}
+.empty-state h3{color:var(--mid);margin-bottom:4px}
+
+/* Siti page */
+.siti-layout{display:flex;gap:16px;height:calc(100vh - 180px)}
+.siti-list-panel{width:420px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden}
+.siti-map-panel{flex:1;border-radius:var(--radius);overflow:hidden;border:1px solid var(--card-border)}
+#dash-map{width:100%;height:100%}
+.siti-search{display:flex;gap:8px;margin-bottom:10px}
+.siti-search input{flex:1}
+.siti-results{flex:1;overflow-y:auto}
+.siti-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;cursor:pointer;margin-bottom:2px;border:1px solid transparent}
+.siti-row:hover{background:rgba(255,255,255,0.05)}
+.siti-row.selected{background:rgba(10,132,255,0.1);border-color:rgba(10,132,255,0.25)}
+.sr-code{font-weight:700;color:var(--accent);font-size:.92em}
+.sr-city{font-size:.85em;color:var(--mid)}
+.sr-addr{font-size:.78em;color:var(--dim)}
+.sr-actions{margin-left:auto;display:flex;gap:6px}
+.siti-detail{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:16px;margin-bottom:10px;display:none}
+.siti-detail.open{display:block}
+.sd-grid{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:.85em;margin:10px 0}
+.sd-grid .lbl{color:var(--dim);font-weight:600}.sd-grid .val{color:var(--text)}
+.sd-nav-btns{display:flex;gap:8px;margin-top:12px}
+.sd-nav-btns a{padding:10px 16px;border-radius:10px;font-size:.85em;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:6px;color:white}
+.sd-nav-btns .gmaps{background:#4285F4}.sd-nav-btns .waze{background:#33CCFF;color:#000}
+.siti-count{font-size:.8em;color:var(--dim);padding:4px 0 8px;font-weight:600}
+.leaflet-popup-content-wrapper{border-radius:12px!important;background:rgba(20,30,50,0.95)!important;color:white!important;backdrop-filter:blur(20px)}
+.leaflet-popup-tip{background:rgba(20,30,50,0.95)!important}
+.leaflet-popup-content{margin:12px!important;font-size:.88em}
+@media(max-width:1024px){.siti-layout{flex-direction:column;height:auto}.siti-list-panel{width:100%;max-height:50vh}.siti-map-panel{height:400px}}
+
+/* Dev credit */
+.dev-credit{text-align:center;padding:16px;font-size:.7em;color:rgba(255,255,255,0.25);font-weight:500;letter-spacing:.3px}
+.dev-credit span{color:rgba(255,255,255,0.45);font-weight:700}
+
+/* Responsive */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .content{padding:14px}
+  .stats-row{grid-template-columns:1fr 1fr}
+  table{font-size:.82em}
+  th,td{padding:10px 12px}
+}
+</style>
+</head>
+<body>
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <img src="../app/logo-cube.png" alt="E.ESEGUO">
+    <h2>E.ESEGUO</h2>
+    <div class="sub">Dashboard Coordinatore</div>
+    <input type="email" id="login-email" placeholder="Email" autocomplete="email">
+    <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
+    <button onclick="doLogin()">Accedi</button>
+    <div class="err" id="login-error"></div>
+  </div>
+</div>
+
+<div class="topbar" id="topbar" style="display:none">
+  <div class="topbar-left">
+    <img src="../app/logo-cube.png" alt="">
+    <div><h1>E.ESEGUO</h1><div class="version">Dashboard Coordinatore · v1.0</div></div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-badge"><div class="avatar" id="tb-avatar">C</div><div class="name" id="tb-name">Coordinatore</div></div>
+    <button class="btn-logout" onclick="doLogout()">Esci</button>
+  </div>
+</div>
+
+<div class="main" id="main-area" style="display:none">
+  <div class="sidebar">
+    <div class="nav-section">Panoramica</div>
+    <button class="nav-btn active" data-page="overview" onclick="showPage('overview')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Dashboard</button>
+    <div class="nav-section">Gestione</div>
+    <button class="nav-btn" data-page="interventi" onclick="showPage('interventi')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 9V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/></svg>Interventi</button>
+    <button class="nav-btn" data-page="tecnici" onclick="showPage('tecnici')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Tecnici</button>
+    <button class="nav-btn" data-page="economia" onclick="showPage('economia')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>Economia</button>
+    <div class="nav-section">Territorio</div>
+    <button class="nav-btn" data-page="siti" onclick="showPage('siti')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>Siti & Mappa</button>
+    <div style="flex:1"></div>
+    <div class="dev-credit">sviluppato da<br><span>Massimiliano Alcini</span></div>
+  </div>
+
+  <div class="content">
+    <!-- OVERVIEW -->
+    <div class="page-section active" id="page-overview">
+      <div class="section-header">Dashboard</div>
+      <div class="stats-row" id="stats-row">
+        <div class="stat-card"><div class="label">Interventi Totali</div><div class="value blue" id="s-tot">—</div></div>
+        <div class="stat-card"><div class="label">Questo Mese</div><div class="value green" id="s-mese">—</div></div>
+        <div class="stat-card"><div class="label">Foto Totali</div><div class="value orange" id="s-foto">—</div></div>
+        <div class="stat-card"><div class="label">Tecnici Attivi</div><div class="value blue" id="s-tecnici">—</div></div>
+      </div>
+      <div class="section-header" style="font-size:1em;margin-top:10px">Ultimi Interventi</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Codice Sito</th><th>Tecnico</th><th>Cliente</th><th>Lavorazione</th><th>Foto</th><th>Importo</th><th>Data</th></tr></thead>
+        <tbody id="overview-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- INTERVENTI -->
+    <div class="page-section" id="page-interventi">
+      <div class="section-header">Tutti gli Interventi</div>
+      <div class="filters">
+        <input class="filter-input" id="f-search" placeholder="Cerca codice sito, tecnico..." oninput="filterInterventi()">
+        <select class="filter-select" id="f-tecnico" onchange="filterInterventi()"><option value="">Tutti i tecnici</option></select>
+        <select class="filter-select" id="f-cliente" onchange="filterInterventi()"><option value="">Tutti i clienti</option></select>
+        <select class="filter-select" id="f-mese" onchange="filterInterventi()"><option value="">Tutti i mesi</option></select>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Codice Sito</th><th>Sito</th><th>Tecnico</th><th>Cliente</th><th>Lavorazione</th><th>Foto</th><th>Importo</th><th>Data</th><th>Azioni</th></tr></thead>
+        <tbody id="interventi-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- TECNICI -->
+    <div class="page-section" id="page-tecnici">
+      <div class="section-header">Tecnici</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Nome</th><th>Email</th><th>Area</th><th>Interventi</th><th>Foto</th></tr></thead>
+        <tbody id="tecnici-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- ECONOMIA (FASE 7) -->
+    <div class="page-section" id="page-economia">
+      <div class="section-header">Gestione Economica</div>
+      <div class="filters">
+        <select class="filter-select" id="eco-mese" onchange="loadEconomia()"></select>
+      </div>
+      <div class="stats-row" id="eco-stats">
+        <div class="stat-card"><div class="label">Totale Interventi</div><div class="value green" id="eco-tot-int">—</div></div>
+        <div class="stat-card"><div class="label">Totale Importi</div><div class="value green" id="eco-tot-imp">—</div></div>
+        <div class="stat-card"><div class="label">Costi Mensili</div><div class="value red" id="eco-tot-costi" style="color:var(--red)">—</div></div>
+        <div class="stat-card"><div class="label">Margine</div><div class="value blue" id="eco-margine">—</div></div>
+      </div>
+      <div class="section-header" style="font-size:1em;margin-top:10px">Dettaglio per Tecnico</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Tecnico</th><th>Interventi</th><th>Foto</th><th>Importo Totale</th></tr></thead>
+        <tbody id="eco-table"></tbody>
+      </table></div>
+    </div>
+
+    <!-- SITI & MAPPA -->
+    <div class="page-section" id="page-siti">
+      <div class="section-header"><svg width="24" height="24" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>Siti & Mappa</div>
+      <div class="siti-layout">
+        <div class="siti-list-panel">
+          <div class="siti-search">
+            <input class="filter-input" id="siti-search" placeholder="Cerca PCN, citta, provincia..." oninput="searchSiti()" style="width:100%">
+          </div>
+          <div class="siti-detail" id="siti-detail"></div>
+          <div class="siti-count" id="siti-count"></div>
+          <div class="siti-results" id="siti-results"></div>
+        </div>
+        <div class="siti-map-panel"><div id="dash-map"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal importo -->
+<div class="modal-bg" id="modal-importo">
+  <div class="modal">
+    <h3>Assegna Importo</h3>
+    <div class="modal-sub" id="modal-info"></div>
+    <label>Importo (€)</label>
+    <input type="number" id="modal-amount" step="0.01" min="0" placeholder="0.00">
+    <div class="modal-buttons">
+      <button class="btn-cancel" onclick="closeModal()">Annulla</button>
+      <button class="btn-save" onclick="saveImporto()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal foto -->
+<div class="modal-bg" id="modal-foto">
+  <div class="modal" style="width:600px">
+    <h3 id="foto-modal-title">Foto Intervento</h3>
+    <div class="modal-sub" id="foto-modal-sub"></div>
+    <div id="foto-container" class="foto-grid"></div>
+    <div class="modal-buttons" style="margin-top:16px"><button class="btn-cancel" onclick="closeFotoModal()" style="flex:none;padding:10px 24px">Chiudi</button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const SUPA_URL='https://gohtmuxaidwzijzrgzfh.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvaHRtdXhhaWR3emlqenJnemZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwODQzNzQsImV4cCI6MjA4OTY2MDM3NH0.TOVZgCuRiCk9B50zTd_BpOKZGpIaHEXFwA2L7TKFJVQ';
+const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+
+let currentUser=null,userProfile=null,allInterventi=[],allProfiles=[],editingIntervento=null;
+let allSiti=[],dashMap=null,dashMarkers=null,selectedDashSite=null;
+
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim(),pass=document.getElementById('login-pass').value;
+  document.getElementById('login-error').textContent='';
+  if(!email||!pass){document.getElementById('login-error').textContent='Inserisci email e password';return;}
+  const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){document.getElementById('login-error').textContent='Credenziali non valide';return;}
+  currentUser=data.user;
+  const{data:p}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
+  userProfile=p;
+  if(!p||!['coordinatore','amministratore'].includes(p.role)){
+    document.getElementById('login-error').textContent='Accesso riservato a coordinatori e amministratori';
+    await sb.auth.signOut();return;
+  }
+  showApp();
+}
+
+async function doLogout(){await sb.auth.signOut();location.reload();}
+
+function showApp(){
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('topbar').style.display='';
+  document.getElementById('main-area').style.display='';
+  const n=userProfile.full_name||currentUser.email;
+  document.getElementById('tb-avatar').textContent=n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('tb-name').textContent=n;
+  loadAllData();
+}
+
+async function loadAllData(){
+  // Load profiles
+  const{data:profiles}=await sb.from('profiles').select('*').order('full_name');
+  allProfiles=profiles||[];
+
+  // Load interventi
+  const{data:int}=await sb.from('interventi').select('*').order('created_at',{ascending:false});
+  allInterventi=int||[];
+
+  // Siti: search on-demand via RPC (no bulk download needed)
+  // Get total count for display
+  const{data:sitiCount}=await sb.rpc('get_siti_count');
+  window._sitiTotal=sitiCount||0;
+
+  // Populate filters
+  populateFilters();
+  renderOverview();
+  renderInterventi();
+  renderTecnici();
+  initEconomia();
+}
+
+function populateFilters(){
+  const tecSel=document.getElementById('f-tecnico');
+  const cliSel=document.getElementById('f-cliente');
+  const meseSel=document.getElementById('f-mese');
+  const tecnici=allProfiles.filter(p=>p.role==='tecnico');
+  tecnici.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.full_name||t.id;tecSel.appendChild(o);});
+  const clienti=[...new Set(allInterventi.map(i=>i.cliente_finale).filter(Boolean))];
+  clienti.sort().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;cliSel.appendChild(o);});
+  const mesi=[...new Set(allInterventi.map(i=>i.created_at?.slice(0,7)).filter(Boolean))];
+  mesi.sort().reverse().forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=formatMese(m);meseSel.appendChild(o);});
+}
+
+function formatMese(m){const[y,mo]=m.split('-');const nomi=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];return nomi[parseInt(mo)-1]+' '+y;}
+function getTecName(id){const p=allProfiles.find(x=>x.id===id);return p?p.full_name||'N/D':'N/D';}
+function formatDate(d){if(!d)return'';const dt=new Date(d);return dt.toLocaleDateString('it-IT')+' '+dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});}
+
+function renderOverview(){
+  const now=new Date(),ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const meseInt=allInterventi.filter(i=>i.created_at?.startsWith(ym));
+  const totFoto=allInterventi.reduce((s,i)=>s+(i.n_foto||0),0);
+  const tecIds=new Set(allInterventi.map(i=>i.tecnico_id));
+  document.getElementById('s-tot').textContent=allInterventi.length;
+  document.getElementById('s-mese').textContent=meseInt.length;
+  document.getElementById('s-foto').textContent=totFoto;
+  document.getElementById('s-tecnici').textContent=tecIds.size;
+
+  const recent=allInterventi.slice(0,10);
+  document.getElementById('overview-table').innerHTML=recent.map(r=>`<tr>
+    <td class="td-code">${r.codice_sito||'—'}</td>
+    <td>${getTecName(r.tecnico_id)}</td>
+    <td>${r.cliente_finale||'—'}</td>
+    <td>${r.lavorazione||'—'}</td>
+    <td>${r.n_foto?`<span class="badge badge-foto">${r.n_foto}</span>`:'—'}</td>
+    <td>${r.importo!=null?`<span class="badge badge-importo">€${(+r.importo).toFixed(2)}</span>`:`<span class="badge badge-no">—</span>`}</td>
+    <td class="td-date">${formatDate(r.created_at)}</td>
+  </tr>`).join('');
+}
+
+function filterInterventi(){
+  const q=document.getElementById('f-search').value.trim().toLowerCase();
+  const tec=document.getElementById('f-tecnico').value;
+  const cli=document.getElementById('f-cliente').value;
+  const mese=document.getElementById('f-mese').value;
+  let filtered=allInterventi;
+  if(tec)filtered=filtered.filter(i=>i.tecnico_id===tec);
+  if(cli)filtered=filtered.filter(i=>i.cliente_finale===cli);
+  if(mese)filtered=filtered.filter(i=>i.created_at?.startsWith(mese));
+  if(q)filtered=filtered.filter(i=>{
+    const h=[i.codice_sito,i.nome_sito,getTecName(i.tecnico_id),i.cliente_finale,i.lavorazione].filter(Boolean).join(' ').toLowerCase();
+    return h.includes(q);
+  });
+  renderInterventiTable(filtered);
+}
+
+function renderInterventi(){renderInterventiTable(allInterventi);}
+
+function renderInterventiTable(list){
+  document.getElementById('interventi-table').innerHTML=list.map(r=>`<tr>
+    <td class="td-code">${r.codice_sito||'—'}</td>
+    <td>${r.nome_sito||'—'}</td>
+    <td>${getTecName(r.tecnico_id)}</td>
+    <td>${r.cliente_finale||'—'}</td>
+    <td>${r.lavorazione||'—'}</td>
+    <td>${r.n_foto?`<button class="btn-action" onclick="viewFoto('${r.id}','${r.codice_sito||''}',${r.n_foto})">${r.n_foto} foto</button>`:'—'}</td>
+    <td>${r.importo!=null?`<span class="badge badge-importo">€${(+r.importo).toFixed(2)}</span>`:`<span class="badge badge-no">—</span>`}</td>
+    <td class="td-date">${formatDate(r.created_at)}</td>
+    <td><button class="btn-action primary" onclick="openImportoModal('${r.id}')">€ Importo</button></td>
+  </tr>`).join('');
+}
+
+function renderTecnici(){
+  const tecnici=allProfiles.filter(p=>p.role==='tecnico');
+  document.getElementById('tecnici-table').innerHTML=tecnici.map(t=>{
+    const ints=allInterventi.filter(i=>i.tecnico_id===t.id);
+    const foto=ints.reduce((s,i)=>s+(i.n_foto||0),0);
+    return`<tr>
+      <td style="font-weight:700">${t.full_name||'—'}</td>
+      <td style="color:var(--dim)">${t.id.slice(0,8)}...</td>
+      <td>${t.area||'—'}</td>
+      <td><span class="badge badge-foto">${ints.length}</span></td>
+      <td>${foto}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* Importo modal */
+function openImportoModal(intId){
+  const r=allInterventi.find(i=>i.id===intId);if(!r)return;
+  editingIntervento=r;
+  document.getElementById('modal-info').textContent=`${r.codice_sito} · ${getTecName(r.tecnico_id)} · ${r.lavorazione||''}`;
+  document.getElementById('modal-amount').value=r.importo||'';
+  document.getElementById('modal-importo').classList.add('open');
+  setTimeout(()=>document.getElementById('modal-amount').focus(),100);
+}
+
+function closeModal(){document.getElementById('modal-importo').classList.remove('open');editingIntervento=null;}
+
+async function saveImporto(){
+  if(!editingIntervento)return;
+  const val=parseFloat(document.getElementById('modal-amount').value);
+  if(isNaN(val)||val<0){return;}
+  const{error}=await sb.from('interventi').update({importo:val,importo_inserito_da:currentUser.id,importo_inserito_at:new Date().toISOString()}).eq('id',editingIntervento.id);
+  if(error){alert('Errore: '+error.message);return;}
+  editingIntervento.importo=val;
+  closeModal();
+  renderOverview();renderInterventi();
+}
+
+/* Foto viewer */
+async function viewFoto(intId,codice,nFoto){
+  document.getElementById('foto-modal-title').textContent='Foto · '+codice;
+  document.getElementById('foto-modal-sub').textContent=nFoto+' foto';
+  document.getElementById('foto-container').innerHTML='<div class="foto-loading">Caricamento foto...</div>';
+  document.getElementById('modal-foto').classList.add('open');
+
+  const{data:fotos}=await sb.from('foto').select('*').eq('intervento_id',intId);
+  if(!fotos||!fotos.length){
+    document.getElementById('foto-container').innerHTML='<div class="foto-loading">Nessuna foto trovata</div>';return;
+  }
+  const thumbs=[];
+  for(const f of fotos){
+    const{data}=await sb.storage.from('foto-interventi').createSignedUrl(f.storage_path,300);
+    if(data?.signedUrl)thumbs.push(`<div class="foto-thumb"><img src="${data.signedUrl}" alt="${f.filename}" onclick="window.open('${data.signedUrl}','_blank')"></div>`);
+  }
+  document.getElementById('foto-container').innerHTML=thumbs.join('')||'<div class="foto-loading">Errore caricamento</div>';
+}
+
+function closeFotoModal(){document.getElementById('modal-foto').classList.remove('open');}
+
+/* Economia */
+function initEconomia(){
+  const sel=document.getElementById('eco-mese');
+  sel.innerHTML='';
+  const mesi=new Set();
+  allInterventi.forEach(i=>{if(i.created_at)mesi.add(i.created_at.slice(0,7));});
+  const now=new Date();mesi.add(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
+  [...mesi].sort().reverse().forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=formatMese(m);sel.appendChild(o);});
+  loadEconomia();
+}
+
+async function loadEconomia(){
+  const mese=document.getElementById('eco-mese').value;if(!mese)return;
+  const meseInt=allInterventi.filter(i=>i.created_at?.startsWith(mese));
+  const totImp=meseInt.reduce((s,i)=>s+(i.importo?+i.importo:0),0);
+  const{data:costi}=await sb.from('costi_mensili').select('*').gte('mese',mese+'-01').lte('mese',mese+'-31');
+  const totCosti=(costi||[]).reduce((s,c)=>s+(+c.importo||0),0);
+
+  document.getElementById('eco-tot-int').textContent=meseInt.length;
+  document.getElementById('eco-tot-imp').textContent='€ '+totImp.toFixed(2);
+  document.getElementById('eco-tot-costi').textContent='€ '+totCosti.toFixed(2);
+  const margine=totImp-totCosti;
+  const me=document.getElementById('eco-margine');
+  me.textContent='€ '+margine.toFixed(2);
+  me.style.color=margine>=0?'var(--green)':'var(--red)';
+
+  // Per tecnico
+  const tecMap={};
+  meseInt.forEach(i=>{
+    if(!tecMap[i.tecnico_id])tecMap[i.tecnico_id]={int:0,foto:0,imp:0};
+    tecMap[i.tecnico_id].int++;
+    tecMap[i.tecnico_id].foto+=(i.n_foto||0);
+    tecMap[i.tecnico_id].imp+=(i.importo?+i.importo:0);
+  });
+  document.getElementById('eco-table').innerHTML=Object.entries(tecMap).map(([id,d])=>`<tr>
+    <td style="font-weight:700">${getTecName(id)}</td>
+    <td>${d.int}</td>
+    <td>${d.foto}</td>
+    <td><span class="badge badge-importo">€ ${d.imp.toFixed(2)}</span></td>
+  </tr>`).join('');
+}
+
+/* Navigation */
+function showPage(page){
+  document.querySelectorAll('.page-section').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page)?.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+  if(page==='siti')setTimeout(()=>initDashMap(),100);
+}
+
+/* === SITI & MAPPA === */
+function initDashMap(){
+  if(dashMap){dashMap.invalidateSize();return;}
+  dashMap=L.map('dash-map',{zoomControl:true}).setView([42.56,12.64],6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OSM',maxZoom:19}).addTo(dashMap);
+  dashMarkers=L.layerGroup().addTo(dashMap);
+  document.getElementById('siti-count').textContent=(window._sitiTotal||0)+' siti disponibili — cerca per visualizzare';
+}
+
+let sitiSearchTimeout=null;
+function searchSiti(){
+  clearTimeout(sitiSearchTimeout);
+  sitiSearchTimeout=setTimeout(doSearchSiti,300);
+}
+
+async function doSearchSiti(){
+  const q=document.getElementById('siti-search').value.trim();
+  if(q.length<2){
+    document.getElementById('siti-results').innerHTML='';
+    document.getElementById('siti-count').textContent=(window._sitiTotal||0)+' siti disponibili — cerca per visualizzare';
+    if(dashMarkers)dashMarkers.clearLayers();
+    allSiti=[];
+    closeSitiDetail();
+    return;
+  }
+  document.getElementById('siti-count').textContent='Ricerca in corso...';
+  const{data:res,error}=await sb.rpc('search_siti',{q:q,max_results:100});
+  const arr=Array.isArray(res)?res:[];
+  allSiti=arr;
+
+  document.getElementById('siti-count').textContent=arr.length+' siti trovati';
+  document.getElementById('siti-results').innerHTML=arr.map(s=>`<div class="siti-row" id="sr-${s.codice_sito}" onclick="selectDashSite('${s.codice_sito}')">
+    <div style="flex:1;min-width:0"><div class="sr-code">${s.codice_sito}</div><div class="sr-city">${s.citta||s.provincia||''}</div><div class="sr-addr">${s.nome_sito||''}</div></div>
+    <div class="sr-actions">${s.latitudine&&s.longitudine?`<a class="btn-action primary" href="https://www.google.com/maps/dir/?api=1&destination=${s.latitudine},${s.longitudine}" target="_blank" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:4px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/></svg>Naviga</a>`:`<span class="btn-action" style="opacity:.3;pointer-events:none;font-size:.75em">No GPS</span>`}</div>
+  </div>`).join('');
+
+  if(dashMarkers){
+    dashMarkers.clearLayers();
+    const bounds=[];
+    arr.filter(s=>s.latitudine&&s.longitudine).forEach(s=>{
+      const la=+s.latitudine,lo=+s.longitudine;
+      bounds.push([la,lo]);
+      const m=L.circleMarker([la,lo],{radius:7,fillColor:'#0A84FF',color:'#fff',weight:2,fillOpacity:.85});
+      m.bindPopup(`<div style="font-weight:700;color:#0A84FF">${s.codice_sito}</div><div style="color:rgba(255,255,255,0.7);font-size:.88em">${s.nome_sito||''}</div><div style="color:rgba(255,255,255,0.5);font-size:.85em">${s.citta||''}</div><div style="margin-top:8px"><a href="https://www.google.com/maps/dir/?api=1&destination=${la},${lo}" target="_blank" style="color:#4285F4;font-weight:700;font-size:.85em;text-decoration:none">📍 Google Maps</a> &nbsp; <a href="https://waze.com/ul?ll=${la},${lo}&navigate=yes" target="_blank" style="color:#33CCFF;font-weight:700;font-size:.85em;text-decoration:none">🚗 Waze</a></div>`);
+      m.on('click',()=>selectDashSite(s.codice_sito));
+      dashMarkers.addLayer(m);
+    });
+    if(bounds.length>0)dashMap.fitBounds(bounds,{padding:[40,40],maxZoom:14});
+  }
+}
+
+async function selectDashSite(codice){
+  let s=allSiti.find(x=>x.codice_sito===codice);if(!s)return;
+  // Load full details on demand if missing fields
+  if(!s._full){
+    const{data:full}=await sb.from('siti').select('*').eq('codice_sito',codice).single();
+    if(full){Object.assign(s,full);s._full=true;}
+  }
+  selectedDashSite=s;
+
+  // Highlight row
+  document.querySelectorAll('.siti-row').forEach(r=>r.classList.remove('selected'));
+  document.getElementById('sr-'+codice)?.classList.add('selected');
+
+  // Show detail
+  const det=document.getElementById('siti-detail');
+  const fields=[['Territorio',s.territorio],['Regione',s.regione],['Provincia',s.provincia],['Citta',s.citta],['Indirizzo',s.indirizzo],['CAP',s.cap],['Tipo Impianto',s.tipo_impianto],['Stato',s.stato_sito],['Struttura',s.struttura_civile],['Manutenzione',s.tipologia_manutenzione],['Coordinate',s.latitudine&&s.longitudine?`${(+s.latitudine).toFixed(5)}, ${(+s.longitudine).toFixed(5)}`:null]];
+  const access=[s.itinerario,s.descrizione_accesso,s.note_accesso].filter(Boolean);
+
+  det.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-weight:700;color:var(--accent);font-size:1.1em">${s.codice_sito}</div><div style="color:var(--mid);font-size:.9em">${s.nome_sito||''}</div></div><button class="btn-action" onclick="closeSitiDetail()" style="flex-shrink:0">✕</button></div>
+  <div class="sd-grid">${fields.filter(f=>f[1]).map(f=>`<div class="lbl">${f[0]}</div><div class="val">${f[1]}</div>`).join('')}</div>
+  ${access.length?`<div style="background:rgba(255,159,10,0.08);border:1px solid rgba(255,159,10,0.2);border-radius:10px;padding:12px;font-size:.82em;color:var(--orange);margin-top:8px"><strong>Accesso:</strong><br>${access.join('<br>')}</div>`:''}
+  <div class="sd-nav-btns">${s.latitudine&&s.longitudine?`<a class="gmaps" href="https://www.google.com/maps/dir/?api=1&destination=${s.latitudine},${s.longitudine}" target="_blank"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>Google Maps</a><a class="waze" href="https://waze.com/ul?ll=${s.latitudine},${s.longitudine}&navigate=yes" target="_blank"><svg width="16" height="16" viewBox="0 0 24 24" fill="#000"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>Waze</a>`:'<span style="color:var(--dim);font-size:.85em">Coordinate non disponibili</span>'}</div>`;
+  det.classList.add('open');
+
+  // Pan map to site
+  if(s.latitudine&&s.longitudine&&dashMap){
+    dashMap.setView([+s.latitudine,+s.longitudine],15,{animate:true});
+  }
+}
+
+function closeSitiDetail(){
+  document.getElementById('siti-detail').classList.remove('open');
+  document.getElementById('siti-detail').innerHTML='';
+  selectedDashSite=null;
+  document.querySelectorAll('.siti-row').forEach(r=>r.classList.remove('selected'));
+}
+
+/* Init */
+(async()=>{
+  const{data:{session}}=await sb.auth.getSession();
+  if(session){
+    currentUser=session.user;
+    const{data:p}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
+    userProfile=p;
+    if(p&&['coordinatore','amministratore'].includes(p.role))showApp();
+  }
+})();
+</script>
+</body>
+</html>
