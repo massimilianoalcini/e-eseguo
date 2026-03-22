@@ -347,13 +347,15 @@ function searchSiteForForm(){
     const{data:res}=await sb.rpc('search_siti',{q:q,max_results:8});
     const arr=Array.isArray(res)?res:[];
     if(arr.length===0){box.classList.remove('open');return;}
+    formSearchResults=arr;
     box.innerHTML=arr.map(s=>`<div class="sp-item" onclick="selectFormSite('${s.codice_sito}')"><span class="sp-code">${s.codice_sito}</span> <span class="sp-city">${s.citta||s.nome_sito||''}</span></div>`).join('');
     box.classList.add('open');
   },250);
 }
 
+let formSearchResults=[];
 function selectFormSite(codice){
-  const s=allSiti.find(x=>x.codice_sito===codice);if(!s)return;
+  const s=formSearchResults.find(x=>x.codice_sito===codice);if(!s)return;
   formSite=s;
   document.getElementById('site-picker-results').classList.remove('open');
   document.getElementById('int-site-search').value='';
