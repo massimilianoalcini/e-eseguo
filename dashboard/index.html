@@ -654,7 +654,7 @@ function renderInterventiTable(list){
     <td>${r.n_foto?`<button class="btn-action" onclick="viewFoto('${r.id}','${r.codice_sito||''}',${r.n_foto})">${r.n_foto} foto</button>`:'—'}</td>
     <td>${r.importo!=null?`<span class="badge badge-importo">€${(+r.importo).toFixed(2)}</span>`:`<span class="badge badge-no">—</span>`}</td>
     <td class="td-date">${formatDate(r.created_at)}</td>
-    <td style="display:flex;gap:6px;"><button class="btn-action" style="background:rgba(243,156,18,0.15);color:#f39c12;font-size:.75em;" onclick="generateReport('${r.id}')">📄 Report</button><button class="btn-action primary" onclick="openImportoModal('${r.id}')">€ Importo</button></td>
+    <td><button class="btn-action" style="background:rgba(243,156,18,0.15);color:#f39c12;font-size:.75em;margin-bottom:4px;" onclick="generateReport('${r.id}')">📄 Report</button><br><button class="btn-action primary" onclick="openImportoModal('${r.id}')">€ Importo</button></td>
   </tr>`).join('');
 }
 
