@@ -138,6 +138,19 @@ tr:last-child td{border-bottom:none}
 .leaflet-popup-content{margin:12px!important;font-size:.88em}
 @media(max-width:1024px){.siti-layout{flex-direction:column;height:auto}.siti-list-panel{width:100%;max-height:50vh}.siti-map-panel{height:400px}}
 
+/* Percorso tappe */
+.tappa-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.08);border-radius:10px;margin-bottom:6px;transition:border-color .2s,opacity .2s}
+.tappa-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.75em;font-weight:800;flex-shrink:0}
+.tappa-info{flex:1;font-size:.88em}
+.tappa-code{font-weight:700;color:var(--accent)}
+.tappa-city{color:var(--dim);font-size:.85em}
+.tappa-remove{background:none;border:none;color:var(--red);cursor:pointer;font-size:1.1em;padding:4px 8px;opacity:0.6}
+.tappa-remove:hover{opacity:1}
+.percorso-sr{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;margin-bottom:2px}
+.percorso-sr:hover{background:rgba(255,255,255,0.06)}
+.percorso-sr .sr-code{font-weight:700;color:var(--accent);font-size:.88em}
+.percorso-sr .sr-info{font-size:.82em;color:var(--dim)}
+
 /* Dev credit */
 .dev-credit{text-align:center;padding:16px;font-size:.7em;color:rgba(255,255,255,0.25);font-weight:500;letter-spacing:.3px}
 .dev-credit span{color:rgba(255,255,255,0.45);font-weight:700}
@@ -234,20 +247,101 @@ tr:last-child td{border-bottom:none}
     <!-- ECONOMIA (FASE 7) -->
     <div class="page-section" id="page-economia">
       <div class="section-header">Gestione Economica</div>
-      <div class="filters">
-        <select class="filter-select" id="eco-mese" onchange="loadEconomia()"></select>
+      <div class="filters" style="align-items:center">
+        <button class="btn-action" onclick="shiftMese(-1)" style="padding:8px 12px;font-size:1.1em;line-height:1">◀</button>
+        <select class="filter-select" id="eco-mese" onchange="loadEconomia()" style="min-width:160px;text-align:center;font-weight:700;font-size:.95em"></select>
+        <button class="btn-action" onclick="shiftMese(1)" style="padding:8px 12px;font-size:1.1em;line-height:1">▶</button>
       </div>
+
+      <!-- Riepilogo Entrate / Uscite -->
       <div class="stats-row" id="eco-stats">
-        <div class="stat-card"><div class="label">Totale Interventi</div><div class="value green" id="eco-tot-int">—</div></div>
-        <div class="stat-card"><div class="label">Totale Importi</div><div class="value green" id="eco-tot-imp">—</div></div>
-        <div class="stat-card"><div class="label">Costi Mensili</div><div class="value red" id="eco-tot-costi" style="color:var(--red)">—</div></div>
-        <div class="stat-card"><div class="label">Margine</div><div class="value blue" id="eco-margine">—</div></div>
+        <div class="stat-card"><div class="label">Totale Interventi</div><div class="value green" id="eco-tot-int">0</div></div>
+        <div class="stat-card"><div class="label">Totale Entrate</div><div class="value green" id="eco-tot-entrate">€ 0.00</div></div>
+        <div class="stat-card"><div class="label">Totale Uscite</div><div class="value" id="eco-tot-uscite" style="color:var(--red)">€ 0.00</div></div>
+        <div class="stat-card"><div class="label">Margine</div><div class="value" id="eco-margine" style="color:var(--accent)">€ 0.00</div></div>
       </div>
-      <div class="section-header" style="font-size:1em;margin-top:10px">Dettaglio per Tecnico</div>
+
+      <!-- Tabella Interventi Mensili -->
+      <div class="section-header" style="font-size:1em;margin-top:10px">Interventi del Mese</div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Tecnico</th><th>Interventi</th><th>Foto</th><th>Importo Totale</th></tr></thead>
-        <tbody id="eco-table"></tbody>
+        <thead><tr><th>Tecnico</th><th>Cliente</th><th>Lavorazione</th><th>Luogo</th><th style="text-align:right">Importo</th></tr></thead>
+        <tbody id="eco-interventi-table"></tbody>
+        <tfoot><tr style="background:rgba(48,209,88,0.08)">
+          <td colspan="4" style="font-weight:700;color:var(--green);text-align:right;padding-right:20px">TOTALE ENTRATE</td>
+          <td style="font-weight:800;color:var(--green);text-align:right" id="eco-entrate-footer">€ 0.00</td>
+        </tr></tfoot>
       </table></div>
+
+      <!-- Tabella Altri Costi -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px">
+        <div class="section-header" style="font-size:1em;margin:0">Altri Costi</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-action primary" onclick="openAddCosto()" style="padding:8px 16px;font-size:.85em">+ Aggiungi Costo</button>
+          <button class="btn-action" onclick="openAIControlCosti()" style="padding:8px 16px;font-size:.85em;background:linear-gradient(135deg,rgba(94,92,230,0.2),rgba(10,132,255,0.2));border-color:rgba(94,92,230,0.4);color:#BDB4FE">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:4px"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/></svg>
+            AI Controllo Costi
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin-top:10px"><table>
+        <thead><tr><th>Voce</th><th>Note</th><th style="text-align:right">Importo</th><th style="width:60px"></th></tr></thead>
+        <tbody id="eco-costi-table"></tbody>
+        <tfoot><tr style="background:rgba(255,69,58,0.08)">
+          <td colspan="2" style="font-weight:700;color:var(--red);text-align:right;padding-right:20px">TOTALE USCITE</td>
+          <td style="font-weight:800;color:var(--red);text-align:right" id="eco-uscite-footer">€ 0.00</td>
+          <td></td>
+        </tr></tfoot>
+      </table></div>
+
+    </div>
+
+    <!-- Modal Aggiungi Costo -->
+    <div class="modal-bg" id="modal-costo">
+      <div class="modal">
+        <h3>Aggiungi Costo</h3>
+        <div class="modal-sub">Inserisci una voce di spesa per il mese selezionato</div>
+        <label>Voce</label>
+        <input id="costo-voce" placeholder="Es: Carburante Ford Ranger, Affitto magazzino...">
+        <label>Importo (€)</label>
+        <input id="costo-importo" type="number" step="0.01" placeholder="0.00">
+        <label>Note (opzionale)</label>
+        <input id="costo-note" placeholder="Note aggiuntive...">
+        <div class="modal-buttons">
+          <button class="btn-cancel" onclick="closeCostoModal()">Annulla</button>
+          <button class="btn-save" onclick="saveCosto()">Salva</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal AI Controllo Costi -->
+    <div class="modal-bg" id="modal-ai-costi">
+      <div class="modal" style="max-width:500px">
+        <h3 style="display:flex;align-items:center;gap:8px">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#BDB4FE"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/></svg>
+          AI Controllo Costi
+        </h3>
+        <div class="modal-sub">Analisi automatica fatture e tracciato bancario</div>
+        <div id="ai-costi-content" style="padding:20px 0;text-align:center">
+          <div style="background:linear-gradient(135deg,rgba(94,92,230,0.1),rgba(10,132,255,0.1));border:1px dashed rgba(94,92,230,0.3);border-radius:16px;padding:30px 20px;margin-bottom:16px">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="rgba(189,180,254,0.4)" style="margin-bottom:12px"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/></svg>
+            <div style="color:#BDB4FE;font-weight:700;font-size:1.05em;margin-bottom:8px">Funzione in sviluppo</div>
+            <div style="color:var(--dim);font-size:.88em;line-height:1.5">
+              L'AI analizzerà automaticamente le <strong style="color:var(--mid)">fatture spese</strong> (PDF) e il <strong style="color:var(--mid)">tracciato bancario</strong> (CSV) caricati nella cartella cloud, effettuando il match intelligente per popolare la tabella Altri Costi.
+            </div>
+          </div>
+          <div style="font-size:.82em;color:var(--dim);line-height:1.6;text-align:left;padding:0 10px">
+            <div style="margin-bottom:6px"><strong style="color:var(--mid)">Come funzionerà:</strong></div>
+            <div style="margin-bottom:4px">1. Carica le fatture PDF del mese nella cartella cloud</div>
+            <div style="margin-bottom:4px">2. Carica l'estratto conto bancario CSV</div>
+            <div style="margin-bottom:4px">3. L'AI effettua OCR sulle fatture e match con i movimenti</div>
+            <div>4. La tabella Altri Costi si popola automaticamente</div>
+          </div>
+        </div>
+        <div class="modal-buttons">
+          <button class="btn-cancel" onclick="closeAICosti()" style="flex:1">Chiudi</button>
+          <button class="btn-save" disabled style="flex:1;opacity:0.4;background:linear-gradient(135deg,#5E5CE6,#0A84FF);cursor:not-allowed">Prossimamente</button>
+        </div>
+      </div>
     </div>
 
     <!-- SITI & MAPPA -->
@@ -264,6 +358,76 @@ tr:last-child td{border-bottom:none}
         </div>
         <div class="siti-map-panel"><div id="dash-map"></div></div>
       </div>
+
+      <!-- CALCOLA PERCORSO -->
+      <div style="margin-top:20px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05em">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--accent)"><path d="M21.71 11.29l-9-9a.996.996 0 00-1.41 0l-9 9a.996.996 0 000 1.41l9 9c.39.39 1.02.39 1.41 0l9-9a.996.996 0 000-1.41zM14 14.5V12h-4v3H8v-4c0-.55.45-1 1-1h5V7.5l3.5 3.5-3.5 3.5z"/></svg>
+            Calcola Percorso
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-action" onclick="clearPercorso()" style="font-size:.82em">Svuota</button>
+            <button class="btn-action" onclick="ottimizzaPercorso()" id="btn-ottimizza" style="font-size:.82em;background:linear-gradient(135deg,rgba(48,209,88,0.15),rgba(10,132,255,0.15));border-color:rgba(48,209,88,0.3);color:var(--green)" disabled>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:3px"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+              Ottimizza percorso
+            </button>
+            <button class="btn-action primary" onclick="calcolaPercorso()" id="btn-calcola-percorso" style="font-size:.82em" disabled>Calcola KM</button>
+          </div>
+        </div>
+
+        <!-- Cerca e aggiungi siti al percorso -->
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <input class="filter-input" id="percorso-search" placeholder="Cerca sito da aggiungere al percorso..." oninput="searchPercorsoSito()" style="flex:1">
+        </div>
+        <div id="percorso-search-results" style="max-height:150px;overflow-y:auto;margin-bottom:12px"></div>
+
+        <!-- Lista tappe del percorso -->
+        <div id="percorso-tappe" style="min-height:40px"></div>
+
+        <!-- Parametri carburante -->
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+          <div style="font-size:.78em;color:var(--dim);font-weight:600">Parametri stima:</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <label style="font-size:.78em;color:var(--dim)">Consumo</label>
+            <input class="filter-input" id="perc-consumo" type="number" value="9" step="0.5" min="3" max="20" style="width:60px;padding:5px 8px;font-size:.85em;text-align:center" onchange="ricalcolaCarburante()">
+            <span style="font-size:.78em;color:var(--dim)">km/l</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <label style="font-size:.78em;color:var(--dim)">Prezzo gasolio</label>
+            <input class="filter-input" id="perc-prezzo" type="number" value="1.70" step="0.01" min="0.50" max="3.00" style="width:70px;padding:5px 8px;font-size:.85em;text-align:center" onchange="ricalcolaCarburante()">
+            <span style="font-size:.78em;color:var(--dim)">€/l</span>
+          </div>
+        </div>
+
+        <!-- Risultato calcolo -->
+        <div id="percorso-risultato" style="display:none;margin-top:14px;padding:16px;background:linear-gradient(135deg,rgba(10,132,255,0.08),rgba(48,209,88,0.08));border:1px solid rgba(10,132,255,0.2);border-radius:12px">
+          <div style="display:flex;align-items:center;justify-content:space-around;text-align:center;flex-wrap:wrap;gap:10px">
+            <div>
+              <div style="font-size:.72em;color:var(--dim);text-transform:uppercase;font-weight:600;letter-spacing:.5px">Tappe</div>
+              <div style="font-size:1.6em;font-weight:800;color:var(--accent)" id="perc-n-tappe">0</div>
+            </div>
+            <div>
+              <div style="font-size:.72em;color:var(--dim);text-transform:uppercase;font-weight:600;letter-spacing:.5px">Distanza Totale</div>
+              <div style="font-size:1.6em;font-weight:800;color:var(--green)" id="perc-km">0 km</div>
+            </div>
+            <div>
+              <div style="font-size:.72em;color:var(--dim);text-transform:uppercase;font-weight:600;letter-spacing:.5px">Tempo Stimato</div>
+              <div style="font-size:1.6em;font-weight:800;color:var(--orange)" id="perc-tempo">0 min</div>
+            </div>
+            <div>
+              <div style="font-size:.72em;color:var(--dim);text-transform:uppercase;font-weight:600;letter-spacing:.5px">Litri Stimati</div>
+              <div style="font-size:1.6em;font-weight:800;color:var(--red)" id="perc-litri">0 l</div>
+            </div>
+            <div>
+              <div style="font-size:.72em;color:var(--dim);text-transform:uppercase;font-weight:600;letter-spacing:.5px">Costo Carburante</div>
+              <div style="font-size:1.6em;font-weight:800;color:var(--red)" id="perc-costo">€ 0.00</div>
+            </div>
+          </div>
+          <div id="perc-dettaglio" style="margin-top:12px;font-size:.82em;color:var(--dim)"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -485,42 +649,299 @@ function closeFotoModal(){document.getElementById('modal-foto').classList.remove
 function initEconomia(){
   const sel=document.getElementById('eco-mese');
   sel.innerHTML='';
-  const mesi=new Set();
-  allInterventi.forEach(i=>{if(i.created_at)mesi.add(i.created_at.slice(0,7));});
-  const now=new Date();mesi.add(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
-  [...mesi].sort().reverse().forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=formatMese(m);sel.appendChild(o);});
+  const now=new Date();
+  const curY=now.getFullYear(), curM=now.getMonth();
+  // Genera mesi da Gen 2025 fino al mese corrente
+  const mesi=[];
+  for(let y=2025;y<=curY;y++){
+    const maxM=(y===curY)?curM:11;
+    const startM=(y===2025)?0:0;
+    for(let m=startM;m<=maxM;m++){
+      mesi.push(y+'-'+String(m+1).padStart(2,'0'));
+    }
+  }
+  mesi.reverse().forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=formatMese(m);sel.appendChild(o);});
   loadEconomia();
 }
 
 async function loadEconomia(){
   const mese=document.getElementById('eco-mese').value;if(!mese)return;
   const meseInt=allInterventi.filter(i=>i.created_at?.startsWith(mese));
-  const totImp=meseInt.reduce((s,i)=>s+(i.importo?+i.importo:0),0);
-  const{data:costi}=await sb.from('costi_mensili').select('*').gte('mese',mese+'-01').lte('mese',mese+'-31');
-  const totCosti=(costi||[]).reduce((s,c)=>s+(+c.importo||0),0);
+  const totEntrate=meseInt.reduce((s,i)=>s+(i.importo?+i.importo:0),0);
 
+  // Carica costi mensili
+  const{data:costi}=await sb.from('costi_mensili').select('*').gte('mese',mese+'-01').lte('mese',mese+'-31').order('created_at');
+  const allCosti=costi||[];
+  const totUscite=allCosti.reduce((s,c)=>s+(+c.importo||0),0);
+  const margine=totEntrate-totUscite;
+
+  // Aggiorna cards riepilogo
   document.getElementById('eco-tot-int').textContent=meseInt.length;
-  document.getElementById('eco-tot-imp').textContent='€ '+totImp.toFixed(2);
-  document.getElementById('eco-tot-costi').textContent='€ '+totCosti.toFixed(2);
-  const margine=totImp-totCosti;
+  document.getElementById('eco-tot-entrate').textContent='€ '+totEntrate.toFixed(2);
+  document.getElementById('eco-tot-uscite').textContent='€ '+totUscite.toFixed(2);
   const me=document.getElementById('eco-margine');
   me.textContent='€ '+margine.toFixed(2);
   me.style.color=margine>=0?'var(--green)':'var(--red)';
 
-  // Per tecnico
-  const tecMap={};
-  meseInt.forEach(i=>{
-    if(!tecMap[i.tecnico_id])tecMap[i.tecnico_id]={int:0,foto:0,imp:0};
-    tecMap[i.tecnico_id].int++;
-    tecMap[i.tecnico_id].foto+=(i.n_foto||0);
-    tecMap[i.tecnico_id].imp+=(i.importo?+i.importo:0);
+  // Tabella interventi: Tecnico | Cliente | Lavorazione | Luogo | Importo
+  document.getElementById('eco-interventi-table').innerHTML=meseInt.length?meseInt.map(i=>`<tr>
+    <td style="font-weight:700">${getTecName(i.tecnico_id)}</td>
+    <td>${i.cliente_finale||'—'}</td>
+    <td>${i.lavorazione||'—'}</td>
+    <td>${i.codice_sito||''} ${i.nome_sito||''}</td>
+    <td style="text-align:right">${i.importo?'<span class="badge badge-importo">€ '+parseFloat(i.importo).toFixed(2)+'</span>':'<span class="badge badge-no">da assegnare</span>'}</td>
+  </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--dim);padding:30px">Nessun intervento in questo mese</td></tr>';
+  document.getElementById('eco-entrate-footer').textContent='€ '+totEntrate.toFixed(2);
+
+  // Tabella altri costi
+  document.getElementById('eco-costi-table').innerHTML=allCosti.length?allCosti.map(c=>`<tr>
+    <td style="font-weight:600">${c.voce||''}</td>
+    <td style="color:var(--dim);font-size:.85em">${c.note||''}</td>
+    <td style="text-align:right;font-weight:700;color:var(--red)">€ ${parseFloat(c.importo).toFixed(2)}</td>
+    <td><button class="btn-action" onclick="deleteCosto('${c.id}')" title="Elimina" style="color:var(--red);border-color:rgba(255,69,58,0.3)">✕</button></td>
+  </tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--dim);padding:30px">Nessun costo inserito — clicca "+ Aggiungi Costo"</td></tr>';
+  document.getElementById('eco-uscite-footer').textContent='€ '+totUscite.toFixed(2);
+}
+
+function openAddCosto(){document.getElementById('modal-costo').classList.add('open');document.getElementById('costo-voce').value='';document.getElementById('costo-importo').value='';document.getElementById('costo-note').value='';document.getElementById('costo-voce').focus();}
+function closeCostoModal(){document.getElementById('modal-costo').classList.remove('open');}
+function openAIControlCosti(){document.getElementById('modal-ai-costi').classList.add('open');}
+function closeAICosti(){document.getElementById('modal-ai-costi').classList.remove('open');}
+
+function shiftMese(dir){
+  const sel=document.getElementById('eco-mese');
+  const idx=sel.selectedIndex+dir;
+  if(idx>=0&&idx<sel.options.length){sel.selectedIndex=idx;loadEconomia();}
+}
+
+async function saveCosto(){
+  const voce=document.getElementById('costo-voce').value.trim();
+  const importo=parseFloat(document.getElementById('costo-importo').value);
+  const note=document.getElementById('costo-note').value.trim();
+  if(!voce){alert('Inserisci la voce di spesa');return;}
+  if(!importo||importo<=0){alert('Inserisci un importo valido');return;}
+  const mese=document.getElementById('eco-mese').value;
+  const{error}=await sb.from('costi_mensili').insert({voce,importo,note:note||null,mese:mese+'-01',inserito_da:currentUser.id});
+  if(error){alert('Errore: '+error.message);return;}
+  closeCostoModal();
+  loadEconomia();
+}
+
+async function deleteCosto(id){
+  if(!confirm('Eliminare questa voce di costo?'))return;
+  await sb.from('costi_mensili').delete().eq('id',id);
+  loadEconomia();
+}
+
+/* === CALCOLA PERCORSO === */
+let percorsoTappe=[];
+let percorsoRoute=null;
+let percorsoSearchTimeout=null;
+
+function searchPercorsoSito(){
+  clearTimeout(percorsoSearchTimeout);
+  const q=document.getElementById('percorso-search').value.trim();
+  const box=document.getElementById('percorso-search-results');
+  if(q.length<2){box.innerHTML='';return;}
+  percorsoSearchTimeout=setTimeout(async()=>{
+    const{data:res}=await sb.rpc('search_siti',{q:q,max_results:6});
+    const arr=Array.isArray(res)?res:[];
+    box.innerHTML=arr.filter(s=>s.latitudine&&s.longitudine).map(s=>`
+      <div class="percorso-sr" onclick="addTappa('${s.codice_sito}','${(s.citta||'').replace(/'/g,"\\'")}','${s.latitudine}','${s.longitudine}')">
+        <span class="sr-code">${s.codice_sito}</span>
+        <span class="sr-info">${s.citta||''} ${s.provincia?'('+s.provincia+')':''} — ${s.indirizzo||''}</span>
+        <span style="margin-left:auto;color:var(--green);font-size:.82em;font-weight:600">+ Aggiungi</span>
+      </div>`).join('')||'<div style="padding:10px;color:var(--dim);font-size:.85em">Nessun sito con coordinate trovato</div>';
+  },250);
+}
+
+function addTappa(codice,citta,lat,lng){
+  if(percorsoTappe.find(t=>t.codice===codice)){return;}
+  percorsoTappe.push({codice,citta,lat:+lat,lng:+lng});
+  document.getElementById('percorso-search').value='';
+  document.getElementById('percorso-search-results').innerHTML='';
+  renderTappe();
+  // Aggiungi marker sulla mappa
+  if(dashMap){
+    const marker=L.circleMarker([+lat,+lng],{radius:10,fillColor:'#FF9F0A',color:'#FF9F0A',weight:2,fillOpacity:0.8}).addTo(dashMap);
+    marker.bindTooltip('Tappa '+percorsoTappe.length+': '+codice,{permanent:true,direction:'top',className:'leaflet-tooltip-percorso'});
+  }
+}
+
+function removeTappa(idx){
+  percorsoTappe.splice(idx,1);
+  renderTappe();
+  renderPercorsoOnMap();
+}
+
+let dragSrcIdx=null;
+
+function renderTappe(){
+  const box=document.getElementById('percorso-tappe');
+  const btn=document.getElementById('btn-calcola-percorso');
+  btn.disabled=percorsoTappe.length<2;
+  document.getElementById('btn-ottimizza').disabled=percorsoTappe.length<3;
+  if(!percorsoTappe.length){
+    box.innerHTML='<div style="text-align:center;color:var(--dim);font-size:.85em;padding:12px">Cerca e aggiungi almeno 2 siti per calcolare il percorso</div>';
+    document.getElementById('percorso-risultato').style.display='none';
+    return;
+  }
+  box.innerHTML=percorsoTappe.map((t,i)=>`
+    <div class="tappa-item" draggable="true" data-idx="${i}" style="cursor:grab">
+      <div class="tappa-drag" style="color:var(--dim);font-size:1em;cursor:grab;padding:0 4px;user-select:none">⠿</div>
+      <div class="tappa-num">${i+1}</div>
+      <div class="tappa-info"><span class="tappa-code">${t.codice}</span> <span class="tappa-city">${t.citta}</span></div>
+      <button class="tappa-remove" onclick="removeTappa(${i})" title="Rimuovi">✕</button>
+    </div>`).join('');
+
+  // Drag & drop handlers
+  box.querySelectorAll('.tappa-item').forEach(el=>{
+    el.addEventListener('dragstart',e=>{
+      dragSrcIdx=+el.dataset.idx;
+      el.style.opacity='0.4';
+      e.dataTransfer.effectAllowed='move';
+    });
+    el.addEventListener('dragend',e=>{el.style.opacity='1';});
+    el.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';el.style.borderColor='var(--accent)';});
+    el.addEventListener('dragleave',e=>{el.style.borderColor='rgba(255,255,255,0.08)';});
+    el.addEventListener('drop',e=>{
+      e.preventDefault();
+      el.style.borderColor='rgba(255,255,255,0.08)';
+      const destIdx=+el.dataset.idx;
+      if(dragSrcIdx===null||dragSrcIdx===destIdx)return;
+      const item=percorsoTappe.splice(dragSrcIdx,1)[0];
+      percorsoTappe.splice(destIdx,0,item);
+      renderTappe();
+      renderPercorsoOnMap();
+      // Se c'era un calcolo, ricalcola automaticamente
+      if(window._lastPercKm)calcolaPercorso();
+    });
   });
-  document.getElementById('eco-table').innerHTML=Object.entries(tecMap).map(([id,d])=>`<tr>
-    <td style="font-weight:700">${getTecName(id)}</td>
-    <td>${d.int}</td>
-    <td>${d.foto}</td>
-    <td><span class="badge badge-importo">€ ${d.imp.toFixed(2)}</span></td>
-  </tr>`).join('');
+}
+
+async function calcolaPercorso(){
+  if(percorsoTappe.length<2)return;
+  const btn=document.getElementById('btn-calcola-percorso');
+  btn.textContent='Calcolo in corso...';btn.disabled=true;
+
+  // Crea stringa coordinate per OSRM: lng,lat;lng,lat;...
+  const coords=percorsoTappe.map(t=>t.lng+','+t.lat).join(';');
+  try{
+    const resp=await fetch('https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=full&geometries=geojson&steps=true');
+    const data=await resp.json();
+    if(data.code==='Ok'&&data.routes&&data.routes.length){
+      const route=data.routes[0];
+      const km=(route.distance/1000).toFixed(1);
+      const minuti=Math.round(route.duration/60);
+      const ore=Math.floor(minuti/60);
+      const min=minuti%60;
+      const tempoStr=ore>0?ore+'h '+min+'min':minuti+' min';
+
+      // Stima carburante
+      const consumo=parseFloat(document.getElementById('perc-consumo').value)||9;
+      const prezzo=parseFloat(document.getElementById('perc-prezzo').value)||1.70;
+      const litri=(parseFloat(km)/consumo).toFixed(1);
+      const costoCarb=(litri*prezzo).toFixed(2);
+
+      document.getElementById('perc-n-tappe').textContent=percorsoTappe.length;
+      document.getElementById('perc-km').textContent=km+' km';
+      document.getElementById('perc-tempo').textContent=tempoStr;
+      document.getElementById('perc-litri').textContent=litri+' l';
+      document.getElementById('perc-costo').textContent='€ '+costoCarb;
+      // Salva km globale per ricalcolo
+      window._lastPercKm=parseFloat(km);
+
+      // Dettaglio tratte
+      let dettaglio='';
+      if(route.legs){
+        dettaglio='<div style="margin-top:8px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px">';
+        route.legs.forEach((leg,i)=>{
+          const legKm=(leg.distance/1000).toFixed(1);
+          const legMin=Math.round(leg.duration/60);
+          dettaglio+=`<div style="display:flex;justify-content:space-between;padding:4px 0">
+            <span>${percorsoTappe[i].codice} → ${percorsoTappe[i+1].codice}</span>
+            <span style="color:var(--mid);font-weight:600">${legKm} km — ${legMin} min</span>
+          </div>`;
+        });
+        dettaglio+='</div>';
+      }
+      document.getElementById('perc-dettaglio').innerHTML=dettaglio;
+      document.getElementById('percorso-risultato').style.display='block';
+
+      // Disegna il percorso sulla mappa
+      if(dashMap){
+        if(percorsoRoute)dashMap.removeLayer(percorsoRoute);
+        percorsoRoute=L.geoJSON(route.geometry,{style:{color:'#FF9F0A',weight:4,opacity:0.8,dashArray:'8,6'}}).addTo(dashMap);
+        dashMap.fitBounds(percorsoRoute.getBounds().pad(0.1));
+      }
+    }else{
+      alert('Impossibile calcolare il percorso. Verifica che i siti abbiano coordinate valide.');
+    }
+  }catch(e){
+    alert('Errore di connessione al servizio di routing: '+e.message);
+  }
+  btn.textContent='Calcola KM';btn.disabled=false;
+}
+
+async function ottimizzaPercorso(){
+  if(percorsoTappe.length<3)return;
+  const btn=document.getElementById('btn-ottimizza');
+  const origText=btn.innerHTML;
+  btn.innerHTML='Ottimizzazione...';btn.disabled=true;
+
+  // Usa OSRM trip endpoint che risolve il TSP (Travelling Salesman Problem)
+  const coords=percorsoTappe.map(t=>t.lng+','+t.lat).join(';');
+  try{
+    const resp=await fetch('https://router.project-osrm.org/trip/v1/driving/'+coords+'?roundtrip=false&source=first&geometries=geojson&overview=full');
+    const data=await resp.json();
+    if(data.code==='Ok'&&data.waypoints){
+      // Riordina le tappe secondo l'ordine ottimale
+      const newOrder=data.waypoints.sort((a,b)=>a.waypoint_index-b.waypoint_index).map(w=>w.waypoint_index);
+      const reordered=newOrder.map(i=>percorsoTappe[i]);
+      percorsoTappe=reordered;
+      renderTappe();
+      renderPercorsoOnMap();
+      // Calcola il percorso con il nuovo ordine
+      await calcolaPercorso();
+    }else{
+      alert('Impossibile ottimizzare. Riprova.');
+    }
+  }catch(e){
+    alert('Errore connessione: '+e.message);
+  }
+  btn.innerHTML=origText;btn.disabled=percorsoTappe.length<3;
+}
+
+function ricalcolaCarburante(){
+  const km=window._lastPercKm;
+  if(!km)return;
+  const consumo=parseFloat(document.getElementById('perc-consumo').value)||9;
+  const prezzo=parseFloat(document.getElementById('perc-prezzo').value)||1.70;
+  const litri=(km/consumo).toFixed(1);
+  const costoCarb=(litri*prezzo).toFixed(2);
+  document.getElementById('perc-litri').textContent=litri+' l';
+  document.getElementById('perc-costo').textContent='€ '+costoCarb;
+}
+
+function clearPercorso(){
+  percorsoTappe=[];
+  renderTappe();
+  document.getElementById('percorso-risultato').style.display='none';
+  if(percorsoRoute&&dashMap){dashMap.removeLayer(percorsoRoute);percorsoRoute=null;}
+  // Rimuovi marker percorso (quelli arancioni)
+  if(dashMap){dashMap.eachLayer(l=>{if(l instanceof L.CircleMarker&&l.options.fillColor==='#FF9F0A')dashMap.removeLayer(l);});}
+}
+
+function renderPercorsoOnMap(){
+  if(!dashMap)return;
+  // Pulisci marker arancioni e route
+  dashMap.eachLayer(l=>{if(l instanceof L.CircleMarker&&l.options.fillColor==='#FF9F0A')dashMap.removeLayer(l);});
+  if(percorsoRoute){dashMap.removeLayer(percorsoRoute);percorsoRoute=null;}
+  // Rimetti i marker delle tappe
+  percorsoTappe.forEach((t,i)=>{
+    const marker=L.circleMarker([t.lat,t.lng],{radius:10,fillColor:'#FF9F0A',color:'#FF9F0A',weight:2,fillOpacity:0.8}).addTo(dashMap);
+    marker.bindTooltip('Tappa '+(i+1)+': '+t.codice,{permanent:true,direction:'top'});
+  });
 }
 
 /* Navigation */
@@ -528,7 +949,7 @@ function showPage(page){
   document.querySelectorAll('.page-section').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page)?.classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
-  if(page==='siti')setTimeout(()=>initDashMap(),100);
+  if(page==='siti'){setTimeout(()=>initDashMap(),100);renderTappe();}
 }
 
 /* === SITI & MAPPA === */
