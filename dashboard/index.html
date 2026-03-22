@@ -693,7 +693,7 @@ async function saveImporto(){
   if(error){alert('Errore: '+error.message);return;}
   editingIntervento.importo=val;
   closeModal();
-  renderOverview();renderInterventi();
+  renderOverview();renderInterventi();loadEconomia();
 }
 
 /* === Report PDF === */
