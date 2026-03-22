@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>E.ESEGUO · Dashboard Coordinatore</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0a1628;--card:rgba(255,255,255,0.06);--card-border:rgba(255,255,255,0.1);--text:#f0f0f0;--dim:rgba(255,255,255,0.45);--mid:rgba(255,255,255,0.7);--accent:#0A84FF;--green:#30D158;--orange:#FF9F0A;--red:#FF453A;--radius:14px}
@@ -94,11 +95,46 @@ tr:last-child td{border-bottom:none}
 .modal-buttons .btn-cancel{background:rgba(255,255,255,0.08);color:var(--mid)}
 .modal-buttons .btn-save{background:var(--accent);color:white}
 
-/* Foto viewer */
+/* Foto viewer enhanced */
 .foto-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:10px 0}
 .foto-thumb{border-radius:10px;overflow:hidden;aspect-ratio:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);cursor:pointer;position:relative}
 .foto-thumb img{width:100%;height:100%;object-fit:cover}
 .foto-loading{color:var(--dim);font-size:.85em;text-align:center;padding:30px}
+.foto-grid-m{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.foto-item-m{border-radius:10px;overflow:hidden;aspect-ratio:1;cursor:pointer;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;position:relative;border:3px solid transparent;transition:border-color .15s}
+.foto-item-m img{width:100%;height:100%;object-fit:cover}
+.foto-item-m.selected{border-color:var(--accent)}
+.foto-item-m.selected img{opacity:.85}
+.foto-cb{position:absolute;top:5px;left:5px;width:26px;height:26px;border-radius:6px;border:2.5px solid rgba(255,255,255,.9);background:transparent;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:all .15s;box-shadow:0 0 0 1.5px rgba(0,0,0,.5)}
+.foto-item-m.selected .foto-cb{background:var(--accent);border-color:white;box-shadow:none}
+.foto-cb-check{color:white;font-size:17px;font-weight:900;line-height:1;display:none}
+.foto-item-m.selected .foto-cb-check{display:block}
+.foto-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:10px;border:1px solid rgba(255,255,255,0.08)}
+.foto-sel-cnt{font-size:12px;font-weight:700;color:var(--accent)}
+.foto-sel-acts{display:flex;gap:8px}
+.foto-sel-btn{font-size:11px;font-weight:700;color:var(--accent);background:none;border:none;cursor:pointer;text-decoration:underline}
+.comp-row{display:flex;align-items:center;gap:8px;padding:8px 0 0;border-top:1px solid rgba(255,255,255,0.08);margin-top:6px}
+.comp-row label{font-size:12px;font-weight:600;color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:6px}
+.mfoot{padding:14px 0 0;display:flex;flex-direction:column;gap:10px}
+.mfoot-btns{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.mbtn{padding:9px 18px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px}
+.mbtn:disabled{opacity:.4;cursor:not-allowed}
+.mb-out{background:rgba(255,255,255,0.06);color:var(--text);border:1.5px solid rgba(255,255,255,0.12)!important}
+.mb-green{background:var(--accent);color:white}
+.mb-blue{background:#1a4fa0;color:white}
+.mb-orange{background:#f39c12;color:white}
+/* Lightbox */
+.lightbox{position:fixed;inset:0;z-index:6000;background:rgba(0,0,0,.94);display:none;align-items:center;justify-content:center}
+.lightbox.show{display:flex}
+.lightbox img{max-width:88vw;max-height:88vh;border-radius:8px;object-fit:contain;user-select:none}
+.lb-close{position:absolute;top:16px;right:20px;color:white;font-size:24px;cursor:pointer;background:rgba(255,255,255,.15);border:none;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;z-index:10}
+.lb-close:hover{background:rgba(255,255,255,.28)}
+.lb-arrow{position:absolute;top:50%;transform:translateY(-50%);color:white;font-size:26px;cursor:pointer;background:rgba(255,255,255,.15);border:none;border-radius:50%;width:54px;height:54px;display:flex;align-items:center;justify-content:center;z-index:10;user-select:none}
+.lb-arrow:hover{background:rgba(255,255,255,.28)}
+.lb-arrow:disabled{opacity:.2;cursor:default;pointer-events:none}
+.lb-prev{left:20px}
+.lb-next{right:20px}
+.lb-counter{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.85);font-size:13px;font-weight:600;background:rgba(0,0,0,.45);padding:5px 16px;border-radius:20px;pointer-events:none}
 
 /* Page sections */
 .page-section{display:none}
@@ -446,14 +482,50 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-<!-- Modal foto -->
-<div class="modal-bg" id="modal-foto">
-  <div class="modal" style="width:600px">
-    <h3 id="foto-modal-title">Foto Intervento</h3>
-    <div class="modal-sub" id="foto-modal-sub"></div>
-    <div id="foto-container" class="foto-grid"></div>
-    <div class="modal-buttons" style="margin-top:16px"><button class="btn-cancel" onclick="closeFotoModal()" style="flex:none;padding:10px 24px">Chiudi</button></div>
+<!-- Modal foto enhanced -->
+<div class="modal-bg" id="modal-foto" onclick="if(event.target===this)closeFotoModal()">
+  <div class="modal" style="width:900px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">
+    <div style="padding:18px 22px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:flex-start;">
+      <div><h3 id="foto-modal-title" style="font-size:18px;font-weight:800;">Foto Intervento</h3><div id="foto-modal-sub" style="font-size:12px;color:var(--dim);margin-top:3px;"></div></div>
+      <button onclick="closeFotoModal()" style="background:rgba(255,255,255,0.06);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px;color:var(--dim);">✕</button>
+    </div>
+    <div style="padding:22px;overflow-y:auto;flex:1;">
+      <div id="m-note-box" style="display:none;margin:0 0 16px;background:rgba(255,190,0,0.08);border:1.5px solid rgba(255,190,0,0.3);border-radius:10px;padding:12px 14px;">
+        <div style="font-size:11px;font-weight:800;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Note Intervento</div>
+        <div id="m-note-text" style="font-size:13px;color:var(--text);line-height:1.5;"></div>
+      </div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Fotografie (<span id="m-nfoto">0</span>)</div>
+      <div class="foto-toolbar">
+        <span class="foto-sel-cnt" id="m-sel-cnt">0 foto selezionate</span>
+        <div class="foto-sel-acts">
+          <button class="foto-sel-btn" onclick="fmSelectAll()">Seleziona tutte</button>
+          <button class="foto-sel-btn" onclick="fmDeselectAll()">Deseleziona tutte</button>
+        </div>
+      </div>
+      <div class="foto-grid-m" id="m-fotogrid"></div>
+    </div>
+    <div class="mfoot" style="padding:14px 22px;border-top:1px solid rgba(255,255,255,0.08);">
+      <div class="comp-row">
+        <label><input type="checkbox" id="m-compress"> Comprimi foto prima del download <span style="font-size:11px;color:var(--dim);">(qualità ridotta, file più leggeri)</span></label>
+      </div>
+      <div class="mfoot-btns">
+        <button class="mbtn mb-out" onclick="closeFotoModal()">Chiudi</button>
+        <button class="mbtn mb-blue" id="m-print-btn" onclick="fmPrint()" disabled>Stampa</button>
+        <button class="mbtn mb-green" id="m-foto-btn" onclick="fmDownload()" disabled>Scarica Foto</button>
+        <button class="mbtn mb-green" id="m-zip-btn" onclick="fmDownloadZip()" disabled style="background:#16a34a;">Scarica ZIP</button>
+        <button class="mbtn mb-orange" id="m-outlook-btn" onclick="fmSendOutlook()">Invia a Outlook</button>
+      </div>
+    </div>
   </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="if(event.target===this)fmCloseLb()">
+  <button class="lb-close" onclick="fmCloseLb()">✕</button>
+  <button class="lb-arrow lb-prev" id="lb-prev" onclick="fmLbNav(-1)">&#8249;</button>
+  <img id="lb-img" src="" alt="">
+  <button class="lb-arrow lb-next" id="lb-next" onclick="fmLbNav(1)">&#8250;</button>
+  <div class="lb-counter" id="lb-counter"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -624,26 +696,149 @@ async function saveImporto(){
   renderOverview();renderInterventi();
 }
 
-/* Foto viewer */
-async function viewFoto(intId,codice,nFoto){
-  document.getElementById('foto-modal-title').textContent='Foto · '+codice;
-  document.getElementById('foto-modal-sub').textContent=nFoto+' foto';
-  document.getElementById('foto-container').innerHTML='<div class="foto-loading">Caricamento foto...</div>';
-  document.getElementById('modal-foto').classList.add('open');
+/* === Foto viewer enhanced === */
+let fmCurrentInv = null
+window._modalUrls = []
+let _lbIndex = 0
 
-  const{data:fotos}=await sb.from('foto').select('*').eq('intervento_id',intId);
+async function viewFoto(intId,codice,nFoto){
+  const inv = allInterventi.find(i=>i.id===intId)
+  fmCurrentInv = inv || {codice_sito:codice, n_foto:nFoto}
+
+  document.getElementById('foto-modal-title').textContent = `${codice} — ${inv?.nome_sito||''}`
+  document.getElementById('foto-modal-sub').textContent = `${inv?new Date(inv.created_at).toLocaleDateString('it-IT')+' '+new Date(inv.created_at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):''} · ${getTecName(inv?.tecnico_id)||'–'} · ${inv?.cliente_finale||'–'}`
+
+  // Note
+  const noteBox = document.getElementById('m-note-box')
+  const noteText = document.getElementById('m-note-text')
+  if(inv?.note && inv.note.trim()){noteText.textContent=inv.note.trim();noteBox.style.display='block'}
+  else{noteBox.style.display='none'}
+
+  document.getElementById('m-nfoto').textContent = nFoto
+  document.getElementById('m-compress').checked = false
+  document.getElementById('m-fotogrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--dim);">Caricamento foto...</div>'
+  window._modalUrls = []
+  fmUpdateSel()
+  document.getElementById('modal-foto').classList.add('open')
+
+  const{data:fotos}=await sb.from('foto').select('*').eq('intervento_id',intId)
   if(!fotos||!fotos.length){
-    document.getElementById('foto-container').innerHTML='<div class="foto-loading">Nessuna foto trovata</div>';return;
+    document.getElementById('m-fotogrid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--dim);">Nessuna foto trovata</div>'
+    return
   }
-  const thumbs=[];
-  for(const f of fotos){
-    const{data}=await sb.storage.from('foto-interventi').createSignedUrl(f.storage_path,300);
-    if(data?.signedUrl)thumbs.push(`<div class="foto-thumb"><img src="${data.signedUrl}" alt="${f.filename}" onclick="window.open('${data.signedUrl}','_blank')"></div>`);
-  }
-  document.getElementById('foto-container').innerHTML=thumbs.join('')||'<div class="foto-loading">Errore caricamento</div>';
+
+  const paths = fotos.map(f=>f.storage_path)
+  const{data:urls} = await sb.storage.from('foto-interventi').createSignedUrls(paths,3600)
+  window._modalUrls = (urls||[]).map((u,i)=>({
+    url: u.signedUrl,
+    name: `${codice}_foto_${String(i+1).padStart(3,'0')}.jpg`,
+    selected: false
+  }))
+  fmRenderGrid()
 }
 
-function closeFotoModal(){document.getElementById('modal-foto').classList.remove('open');}
+function closeFotoModal(){document.getElementById('modal-foto').classList.remove('open');fmCurrentInv=null;window._modalUrls=[]}
+
+function fmRenderGrid(){
+  const grid = document.getElementById('m-fotogrid')
+  grid.innerHTML = (window._modalUrls||[]).map((item,i)=>`
+    <div class="foto-item-m ${item.selected?'selected':''}" onclick="fmToggle(${i})">
+      <div class="foto-cb"><span class="foto-cb-check">✔</span></div>
+      ${item.url?`<img src="${item.url}" alt="foto ${i+1}" loading="lazy">`:`<span style="color:var(--dim);font-size:11px;">Errore</span>`}
+      <button onclick="event.stopPropagation();fmOpenLb(${i})" style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.55);border:none;border-radius:7px;color:white;font-size:15px;padding:5px 8px;cursor:pointer;line-height:1;">👁</button>
+    </div>`).join('')
+  fmUpdateSel()
+}
+
+function fmToggle(i){if(!window._modalUrls?.[i])return;window._modalUrls[i].selected=!window._modalUrls[i].selected;fmRenderGrid()}
+function fmSelectAll(){(window._modalUrls||[]).forEach(f=>f.selected=true);fmRenderGrid()}
+function fmDeselectAll(){(window._modalUrls||[]).forEach(f=>f.selected=false);fmRenderGrid()}
+
+function fmUpdateSel(){
+  const sel=(window._modalUrls||[]).filter(f=>f.selected).length
+  const tot=(window._modalUrls||[]).length
+  document.getElementById('m-sel-cnt').textContent=sel===0?'Nessuna selezionata — clicca le foto per selezionarle':`${sel} di ${tot} foto selezionate`
+  const has=sel>0
+  document.getElementById('m-foto-btn').disabled=!has
+  document.getElementById('m-zip-btn').disabled=!has
+  document.getElementById('m-print-btn').disabled=!has
+}
+
+async function fmCompressImg(url,quality=0.65){
+  try{const r=await fetch(url);const b=await r.blob();const bmp=await createImageBitmap(b);const c=document.createElement('canvas');c.width=bmp.width;c.height=bmp.height;c.getContext('2d').drawImage(bmp,0,0);return new Promise(res=>c.toBlob(res,'image/jpeg',quality))}catch{return null}
+}
+
+async function fmDownload(){
+  const selected=(window._modalUrls||[]).filter(f=>f.selected&&f.url);if(!selected.length)return
+  const compress=document.getElementById('m-compress').checked
+  const btn=document.getElementById('m-foto-btn');btn.disabled=true
+  for(let i=0;i<selected.length;i++){
+    btn.textContent=`${i+1}/${selected.length}...`
+    try{let bUrl;if(compress){const bl=await fmCompressImg(selected[i].url);bUrl=bl?URL.createObjectURL(bl):selected[i].url}else{const r=await fetch(selected[i].url);bUrl=URL.createObjectURL(await r.blob())}
+    const a=document.createElement('a');a.href=bUrl;a.download=selected[i].name;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(bUrl),2000)}catch{}
+    await new Promise(r=>setTimeout(r,400))
+  }
+  btn.disabled=false;btn.textContent='Scarica Foto';fmUpdateSel()
+}
+
+async function fmDownloadZip(){
+  const selected=(window._modalUrls||[]).filter(f=>f.selected&&f.url);if(!selected.length)return
+  const compress=document.getElementById('m-compress').checked
+  const inv=fmCurrentInv;const btn=document.getElementById('m-zip-btn');btn.disabled=true;btn.textContent='Creo ZIP...'
+  try{
+    const zip=new JSZip()
+    for(let i=0;i<selected.length;i++){
+      btn.textContent=`${i+1}/${selected.length}...`
+      try{const r=await fetch(selected[i].url);let bl=await r.blob();if(compress){const c=await fmCompressImg(selected[i].url);if(c)bl=c}zip.file(selected[i].name,bl)}catch{}
+    }
+    btn.textContent='Generazione...'
+    const content=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}})
+    const a=document.createElement('a');a.href=URL.createObjectURL(content);a.download=`${inv?.codice_sito||'sito'}_foto.zip`;document.body.appendChild(a);a.click();document.body.removeChild(a)
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000)
+  }catch(e){alert('Errore ZIP: '+e.message)}
+  btn.disabled=false;btn.textContent='Scarica ZIP';fmUpdateSel()
+}
+
+function fmPrint(){
+  const selected=(window._modalUrls||[]).filter(f=>f.selected&&f.url);if(!selected.length)return
+  const inv=fmCurrentInv
+  const win=window.open('','_blank')
+  win.document.write(`<!DOCTYPE html><html><head><title>Foto ${inv?.codice_sito||''}</title><style>body{margin:0;font-family:sans-serif;}h2{font-size:14px;text-align:center;margin:10px 0;}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px;}.grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;}.cap{font-size:9px;text-align:center;color:#666;margin-top:2px;}@media print{@page{margin:12mm;}}</style></head><body><h2>Sito ${inv?.codice_sito||'–'} — ${inv?.nome_sito||''} · ${inv?.cliente_finale||''} · ${new Date().toLocaleDateString('it-IT')}</h2><div class="grid">${selected.map((f,i)=>`<div><img src="${f.url}" crossorigin="anonymous"><div class="cap">${f.name}</div></div>`).join('')}</div></body></html>`)
+  win.document.close();win.onload=()=>{win.focus();win.print()}
+}
+
+function fmSendOutlook(){
+  const inv=fmCurrentInv;if(!inv)return
+  const sel=(window._modalUrls||[]).filter(f=>f.selected).length
+  const subject=encodeURIComponent(`Sito ${inv.codice_sito} — ${inv.nome_sito||''} · E.ESEGUO`)
+  const body=encodeURIComponent(
+    `Gentile,\n\nsi trasmettono i dati dell'intervento:\n\n`+
+    `  Codice Sito:  ${inv.codice_sito}\n`+
+    `  Nome:         ${inv.nome_sito||'–'}\n`+
+    `  Cliente:      ${inv.cliente_finale||'–'}\n`+
+    `  Lavorazione:  ${inv.lavorazione||'–'}\n`+
+    `  Data:         ${new Date(inv.created_at).toLocaleDateString('it-IT')}\n`+
+    `  Foto totali:  ${inv.n_foto}\n`+
+    (sel>0?`  Foto selezionate: ${sel} (scaricabili dal portale)\n`:'')+
+    (inv.note?`\nNote:\n${inv.note}\n`:'')+
+    `\nCordiali saluti,\nE.ESEGUO`
+  )
+  window.location.href=`mailto:?subject=${subject}&body=${body}`
+}
+
+/* Lightbox */
+function fmOpenLb(idx){
+  const urls=(window._modalUrls||[]).filter(f=>f.url);if(!urls.length)return
+  _lbIndex=Math.max(0,Math.min(idx,urls.length-1))
+  document.getElementById('lb-img').src=urls[_lbIndex].url
+  document.getElementById('lb-counter').textContent=`${_lbIndex+1} / ${urls.length}`
+  document.getElementById('lb-prev').disabled=_lbIndex===0
+  document.getElementById('lb-next').disabled=_lbIndex===urls.length-1
+  document.getElementById('lightbox').classList.add('show')
+}
+function fmLbNav(dir){const urls=(window._modalUrls||[]).filter(f=>f.url);const n=_lbIndex+dir;if(n>=0&&n<urls.length)fmOpenLb(n)}
+function fmCloseLb(){document.getElementById('lightbox').classList.remove('show')}
+document.addEventListener('keydown',e=>{if(!document.getElementById('lightbox').classList.contains('show'))return;if(e.key==='ArrowLeft')fmLbNav(-1);if(e.key==='ArrowRight')fmLbNav(1);if(e.key==='Escape')fmCloseLb()})
 
 /* Economia */
 function initEconomia(){
