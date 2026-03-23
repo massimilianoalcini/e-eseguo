@@ -5,49 +5,48 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>E.ESEGUO · Dashboard Coordinatore</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#EAE7E1;--card:#ffffff;--card-border:rgba(0,0,0,0.04);--card-shadow:0 1px 3px rgba(0,0,0,0.04);--card-shadow-md:0 2px 8px rgba(0,0,0,0.04);--card-shadow-lg:0 8px 24px rgba(0,0,0,0.08);--text:#1C1917;--dim:#A8A29E;--mid:#57534E;--accent:#0D9488;--accent-dark:#0A7A70;--accent-light:rgba(13,148,136,0.08);--accent-glow:rgba(13,148,136,0.2);--green:#16A34A;--orange:#E8762D;--red:#EF4444;--radius:16px;--surface:#FFFFFE;--input-border:#E7E5E0}
+:root{--bg:#F2F2F7;--card:#ffffff;--card-border:rgba(0,0,0,0.06);--card-shadow:0 2px 12px rgba(0,0,0,0.06);--text:#1a1a2e;--dim:#8e8e93;--mid:#555;--accent:#0A84FF;--accent-light:rgba(10,132,255,0.08);--accent-glow:rgba(10,132,255,0.18);--green:#34C759;--orange:#FF9500;--red:#FF3B30;--radius:16px;--surface:#fff}
 html,body{height:100%;overflow:hidden}
-body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
 
 /* Login */
-.login-overlay{position:fixed;inset:0;background:linear-gradient(160deg,#0D9488 0%,#0A7A70 100%);display:flex;align-items:center;justify-content:center;z-index:9000}
+.login-overlay{position:fixed;inset:0;background:linear-gradient(160deg,#0A84FF 0%,#5E5CE6 100%);display:flex;align-items:center;justify-content:center;z-index:9000}
 .login-overlay.hidden{display:none}
 .login-box{background:#ffffff;border:none;border-radius:24px;padding:36px 28px;width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
 .login-box img{height:60px;margin-bottom:8px}
 .login-box h2{font-size:1.4em;margin-bottom:2px}
 .login-box .sub{color:var(--dim);font-size:.85em;margin-bottom:24px}
-.login-box input{width:100%;padding:13px 16px;border:1px solid #E7E5E0;border-radius:12px;font-size:1em;margin-bottom:10px;outline:none;background:#fff;color:var(--text)}
-.login-box input::placeholder{color:#C4C0B8}
+.login-box input{width:100%;padding:13px 16px;border:1px solid #e0e0e0;border-radius:12px;font-size:1em;margin-bottom:10px;outline:none;background:#f8f8fa;color:var(--text)}
+.login-box input::placeholder{color:#b0b0b0}
 .login-box input:focus{border-color:var(--accent)}
 .login-box button{width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:12px;font-size:1em;font-weight:700;cursor:pointer;margin-top:4px}
 .login-box .err{color:var(--red);font-size:.85em;margin-top:10px;min-height:20px}
 
 /* Top bar */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid rgba(0,0,0,0.04);flex-shrink:0;background:#ffffff}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid rgba(0,0,0,0.06);flex-shrink:0;background:#ffffff}
 .topbar-left{display:flex;align-items:center;gap:12px}
 .topbar-left img{height:30px}
 .topbar-left h1{font-size:1.15em;font-weight:700}
 .topbar-left .version{font-size:.7em;color:var(--dim)}
 .topbar-right{display:flex;align-items:center;gap:16px}
-.user-badge{display:flex;align-items:center;gap:8px;background:#fff;padding:6px 14px 6px 8px;border-radius:10px;border:1px solid rgba(0,0,0,0.08)}
-.user-badge .avatar{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#0A7A70);color:white;display:flex;align-items:center;justify-content:center;font-size:.7em;font-weight:700}
+.user-badge{display:flex;align-items:center;gap:8px;background:#f8f8fa;padding:6px 14px 6px 8px;border-radius:10px;border:1px solid rgba(0,0,0,0.08)}
+.user-badge .avatar{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#5E5CE6);color:white;display:flex;align-items:center;justify-content:center;font-size:.7em;font-weight:700}
 .user-badge .name{font-size:.85em;font-weight:600;color:var(--text)}
-.btn-logout{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:var(--red);padding:7px 14px;border-radius:10px;font-size:.82em;font-weight:700;cursor:pointer}
+.btn-logout{background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.2);color:var(--red);padding:7px 14px;border-radius:10px;font-size:.82em;font-weight:700;cursor:pointer}
 
 /* Layout */
 .main{flex:1;display:flex;overflow:hidden}
-.sidebar{width:260px;border-right:1px solid rgba(0,0,0,0.04);padding:16px;overflow-y:auto;flex-shrink:0;background:#ffffff}
+.sidebar{width:260px;border-right:1px solid rgba(0,0,0,0.06);padding:16px;overflow-y:auto;flex-shrink:0;background:#ffffff}
 .content{flex:1;overflow-y:auto;padding:20px 24px;background:var(--bg)}
 
 /* Sidebar nav */
 .nav-section{font-size:.7em;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;padding:12px 12px 6px}
 .nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border:none;background:transparent;color:var(--text);font-size:.9em;font-weight:600;cursor:pointer;border-radius:10px;margin-bottom:2px}
 .nav-btn:hover{background:rgba(0,0,0,0.04)}
-.nav-btn.active{background:rgba(13,148,136,0.08);color:var(--accent)}
+.nav-btn.active{background:rgba(10,132,255,0.08);color:var(--accent)}
 .nav-btn svg{width:20px;height:20px;flex-shrink:0}
 
 /* Stats cards */
@@ -59,28 +58,28 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
 
 /* Filters */
 .filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-.filter-select{padding:9px 14px;border:1px solid #E7E5E0;border-radius:10px;background:#ffffff;color:var(--text);font-size:.88em;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238e8e93' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+.filter-select{padding:9px 14px;border:1px solid #e0e0e0;border-radius:10px;background:#ffffff;color:var(--text);font-size:.88em;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238e8e93' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
 .filter-select option{background:#ffffff;color:var(--text)}
-.filter-input{padding:9px 14px;border:1px solid #E7E5E0;border-radius:10px;background:#ffffff;color:var(--text);font-size:.88em;outline:none;width:200px}
-.filter-input::placeholder{color:#C4C0B8}
+.filter-input{padding:9px 14px;border:1px solid #e0e0e0;border-radius:10px;background:#ffffff;color:var(--text);font-size:.88em;outline:none;width:200px}
+.filter-input::placeholder{color:#b0b0b0}
 .filter-input:focus,.filter-select:focus{border-color:var(--accent)}
 
 /* Table */
 .table-wrap{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--card-shadow)}
 table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:12px 16px;font-size:.75em;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid rgba(0,0,0,0.04);background:rgba(0,0,0,0.02)}
+th{text-align:left;padding:12px 16px;font-size:.75em;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid rgba(0,0,0,0.06);background:rgba(0,0,0,0.02)}
 td{padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.04);font-size:.88em;color:var(--text)}
 tr:hover{background:rgba(0,0,0,0.01)}
 tr:last-child td{border-bottom:none}
 .td-code{font-weight:700;color:var(--accent)}
 .td-date{font-size:.82em;color:var(--dim)}
 .badge{display:inline-block;padding:3px 10px;border-radius:8px;font-size:.75em;font-weight:700}
-.badge-foto{background:rgba(13,148,136,0.12);color:var(--accent)}
+.badge-foto{background:rgba(10,132,255,0.12);color:var(--accent)}
 .badge-importo{background:rgba(48,209,88,0.12);color:var(--green)}
 .badge-no{background:rgba(255,159,10,0.12);color:var(--orange)}
-.btn-action{padding:6px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.12);background:#fff;color:var(--text);font-size:.78em;font-weight:600;cursor:pointer;margin-right:4px}
-.btn-action:hover{background:rgba(0,0,0,0.04)}
-.btn-action.primary{background:rgba(13,148,136,0.1);border-color:rgba(13,148,136,0.25);color:var(--accent)}
+.btn-action{padding:6px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.12);background:#f8f8fa;color:var(--text);font-size:.78em;font-weight:600;cursor:pointer;margin-right:4px}
+.btn-action:hover{background:rgba(0,0,0,0.06)}
+.btn-action.primary{background:rgba(10,132,255,0.1);border-color:rgba(10,132,255,0.25);color:var(--accent)}
 
 /* Importo modal */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:none;align-items:center;justify-content:center;z-index:5000}
@@ -89,20 +88,20 @@ tr:last-child td{border-bottom:none}
 .modal h3{margin-bottom:4px;font-size:1.1em;color:var(--text)}
 .modal .modal-sub{color:var(--dim);font-size:.88em;margin-bottom:18px}
 .modal label{font-size:.78em;font-weight:700;color:var(--dim);text-transform:uppercase;display:block;margin-bottom:6px}
-.modal input{width:100%;padding:12px 14px;border:1px solid #E7E5E0;border-radius:10px;background:#fff;color:var(--text);font-size:1.1em;font-weight:700;outline:none;margin-bottom:16px}
+.modal input{width:100%;padding:12px 14px;border:1px solid #e0e0e0;border-radius:10px;background:#f8f8fa;color:var(--text);font-size:1.1em;font-weight:700;outline:none;margin-bottom:16px}
 .modal input:focus{border-color:var(--accent)}
 .modal-buttons{display:flex;gap:10px}
 .modal-buttons button{flex:1;padding:12px;border-radius:10px;font-weight:700;font-size:.92em;cursor:pointer;border:none}
-.modal-buttons .btn-cancel{background:#fff;color:var(--text);border:1px solid #E7E5E0}
+.modal-buttons .btn-cancel{background:#f8f8fa;color:var(--text);border:1px solid #e0e0e0}
 .modal-buttons .btn-save{background:var(--accent);color:white}
 
 /* Foto viewer enhanced */
 .foto-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:10px 0}
-.foto-thumb{border-radius:10px;overflow:hidden;aspect-ratio:1;background:#fff;border:1px solid rgba(0,0,0,0.04);cursor:pointer;position:relative}
+.foto-thumb{border-radius:10px;overflow:hidden;aspect-ratio:1;background:#f8f8fa;border:1px solid rgba(0,0,0,0.06);cursor:pointer;position:relative}
 .foto-thumb img{width:100%;height:100%;object-fit:cover}
 .foto-loading{color:var(--dim);font-size:.85em;text-align:center;padding:30px}
 .foto-grid-m{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.foto-item-m{border-radius:10px;overflow:hidden;aspect-ratio:1;cursor:pointer;background:#fff;display:flex;align-items:center;justify-content:center;position:relative;border:3px solid transparent;transition:border-color .15s}
+.foto-item-m{border-radius:10px;overflow:hidden;aspect-ratio:1;cursor:pointer;background:#f8f8fa;display:flex;align-items:center;justify-content:center;position:relative;border:3px solid transparent;transition:border-color .15s}
 .foto-item-m img{width:100%;height:100%;object-fit:cover}
 .foto-item-m.selected{border-color:var(--accent)}
 .foto-item-m.selected img{opacity:.85}
@@ -110,17 +109,17 @@ tr:last-child td{border-bottom:none}
 .foto-item-m.selected .foto-cb{background:var(--accent);border-color:white;box-shadow:none}
 .foto-cb-check{color:white;font-size:17px;font-weight:900;line-height:1;display:none}
 .foto-item-m.selected .foto-cb-check{display:block}
-.foto-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:#fff;border-radius:10px;border:1px solid rgba(0,0,0,0.04)}
+.foto-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 12px;background:#f8f8fa;border-radius:10px;border:1px solid rgba(0,0,0,0.06)}
 .foto-sel-cnt{font-size:12px;font-weight:700;color:var(--accent)}
 .foto-sel-acts{display:flex;gap:8px}
 .foto-sel-btn{font-size:11px;font-weight:700;color:var(--accent);background:none;border:none;cursor:pointer;text-decoration:underline}
-.comp-row{display:flex;align-items:center;gap:8px;padding:8px 0 0;border-top:1px solid rgba(0,0,0,0.04);margin-top:6px}
+.comp-row{display:flex;align-items:center;gap:8px;padding:8px 0 0;border-top:1px solid rgba(0,0,0,0.06);margin-top:6px}
 .comp-row label{font-size:12px;font-weight:600;color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:6px}
 .mfoot{padding:14px 0 0;display:flex;flex-direction:column;gap:10px}
 .mfoot-btns{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .mbtn{padding:9px 18px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px}
 .mbtn:disabled{opacity:.4;cursor:not-allowed}
-.mb-out{background:#fff;color:var(--text);border:1.5px solid rgba(0,0,0,0.08)!important}
+.mb-out{background:#f8f8fa;color:var(--text);border:1.5px solid rgba(0,0,0,0.08)!important}
 .mb-green{background:var(--accent);color:white}
 .mb-blue{background:#1a4fa0;color:white}
 .mb-orange{background:#f39c12;color:white}
@@ -157,7 +156,7 @@ tr:last-child td{border-bottom:none}
 .siti-results{flex:1;overflow-y:auto}
 .siti-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;cursor:pointer;margin-bottom:2px;border:1px solid transparent}
 .siti-row:hover{background:rgba(0,0,0,0.03)}
-.siti-row.selected{background:rgba(13,148,136,0.08);border-color:rgba(13,148,136,0.2)}
+.siti-row.selected{background:rgba(10,132,255,0.08);border-color:rgba(10,132,255,0.2)}
 .sr-code{font-weight:700;color:var(--accent);font-size:.92em}
 .sr-city{font-size:.85em;color:var(--mid)}
 .sr-addr{font-size:.78em;color:var(--dim)}
@@ -176,7 +175,7 @@ tr:last-child td{border-bottom:none}
 @media(max-width:1024px){.siti-layout{flex-direction:column;height:auto}.siti-list-panel{width:100%;max-height:50vh}.siti-map-panel{height:400px}}
 
 /* Percorso tappe */
-.tappa-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border:2px solid rgba(0,0,0,0.04);border-radius:10px;margin-bottom:6px;transition:border-color .2s,opacity .2s}
+.tappa-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8f8fa;border:2px solid rgba(0,0,0,0.06);border-radius:10px;margin-bottom:6px;transition:border-color .2s,opacity .2s}
 .tappa-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.75em;font-weight:800;flex-shrink:0}
 .tappa-info{flex:1;font-size:.88em}
 .tappa-code{font-weight:700;color:var(--accent)}
@@ -189,8 +188,8 @@ tr:last-child td{border-bottom:none}
 .percorso-sr .sr-info{font-size:.82em;color:var(--dim)}
 
 /* Dev credit */
-.dev-credit{text-align:center;padding:16px;font-size:.7em;color:#C4C0B8;font-weight:500;letter-spacing:.3px}
-.dev-credit span{color:#57534E;font-weight:700}
+.dev-credit{text-align:center;padding:16px;font-size:.7em;color:#b0b0b0;font-weight:500;letter-spacing:.3px}
+.dev-credit span{color:#555;font-weight:700}
 
 /* Responsive */
 @media(max-width:768px){
@@ -303,7 +302,7 @@ tr:last-child td{border-bottom:none}
       <div class="table-wrap"><table>
         <thead><tr><th>Tecnico</th><th>Cliente</th><th>Lavorazione</th><th>Luogo</th><th style="text-align:right">Importo</th></tr></thead>
         <tbody id="eco-interventi-table"></tbody>
-        <tfoot><tr style="background:rgba(22,163,74,0.06)">
+        <tfoot><tr style="background:rgba(52,199,89,0.06)">
           <td colspan="4" style="font-weight:700;color:var(--green);text-align:right;padding-right:20px">TOTALE ENTRATE</td>
           <td style="font-weight:800;color:var(--green);text-align:right" id="eco-entrate-footer">€ 0.00</td>
         </tr></tfoot>
@@ -314,7 +313,7 @@ tr:last-child td{border-bottom:none}
         <div class="section-header" style="font-size:1em;margin:0">Altri Costi</div>
         <div style="display:flex;gap:8px">
           <button class="btn-action primary" onclick="openAddCosto()" style="padding:8px 16px;font-size:.85em">+ Aggiungi Costo</button>
-          <button class="btn-action" onclick="openAIControlCosti()" style="padding:8px 16px;font-size:.85em;background:linear-gradient(135deg,rgba(94,92,230,0.1),rgba(13,148,136,0.1));border-color:rgba(94,92,230,0.2);color:#0A7A70">
+          <button class="btn-action" onclick="openAIControlCosti()" style="padding:8px 16px;font-size:.85em;background:linear-gradient(135deg,rgba(94,92,230,0.1),rgba(10,132,255,0.1));border-color:rgba(94,92,230,0.2);color:#5E5CE6">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:4px"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/></svg>
             AI Controllo Costi
           </button>
@@ -323,7 +322,7 @@ tr:last-child td{border-bottom:none}
       <div class="table-wrap" style="margin-top:10px"><table>
         <thead><tr><th>Voce</th><th>Note</th><th style="text-align:right">Importo</th><th style="width:60px"></th></tr></thead>
         <tbody id="eco-costi-table"></tbody>
-        <tfoot><tr style="background:rgba(239,68,68,0.06)">
+        <tfoot><tr style="background:rgba(255,59,48,0.06)">
           <td colspan="2" style="font-weight:700;color:var(--red);text-align:right;padding-right:20px">TOTALE USCITE</td>
           <td style="font-weight:800;color:var(--red);text-align:right" id="eco-uscite-footer">€ 0.00</td>
           <td></td>
@@ -354,14 +353,14 @@ tr:last-child td{border-bottom:none}
     <div class="modal-bg" id="modal-ai-costi">
       <div class="modal" style="max-width:500px">
         <h3 style="display:flex;align-items:center;gap:8px">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="#0A7A70"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#5E5CE6"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/></svg>
           AI Controllo Costi
         </h3>
         <div class="modal-sub">Analisi automatica fatture e tracciato bancario</div>
         <div id="ai-costi-content" style="padding:20px 0;text-align:center">
-          <div style="background:linear-gradient(135deg,rgba(94,92,230,0.08),rgba(13,148,136,0.08));border:1px dashed rgba(94,92,230,0.2);border-radius:16px;padding:30px 20px;margin-bottom:16px">
+          <div style="background:linear-gradient(135deg,rgba(94,92,230,0.08),rgba(10,132,255,0.08));border:1px dashed rgba(94,92,230,0.2);border-radius:16px;padding:30px 20px;margin-bottom:16px">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="rgba(94,92,230,0.3)" style="margin-bottom:12px"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/></svg>
-            <div style="color:#0A7A70;font-weight:700;font-size:1.05em;margin-bottom:8px">Funzione in sviluppo</div>
+            <div style="color:#5E5CE6;font-weight:700;font-size:1.05em;margin-bottom:8px">Funzione in sviluppo</div>
             <div style="color:var(--dim);font-size:.88em;line-height:1.5">
               L'AI analizzerà automaticamente le <strong style="color:var(--mid)">fatture spese</strong> (PDF) e il <strong style="color:var(--mid)">tracciato bancario</strong> (CSV) caricati nella cartella cloud, effettuando il match intelligente per popolare la tabella Altri Costi.
             </div>
@@ -376,7 +375,7 @@ tr:last-child td{border-bottom:none}
         </div>
         <div class="modal-buttons">
           <button class="btn-cancel" onclick="closeAICosti()" style="flex:1">Chiudi</button>
-          <button class="btn-save" disabled style="flex:1;opacity:0.4;background:linear-gradient(135deg,#0A7A70,#0D9488);cursor:not-allowed;color:white">Prossimamente</button>
+          <button class="btn-save" disabled style="flex:1;opacity:0.4;background:linear-gradient(135deg,#5E5CE6,#0A84FF);cursor:not-allowed;color:white">Prossimamente</button>
         </div>
       </div>
     </div>
@@ -405,7 +404,7 @@ tr:last-child td{border-bottom:none}
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn-action" onclick="clearPercorso()" style="font-size:.82em">Svuota</button>
-            <button class="btn-action" onclick="ottimizzaPercorso()" id="btn-ottimizza" style="font-size:.82em;background:linear-gradient(135deg,rgba(22,163,74,0.1),rgba(13,148,136,0.1));border-color:rgba(22,163,74,0.2);color:var(--green)" disabled>
+            <button class="btn-action" onclick="ottimizzaPercorso()" id="btn-ottimizza" style="font-size:.82em;background:linear-gradient(135deg,rgba(52,199,89,0.1),rgba(10,132,255,0.1));border-color:rgba(52,199,89,0.2);color:var(--green)" disabled>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:3px"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
               Ottimizza percorso
             </button>
@@ -438,7 +437,7 @@ tr:last-child td{border-bottom:none}
         </div>
 
         <!-- Risultato calcolo -->
-        <div id="percorso-risultato" style="display:none;margin-top:14px;padding:16px;background:linear-gradient(135deg,rgba(13,148,136,0.06),rgba(22,163,74,0.06));border:1px solid rgba(13,148,136,0.15);border-radius:12px">
+        <div id="percorso-risultato" style="display:none;margin-top:14px;padding:16px;background:linear-gradient(135deg,rgba(10,132,255,0.06),rgba(52,199,89,0.06));border:1px solid rgba(10,132,255,0.15);border-radius:12px">
           <div style="display:flex;align-items:center;justify-content:space-around;text-align:center;flex-wrap:wrap;gap:10px">
             <div>
               <div style="font-size:.72em;color:var(--dim);text-transform:uppercase;font-weight:600;letter-spacing:.5px">Tappe</div>
@@ -486,12 +485,12 @@ tr:last-child td{border-bottom:none}
 <!-- Modal foto enhanced -->
 <div class="modal-bg" id="modal-foto" onclick="if(event.target===this)closeFotoModal()">
   <div class="modal" style="width:900px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">
-    <div style="padding:18px 22px;border-bottom:1px solid rgba(0,0,0,0.04);display:flex;justify-content:space-between;align-items:flex-start;">
+    <div style="padding:18px 22px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;align-items:flex-start;">
       <div><h3 id="foto-modal-title" style="font-size:18px;font-weight:800;">Foto Intervento</h3><div id="foto-modal-sub" style="font-size:12px;color:var(--dim);margin-top:3px;"></div></div>
-      <button onclick="closeFotoModal()" style="background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px;color:var(--dim);">✕</button>
+      <button onclick="closeFotoModal()" style="background:#f8f8fa;border:1px solid rgba(0,0,0,0.08);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px;color:var(--dim);">✕</button>
     </div>
     <div style="padding:22px;overflow-y:auto;flex:1;">
-      <div id="m-note-box" style="display:none;margin:0 0 16px;background:rgba(232,118,45,0.08);border:1.5px solid rgba(232,118,45,0.2);border-radius:10px;padding:12px 14px;">
+      <div id="m-note-box" style="display:none;margin:0 0 16px;background:rgba(255,149,0,0.08);border:1.5px solid rgba(255,149,0,0.2);border-radius:10px;padding:12px 14px;">
         <div style="font-size:11px;font-weight:800;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Note Intervento</div>
         <div id="m-note-text" style="font-size:13px;color:var(--text);line-height:1.5;"></div>
       </div>
@@ -505,7 +504,7 @@ tr:last-child td{border-bottom:none}
       </div>
       <div class="foto-grid-m" id="m-fotogrid"></div>
     </div>
-    <div class="mfoot" style="padding:14px 22px;border-top:1px solid rgba(0,0,0,0.04);">
+    <div class="mfoot" style="padding:14px 22px;border-top:1px solid rgba(0,0,0,0.06);">
       <div class="comp-row">
         <label style="color:var(--text)"><input type="checkbox" id="m-compress"> Comprimi foto prima del download <span style="font-size:11px;color:var(--dim);">(qualità ridotta, file più leggeri)</span></label>
       </div>
@@ -655,7 +654,7 @@ function renderInterventiTable(list){
     <td>${r.n_foto?`<button class="btn-action" onclick="viewFoto('${r.id}','${r.codice_sito||''}',${r.n_foto})">${r.n_foto} foto</button>`:'—'}</td>
     <td>${r.importo!=null?`<span class="badge badge-importo">€${(+r.importo).toFixed(2)}</span>`:`<span class="badge badge-no">—</span>`}</td>
     <td class="td-date">${formatDate(r.created_at)}</td>
-    <td><div style="display:flex;flex-direction:column;gap:4px;align-items:center;"><button class="btn-action" style="background:rgba(232,118,45,0.1);color:var(--orange);font-size:.75em;white-space:nowrap;border-color:rgba(232,118,45,0.2)" onclick="generateReport('${r.id}')">📄 Report</button><button class="btn-action primary" style="white-space:nowrap;" onclick="openImportoModal('${r.id}')">€ Importo</button></div></td>
+    <td><div style="display:flex;flex-direction:column;gap:4px;align-items:center;"><button class="btn-action" style="background:rgba(255,149,0,0.1);color:var(--orange);font-size:.75em;white-space:nowrap;border-color:rgba(255,149,0,0.2)" onclick="generateReport('${r.id}')">📄 Report</button><button class="btn-action primary" style="white-space:nowrap;" onclick="openImportoModal('${r.id}')">€ Importo</button></div></td>
   </tr>`).join('');
 }
 
@@ -724,23 +723,23 @@ async function generateReport(intId) {
   <style>
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#222;background:white;padding:20px;}
-    .header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:3px solid #0D9488;margin-bottom:18px;}
-    .brand{font-size:22px;font-weight:900;color:#0D9488;}
-    .brand span{color:#16A34A;}
-    .brand-sub{font-size:10px;color:#57534E;margin-top:2px;}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:3px solid #0A84FF;margin-bottom:18px;}
+    .brand{font-size:22px;font-weight:900;color:#0A84FF;}
+    .brand span{color:#30D158;}
+    .brand-sub{font-size:10px;color:#666;margin-top:2px;}
     .report-title{text-align:right;}
-    .report-title h1{font-size:17px;font-weight:800;color:#0D9488;}
-    .report-title .ts{font-size:10px;color:#57534E;margin-top:3px;}
+    .report-title h1{font-size:17px;font-weight:800;color:#0A84FF;}
+    .report-title .ts{font-size:10px;color:#888;margin-top:3px;}
     .section{margin-bottom:18px;}
-    .section-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#0D9488;border-bottom:1.5px solid #dce3ed;padding-bottom:5px;margin-bottom:10px;}
+    .section-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#0A84FF;border-bottom:1.5px solid #dce3ed;padding-bottom:5px;margin-bottom:10px;}
     .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
     .info-box{background:#f4f7fb;border-radius:7px;padding:8px 12px;}
-    .info-label{font-size:9px;font-weight:700;text-transform:uppercase;color:#57534E;margin-bottom:2px;}
-    .info-val{font-size:12px;font-weight:700;color:#0D9488;}
+    .info-label{font-size:9px;font-weight:700;text-transform:uppercase;color:#888;margin-bottom:2px;}
+    .info-val{font-size:12px;font-weight:700;color:#0A84FF;}
     .note-box{background:#fffbe6;border:1px solid #f5c842;border-radius:7px;padding:10px 14px;font-size:12px;line-height:1.5;white-space:pre-wrap;}
     .foto-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
     .rf img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;}
-    .rc{font-size:9px;color:#57534E;text-align:center;margin-top:3px;}
+    .rc{font-size:9px;color:#888;text-align:center;margin-top:3px;}
     .empty{color:#999;font-style:italic;font-size:11px;}
     .footer{margin-top:24px;padding-top:10px;border-top:1px solid #dce3ed;display:flex;justify-content:space-between;font-size:9px;color:#aaa;}
     @media print{
@@ -904,7 +903,7 @@ function fmPrint(){
   const selected=(window._modalUrls||[]).filter(f=>f.selected&&f.url);if(!selected.length)return
   const inv=fmCurrentInv
   const win=window.open('','_blank')
-  win.document.write(`<!DOCTYPE html><html><head><title>Foto ${inv?.codice_sito||''}</title><style>body{margin:0;font-family:sans-serif;}h2{font-size:14px;text-align:center;margin:10px 0;}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px;}.grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;}.cap{font-size:9px;text-align:center;color:#57534E;margin-top:2px;}@media print{@page{margin:12mm;}}</style></head><body><h2>Sito ${inv?.codice_sito||'–'} — ${inv?.nome_sito||''} · ${inv?.cliente_finale||''} · ${new Date().toLocaleDateString('it-IT')}</h2><div class="grid">${selected.map((f,i)=>`<div><img src="${f.url}" crossorigin="anonymous"><div class="cap">${f.name}</div></div>`).join('')}</div></body></html>`)
+  win.document.write(`<!DOCTYPE html><html><head><title>Foto ${inv?.codice_sito||''}</title><style>body{margin:0;font-family:sans-serif;}h2{font-size:14px;text-align:center;margin:10px 0;}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px;}.grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;}.cap{font-size:9px;text-align:center;color:#666;margin-top:2px;}@media print{@page{margin:12mm;}}</style></head><body><h2>Sito ${inv?.codice_sito||'–'} — ${inv?.nome_sito||''} · ${inv?.cliente_finale||''} · ${new Date().toLocaleDateString('it-IT')}</h2><div class="grid">${selected.map((f,i)=>`<div><img src="${f.url}" crossorigin="anonymous"><div class="cap">${f.name}</div></div>`).join('')}</div></body></html>`)
   win.document.close();win.onload=()=>{win.focus();win.print()}
 }
 
@@ -1099,10 +1098,10 @@ function renderTappe(){
     });
     el.addEventListener('dragend',e=>{el.style.opacity='1';});
     el.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';el.style.borderColor='var(--accent)';});
-    el.addEventListener('dragleave',e=>{el.style.borderColor='rgba(0,0,0,0.04)';});
+    el.addEventListener('dragleave',e=>{el.style.borderColor='rgba(0,0,0,0.06)';});
     el.addEventListener('drop',e=>{
       e.preventDefault();
-      el.style.borderColor='rgba(0,0,0,0.04)';
+      el.style.borderColor='rgba(0,0,0,0.06)';
       const destIdx=+el.dataset.idx;
       if(dragSrcIdx===null||dragSrcIdx===destIdx)return;
       const item=percorsoTappe.splice(dragSrcIdx,1)[0];
@@ -1150,7 +1149,7 @@ async function calcolaPercorso(){
       // Dettaglio tratte
       let dettaglio='';
       if(route.legs){
-        dettaglio='<div style="margin-top:8px;border-top:1px solid rgba(0,0,0,0.04);padding-top:8px">';
+        dettaglio='<div style="margin-top:8px;border-top:1px solid rgba(0,0,0,0.06);padding-top:8px">';
         route.legs.forEach((leg,i)=>{
           const legKm=(leg.distance/1000).toFixed(1);
           const legMin=Math.round(leg.duration/60);
@@ -1290,8 +1289,8 @@ async function doSearchSiti(){
     arr.filter(s=>s.latitudine&&s.longitudine).forEach(s=>{
       const la=+s.latitudine,lo=+s.longitudine;
       bounds.push([la,lo]);
-      const m=L.circleMarker([la,lo],{radius:7,fillColor:'#0D9488',color:'#fff',weight:2,fillOpacity:.85});
-      m.bindPopup(`<div style="font-weight:700;color:#0D9488">${s.codice_sito}</div><div style="color:#57534E;font-size:.88em">${s.nome_sito||''}</div><div style="color:#A8A29E;font-size:.85em">${s.citta||''}</div><div style="margin-top:8px"><a href="https://www.google.com/maps/dir/?api=1&destination=${la},${lo}" target="_blank" style="color:#4285F4;font-weight:700;font-size:.85em;text-decoration:none">📍 Google Maps</a> &nbsp; <a href="https://waze.com/ul?ll=${la},${lo}&navigate=yes" target="_blank" style="color:#33CCFF;font-weight:700;font-size:.85em;text-decoration:none">🚗 Waze</a></div>`);
+      const m=L.circleMarker([la,lo],{radius:7,fillColor:'#0A84FF',color:'#fff',weight:2,fillOpacity:.85});
+      m.bindPopup(`<div style="font-weight:700;color:#0A84FF">${s.codice_sito}</div><div style="color:#555;font-size:.88em">${s.nome_sito||''}</div><div style="color:#8e8e93;font-size:.85em">${s.citta||''}</div><div style="margin-top:8px"><a href="https://www.google.com/maps/dir/?api=1&destination=${la},${lo}" target="_blank" style="color:#4285F4;font-weight:700;font-size:.85em;text-decoration:none">📍 Google Maps</a> &nbsp; <a href="https://waze.com/ul?ll=${la},${lo}&navigate=yes" target="_blank" style="color:#33CCFF;font-weight:700;font-size:.85em;text-decoration:none">🚗 Waze</a></div>`);
       m.on('click',()=>selectDashSite(s.codice_sito));
       dashMarkers.addLayer(m);
     });
