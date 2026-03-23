@@ -1098,10 +1098,10 @@ function renderTappe(){
     });
     el.addEventListener('dragend',e=>{el.style.opacity='1';});
     el.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';el.style.borderColor='var(--accent)';});
-    el.addEventListener('dragleave',e=>{el.style.borderColor='rgba(255,255,255,0.08)';});
+    el.addEventListener('dragleave',e=>{el.style.borderColor='rgba(0,0,0,0.06)';});
     el.addEventListener('drop',e=>{
       e.preventDefault();
-      el.style.borderColor='rgba(255,255,255,0.08)';
+      el.style.borderColor='rgba(0,0,0,0.06)';
       const destIdx=+el.dataset.idx;
       if(dragSrcIdx===null||dragSrcIdx===destIdx)return;
       const item=percorsoTappe.splice(dragSrcIdx,1)[0];
@@ -1149,7 +1149,7 @@ async function calcolaPercorso(){
       // Dettaglio tratte
       let dettaglio='';
       if(route.legs){
-        dettaglio='<div style="margin-top:8px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px">';
+        dettaglio='<div style="margin-top:8px;border-top:1px solid rgba(0,0,0,0.06);padding-top:8px">';
         route.legs.forEach((leg,i)=>{
           const legKm=(leg.distance/1000).toFixed(1);
           const legMin=Math.round(leg.duration/60);
@@ -1290,7 +1290,7 @@ async function doSearchSiti(){
       const la=+s.latitudine,lo=+s.longitudine;
       bounds.push([la,lo]);
       const m=L.circleMarker([la,lo],{radius:7,fillColor:'#0A84FF',color:'#fff',weight:2,fillOpacity:.85});
-      m.bindPopup(`<div style="font-weight:700;color:#0A84FF">${s.codice_sito}</div><div style="color:rgba(255,255,255,0.7);font-size:.88em">${s.nome_sito||''}</div><div style="color:rgba(255,255,255,0.5);font-size:.85em">${s.citta||''}</div><div style="margin-top:8px"><a href="https://www.google.com/maps/dir/?api=1&destination=${la},${lo}" target="_blank" style="color:#4285F4;font-weight:700;font-size:.85em;text-decoration:none">📍 Google Maps</a> &nbsp; <a href="https://waze.com/ul?ll=${la},${lo}&navigate=yes" target="_blank" style="color:#33CCFF;font-weight:700;font-size:.85em;text-decoration:none">🚗 Waze</a></div>`);
+      m.bindPopup(`<div style="font-weight:700;color:#0A84FF">${s.codice_sito}</div><div style="color:#555;font-size:.88em">${s.nome_sito||''}</div><div style="color:#8e8e93;font-size:.85em">${s.citta||''}</div><div style="margin-top:8px"><a href="https://www.google.com/maps/dir/?api=1&destination=${la},${lo}" target="_blank" style="color:#4285F4;font-weight:700;font-size:.85em;text-decoration:none">📍 Google Maps</a> &nbsp; <a href="https://waze.com/ul?ll=${la},${lo}&navigate=yes" target="_blank" style="color:#33CCFF;font-weight:700;font-size:.85em;text-decoration:none">🚗 Waze</a></div>`);
       m.on('click',()=>selectDashSite(s.codice_sito));
       dashMarkers.addLayer(m);
     });
