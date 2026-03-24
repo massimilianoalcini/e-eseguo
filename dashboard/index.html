@@ -14,17 +14,29 @@ html,body{height:100%;overflow:hidden}
 body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
 
 /* Login */
-.login-overlay{position:fixed;inset:0;background:linear-gradient(160deg,#0D9488 0%,#0A7A70 100%);display:flex;align-items:center;justify-content:center;z-index:9000}
+.login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#F0F7F6 0%,#E8F0EF 30%,#EAE7E1 70%,#F2F0EC 100%);display:flex;align-items:center;justify-content:center;z-index:9000;overflow:hidden}
 .login-overlay.hidden{display:none}
-.login-box{background:#ffffff;border:none;border-radius:24px;padding:36px 28px;width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.login-geo{position:absolute;inset:0;z-index:0;opacity:0.4}
+.login-geo svg{width:100%;height:100%}
+.login-box{position:relative;z-index:1;background:rgba(255,255,255,0.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.6);border-radius:20px;padding:44px 38px;width:400px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.8)}
+@keyframes logoRotateY{0%{transform:rotateY(0deg)}100%{transform:rotateY(360deg)}}
+.login-logo-wrap{perspective:400px;display:flex;justify-content:center;margin:0 auto 10px}
+.login-logo-img{width:72px;display:block;transform-style:preserve-3d;animation:logoRotateY 3s linear infinite;filter:drop-shadow(0 4px 12px rgba(13,148,136,0.25))}
 .login-box img{height:60px;margin-bottom:8px}
-.login-box h2{font-size:1.4em;margin-bottom:2px}
-.login-box .sub{color:var(--dim);font-size:.85em;margin-bottom:24px}
-.login-box input{width:100%;padding:13px 16px;border:1px solid #E7E5E0;border-radius:12px;font-size:1em;margin-bottom:10px;outline:none;background:#fff;color:var(--text)}
-.login-box input::placeholder{color:#C4C0B8}
-.login-box input:focus{border-color:var(--accent)}
-.login-box button{width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:12px;font-size:1em;font-weight:700;cursor:pointer;margin-top:4px}
+.login-box h2{font-size:1.5em;font-weight:800;margin-bottom:2px;letter-spacing:.5px}
+.login-box .sub{color:var(--mid);font-size:.85em;margin-bottom:28px;font-weight:500}
+.login-box .input-wrap{position:relative;margin-bottom:12px}
+.login-box .input-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:#A8A29E}
+.login-box input{width:100%;padding:14px 16px 14px 42px;border:1px solid rgba(0,0,0,0.08);border-radius:12px;font-size:.95em;outline:none;background:rgba(255,255,255,0.6);color:var(--text);font-family:inherit;transition:border-color .2s,background .2s}
+.login-box input::placeholder{color:#A8A29E}
+.login-box input:focus{border-color:var(--accent);background:rgba(255,255,255,0.85);box-shadow:0 0 0 3px rgba(13,148,136,0.1)}
+.login-box button{width:100%;padding:15px;margin-top:6px;background:linear-gradient(135deg,#0D9488,#0A7A70);color:white;border:1px solid rgba(13,148,136,0.3);border-radius:12px;font-size:1.05em;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(13,148,136,0.25);transition:transform .15s}
+.login-box button:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(13,148,136,0.3)}
+.login-box .forgot{font-size:.78em;color:#78756E;margin-top:16px;cursor:pointer;text-decoration:none;display:inline-block}
+.login-box .forgot:hover{color:var(--accent)}
 .login-box .err{color:var(--red);font-size:.85em;margin-top:10px;min-height:20px}
+.login-box .dev-credit{font-size:.68em;color:#A8A29E;margin-top:18px;font-weight:500}
+.login-box .dev-credit span{color:#57534E;font-weight:700}
 
 /* Top bar */
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid rgba(0,0,0,0.04);flex-shrink:0;background:#ffffff}
@@ -204,14 +216,103 @@ tr:last-child td{border-bottom:none}
 </head>
 <body>
 <div class="login-overlay" id="login-overlay">
+  <div class="login-geo">
+    <svg viewBox="0 0 1440 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="0" y1="150" x2="1440" y2="150" stroke="rgba(13,148,136,0.07)" stroke-width="0.5"/>
+      <line x1="0" y1="300" x2="1440" y2="300" stroke="rgba(13,148,136,0.05)" stroke-width="0.5"/>
+      <line x1="0" y1="450" x2="1440" y2="450" stroke="rgba(13,148,136,0.07)" stroke-width="0.5"/>
+      <line x1="0" y1="600" x2="1440" y2="600" stroke="rgba(13,148,136,0.05)" stroke-width="0.5"/>
+      <line x1="0" y1="750" x2="1440" y2="750" stroke="rgba(13,148,136,0.07)" stroke-width="0.5"/>
+      <line x1="200" y1="0" x2="200" y2="900" stroke="rgba(13,148,136,0.05)" stroke-width="0.5"/>
+      <line x1="400" y1="0" x2="400" y2="900" stroke="rgba(13,148,136,0.07)" stroke-width="0.5"/>
+      <line x1="600" y1="0" x2="600" y2="900" stroke="rgba(13,148,136,0.05)" stroke-width="0.5"/>
+      <line x1="840" y1="0" x2="840" y2="900" stroke="rgba(13,148,136,0.05)" stroke-width="0.5"/>
+      <line x1="1040" y1="0" x2="1040" y2="900" stroke="rgba(13,148,136,0.07)" stroke-width="0.5"/>
+      <line x1="1240" y1="0" x2="1240" y2="900" stroke="rgba(13,148,136,0.05)" stroke-width="0.5"/>
+      <!-- Top-left cluster -->
+      <line x1="120" y1="80" x2="280" y2="200" stroke="rgba(13,148,136,0.12)" stroke-width="0.8"/>
+      <line x1="280" y1="200" x2="400" y2="130" stroke="rgba(13,148,136,0.1)" stroke-width="0.8"/>
+      <line x1="400" y1="130" x2="500" y2="220" stroke="rgba(13,148,136,0.08)" stroke-width="0.8"/>
+      <rect x="100" y="60" width="44" height="44" rx="7" stroke="rgba(13,148,136,0.14)" stroke-width="1" fill="none"/>
+      <rect x="110" y="70" width="44" height="44" rx="7" stroke="rgba(13,148,136,0.09)" stroke-width="1" fill="none"/>
+      <rect x="270" y="185" width="26" height="26" rx="4" stroke="rgba(13,148,136,0.18)" stroke-width="1" fill="rgba(13,148,136,0.04)"/>
+      <rect x="390" y="115" width="28" height="28" rx="5" stroke="rgba(13,148,136,0.12)" stroke-width="1" fill="none"/>
+      <circle cx="120" cy="80" r="5" fill="rgba(13,148,136,0.28)"/>
+      <circle cx="280" cy="200" r="6" fill="rgba(13,148,136,0.32)"/>
+      <circle cx="400" cy="130" r="4" fill="rgba(13,148,136,0.2)"/>
+      <circle cx="500" cy="220" r="4" fill="rgba(13,148,136,0.2)"/>
+      <!-- Top-right cluster -->
+      <line x1="1000" y1="100" x2="1150" y2="200" stroke="rgba(13,148,136,0.12)" stroke-width="0.8"/>
+      <line x1="1150" y1="200" x2="1300" y2="140" stroke="rgba(13,148,136,0.1)" stroke-width="0.8"/>
+      <line x1="1300" y1="140" x2="1380" y2="250" stroke="rgba(13,148,136,0.08)" stroke-width="0.8"/>
+      <rect x="980" y="80" width="40" height="40" rx="6" stroke="rgba(13,148,136,0.14)" stroke-width="1" fill="none"/>
+      <rect x="990" y="90" width="40" height="40" rx="6" stroke="rgba(13,148,136,0.09)" stroke-width="1" fill="none"/>
+      <rect x="1140" y="185" width="24" height="24" rx="4" stroke="rgba(13,148,136,0.18)" stroke-width="1" fill="rgba(13,148,136,0.04)"/>
+      <rect x="1290" y="125" width="26" height="26" rx="4" stroke="rgba(13,148,136,0.12)" stroke-width="1" fill="none"/>
+      <circle cx="1000" cy="100" r="5" fill="rgba(13,148,136,0.28)"/>
+      <circle cx="1150" cy="200" r="6" fill="rgba(13,148,136,0.32)"/>
+      <circle cx="1300" cy="140" r="4" fill="rgba(13,148,136,0.2)"/>
+      <circle cx="1380" cy="250" r="4" fill="rgba(13,148,136,0.2)"/>
+      <!-- Bottom-left cluster -->
+      <line x1="100" y1="650" x2="250" y2="750" stroke="rgba(13,148,136,0.1)" stroke-width="0.8"/>
+      <line x1="250" y1="750" x2="380" y2="680" stroke="rgba(13,148,136,0.08)" stroke-width="0.8"/>
+      <line x1="380" y1="680" x2="460" y2="800" stroke="rgba(13,148,136,0.08)" stroke-width="0.8"/>
+      <rect x="80" y="630" width="36" height="36" rx="6" stroke="rgba(13,148,136,0.12)" stroke-width="1" fill="none"/>
+      <rect x="88" y="638" width="36" height="36" rx="6" stroke="rgba(13,148,136,0.08)" stroke-width="1" fill="none"/>
+      <rect x="240" y="735" width="24" height="24" rx="4" stroke="rgba(13,148,136,0.16)" stroke-width="1" fill="rgba(13,148,136,0.03)"/>
+      <circle cx="100" cy="650" r="5" fill="rgba(13,148,136,0.25)"/>
+      <circle cx="250" cy="750" r="5" fill="rgba(13,148,136,0.3)"/>
+      <circle cx="380" cy="680" r="4" fill="rgba(13,148,136,0.18)"/>
+      <circle cx="460" cy="800" r="4" fill="rgba(13,148,136,0.18)"/>
+      <!-- Bottom-right cluster -->
+      <line x1="1050" y1="680" x2="1180" y2="780" stroke="rgba(13,148,136,0.12)" stroke-width="0.8"/>
+      <line x1="1180" y1="780" x2="1330" y2="700" stroke="rgba(13,148,136,0.1)" stroke-width="0.8"/>
+      <line x1="1330" y1="700" x2="1400" y2="820" stroke="rgba(13,148,136,0.08)" stroke-width="0.8"/>
+      <rect x="1030" y="660" width="38" height="38" rx="6" stroke="rgba(13,148,136,0.14)" stroke-width="1" fill="none"/>
+      <rect x="1040" y="670" width="38" height="38" rx="6" stroke="rgba(13,148,136,0.09)" stroke-width="1" fill="none"/>
+      <rect x="1170" y="765" width="24" height="24" rx="4" stroke="rgba(13,148,136,0.18)" stroke-width="1" fill="rgba(13,148,136,0.04)"/>
+      <circle cx="1050" cy="680" r="5" fill="rgba(13,148,136,0.28)"/>
+      <circle cx="1180" cy="780" r="6" fill="rgba(13,148,136,0.32)"/>
+      <circle cx="1330" cy="700" r="4" fill="rgba(13,148,136,0.2)"/>
+      <circle cx="1400" cy="820" r="4" fill="rgba(13,148,136,0.2)"/>
+      <!-- Mid accents -->
+      <line x1="150" y1="400" x2="300" y2="470" stroke="rgba(13,148,136,0.08)" stroke-width="0.8" stroke-dasharray="4 4"/>
+      <rect x="140" y="385" width="20" height="20" rx="3" stroke="rgba(13,148,136,0.1)" stroke-width="1" fill="none"/>
+      <circle cx="150" cy="400" r="3" fill="rgba(13,148,136,0.18)"/>
+      <circle cx="300" cy="470" r="3" fill="rgba(13,148,136,0.18)"/>
+      <line x1="1150" y1="430" x2="1300" y2="500" stroke="rgba(13,148,136,0.08)" stroke-width="0.8" stroke-dasharray="4 4"/>
+      <rect x="1140" y="415" width="20" height="20" rx="3" stroke="rgba(13,148,136,0.1)" stroke-width="1" fill="none"/>
+      <circle cx="1150" cy="430" r="3" fill="rgba(13,148,136,0.18)"/>
+      <circle cx="1300" cy="500" r="3" fill="rgba(13,148,136,0.18)"/>
+      <!-- Scattered cubes -->
+      <rect x="550" y="60" width="18" height="18" rx="3" stroke="rgba(13,148,136,0.08)" stroke-width="0.8" fill="none"/>
+      <rect x="870" y="380" width="16" height="16" rx="3" stroke="rgba(13,148,136,0.08)" stroke-width="0.8" fill="none"/>
+      <rect x="620" y="800" width="20" height="20" rx="3" stroke="rgba(13,148,136,0.08)" stroke-width="0.8" fill="none"/>
+      <rect x="780" y="70" width="16" height="16" rx="3" stroke="rgba(13,148,136,0.06)" stroke-width="0.8" fill="none"/>
+      <!-- Hexagon accents -->
+      <polygon points="320,400 340,388 360,400 360,420 340,432 320,420" stroke="rgba(13,148,136,0.1)" stroke-width="0.8" fill="none"/>
+      <polygon points="1100,320 1120,308 1140,320 1140,340 1120,352 1100,340" stroke="rgba(13,148,136,0.1)" stroke-width="0.8" fill="none"/>
+      <!-- Diamond accents -->
+      <polygon points="500,650 520,630 540,650 520,670" stroke="rgba(13,148,136,0.1)" stroke-width="0.8" fill="rgba(13,148,136,0.02)"/>
+      <polygon points="950,500 970,480 990,500 970,520" stroke="rgba(13,148,136,0.1)" stroke-width="0.8" fill="rgba(13,148,136,0.02)"/>
+    </svg>
+  </div>
   <div class="login-box">
-    <img src="../app/logo-cube.png" alt="E.ESEGUO">
+    <div class="login-logo-wrap"><img src="../app/LOGOTRSP.png" class="login-logo-img" alt="E.ESEGUO"></div>
     <h2>E.ESEGUO</h2>
     <div class="sub">Dashboard Coordinatore</div>
-    <input type="email" id="login-email" placeholder="Email" autocomplete="email">
-    <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
+    <div class="input-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 7l10 7 10-7"/></svg>
+      <input type="email" id="login-email" placeholder="Email" autocomplete="email">
+    </div>
+    <div class="input-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+      <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
+    </div>
     <button onclick="doLogin()">Accedi</button>
+    <a class="forgot">Forgot password?</a>
     <div class="err" id="login-error"></div>
+    <p class="dev-credit">sviluppato da <span>Massimiliano Alcini</span></p>
   </div>
 </div>
 
