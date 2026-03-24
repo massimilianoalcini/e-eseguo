@@ -53,7 +53,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
 /* Layout */
 .main{flex:1;display:flex;overflow:hidden}
 .sidebar{width:260px;border-right:1px solid rgba(0,0,0,0.04);padding:16px;overflow-y:auto;flex-shrink:0;background:#ffffff}
-.content{flex:1;overflow-y:auto;padding:20px 24px;background:var(--bg)}
+.content{flex:1;overflow-y:auto;padding:20px 24px;background:#F0F2F5}
 
 /* Sidebar nav */
 .nav-section{font-size:.7em;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;padding:12px 12px 6px}
@@ -64,10 +64,21 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
 
 /* Stats cards */
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
-.stat-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:18px 20px}
-.stat-card .label{font-size:.75em;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.stat-card{background:var(--card);border:none;border-radius:var(--radius);padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,0.04);border-left:4px solid var(--accent);position:relative}
+.stat-card .label{font-size:.75em;color:#78756E;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .stat-card .value{font-size:1.8em;font-weight:800;margin-top:4px}
 .stat-card .value.blue{color:var(--accent)}.stat-card .value.green{color:var(--green)}.stat-card .value.orange{color:var(--orange)}
+.stat-card .stat-icon{position:absolute;top:16px;right:16px;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.stat-card .stat-icon svg{width:20px;height:20px}
+.stat-card:nth-child(1){border-left-color:var(--accent)}
+.stat-card:nth-child(1) .stat-icon{background:linear-gradient(135deg,#0D9488,#14B8A6);color:#fff;box-shadow:0 3px 10px rgba(13,148,136,0.3)}
+.stat-card:nth-child(2){border-left-color:#6366F1}
+.stat-card:nth-child(2) .value{color:#6366F1!important}
+.stat-card:nth-child(2) .stat-icon{background:linear-gradient(135deg,#6366F1,#818CF8);color:#fff;box-shadow:0 3px 10px rgba(99,102,241,0.3)}
+.stat-card:nth-child(3){border-left-color:var(--orange)}
+.stat-card:nth-child(3) .stat-icon{background:linear-gradient(135deg,#E8762D,#F59E0B);color:#fff;box-shadow:0 3px 10px rgba(232,118,45,0.3)}
+.stat-card:nth-child(4){border-left-color:var(--green)}
+.stat-card:nth-child(4) .stat-icon{background:linear-gradient(135deg,#16A34A,#34D399);color:#fff;box-shadow:0 3px 10px rgba(22,163,74,0.3)}
 
 /* Filters */
 .filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
@@ -78,11 +89,11 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
 .filter-input:focus,.filter-select:focus{border-color:var(--accent)}
 
 /* Table */
-.table-wrap{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--card-shadow)}
+.table-wrap{background:var(--card);border:none;border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
 table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:12px 16px;font-size:.75em;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid rgba(0,0,0,0.04);background:rgba(0,0,0,0.02)}
-td{padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.04);font-size:.88em;color:var(--text)}
-tr:hover{background:rgba(0,0,0,0.01)}
+th{text-align:left;padding:12px 16px;font-size:.75em;font-weight:700;color:#78756E;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #F0F2F5;background:#FAFAFA}
+td{padding:14px 16px;border-bottom:1px solid #F5F5F5;font-size:.88em;color:var(--text)}
+tr:hover td{background:rgba(13,148,136,0.03)}
 tr:last-child td{border-bottom:none}
 .td-code{font-weight:700;color:var(--accent)}
 .td-date{font-size:.82em;color:var(--dim)}
@@ -347,10 +358,10 @@ tr:last-child td{border-bottom:none}
     <div class="page-section active" id="page-overview">
       <div class="section-header">Dashboard</div>
       <div class="stats-row" id="stats-row">
-        <div class="stat-card"><div class="label">Interventi Totali</div><div class="value blue" id="s-tot">—</div></div>
-        <div class="stat-card"><div class="label">Questo Mese</div><div class="value green" id="s-mese">—</div></div>
-        <div class="stat-card"><div class="label">Foto Totali</div><div class="value orange" id="s-foto">—</div></div>
-        <div class="stat-card"><div class="label">Tecnici Attivi</div><div class="value blue" id="s-tecnici">—</div></div>
+        <div class="stat-card"><div class="label">Interventi Totali</div><div class="value blue" id="s-tot">—</div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><polyline points="9 14 12 17 22 7"/></svg></div></div>
+        <div class="stat-card"><div class="label">Questo Mese</div><div class="value green" id="s-mese">—</div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div></div>
+        <div class="stat-card"><div class="label">Foto Totali</div><div class="value orange" id="s-foto">—</div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div></div>
+        <div class="stat-card"><div class="label">Tecnici Attivi</div><div class="value blue" id="s-tecnici">—</div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div></div>
       </div>
       <div class="section-header" style="font-size:1em;margin-top:10px">Ultimi Interventi</div>
       <div class="table-wrap"><table>
