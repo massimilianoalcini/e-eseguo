@@ -18,7 +18,9 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
 .mobile-frame{width:100%;max-width:430px;height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden;background:var(--bg)}
 @media(min-width:500px){.mobile-frame{height:92vh;max-height:900px;border-radius:28px;border:1px solid rgba(0,0,0,0.08);box-shadow:0 20px 60px rgba(0,0,0,0.12)}}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-@keyframes flipX{0%{transform:perspective(400px) rotateX(0deg)}100%{transform:perspective(400px) rotateX(360deg)}}
+@keyframes logoRotateY{0%{transform:rotateY(0deg)}100%{transform:rotateY(360deg)}}
+.login-logo-wrap{perspective:400px;display:flex;justify-content:center;margin:0 auto 10px}
+.login-logo-img{width:80px;display:block;transform-style:preserve-3d;animation:logoRotateY 3s linear infinite}
 .glass{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow)}
 .glass-strong{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow)}
 .topbar{padding:12px 16px 10px;flex-shrink:0;z-index:100;background:var(--surface);border-bottom:1px solid rgba(0,0,0,0.06)}
@@ -194,7 +196,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
 <div class="mobile-frame">
 <div class="login-screen" id="login-screen">
   <div class="login-card">
-    <img src="./LOGOTRSP.png" alt="E.ESEGUO" style="width:80px;margin:0 auto 10px;display:block;animation:flipX 4s ease-in-out infinite">
+    <div class="login-logo-wrap"><img src="./LOGOTRSP.png" id="login-logo" class="login-logo-img" alt="E.ESEGUO"></div>
     <div class="logo">E.ESEGUO</div>
     <p class="subtitle">Gestione Interventi TLC</p>
     <p style="font-size:.72em;color:#C4C0B8;margin:-16px 0 24px;font-weight:500;letter-spacing:.3px">sviluppato da <span style="color:#57534E;font-weight:700">Massimiliano Alcini</span></p>
