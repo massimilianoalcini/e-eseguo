@@ -485,7 +485,14 @@ function renderInterventi(data){
   const c=document.getElementById('interventi-list');
   const cnt=document.getElementById('interventi-count');
   const q=document.getElementById('interventi-search').value.trim();
-  if(q){cnt.style.display='';cnt.textContent=data.length+' intervento/i trovato/i';}else{cnt.style.display='none';}
+  // Nessuna query → schermata vuota con invito a cercare
+  if(!q){
+    cnt.style.display='none';
+    c.innerHTML=`<div class="empty-interventi"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="1.5" opacity=".5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><div class="ei-title">Cerca un intervento</div><div class="ei-sub">Digita il codice sito, nome<br>o localit&agrave; per trovare gli interventi</div></div>`;
+    return;
+  }
+  cnt.style.display='';
+  cnt.textContent=data.length+' intervento/i trovato/i';
   if(!data.length){
     c.innerHTML=`<div class="empty-interventi"><svg width="48" height="48" viewBox="0 0 24 24" fill="#d0d0d5"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg><div class="ei-title">Nessun risultato</div><div class="ei-sub">Prova con un altro termine di ricerca</div></div>`;
     return;
