@@ -104,6 +104,28 @@ tr:last-child td{border-bottom:none}
 .btn-action{padding:6px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.12);background:#fff;color:var(--text);font-size:.78em;font-weight:600;cursor:pointer;margin-right:4px}
 .btn-action:hover{background:rgba(0,0,0,0.04)}
 .btn-action.primary{background:rgba(13,148,136,0.1);border-color:rgba(13,148,136,0.25);color:var(--accent)}
+/* Stato tab */
+.stato-tabs{display:flex;gap:6px;margin-bottom:14px}
+.stato-tab{padding:8px 18px;border-radius:10px;font-size:.85em;font-weight:700;cursor:pointer;border:1.5px solid transparent;transition:all .2s}
+.stato-tab.da-validare{background:rgba(232,118,45,0.08);color:var(--orange);border-color:rgba(232,118,45,0.25)}
+.stato-tab.da-validare.active{background:rgba(232,118,45,0.18);border-color:rgba(232,118,45,0.5)}
+.stato-tab.validati{background:rgba(22,163,74,0.08);color:var(--green);border-color:rgba(22,163,74,0.25)}
+.stato-tab.validati.active{background:rgba(22,163,74,0.18);border-color:rgba(22,163,74,0.5)}
+.stato-count{display:inline-block;background:rgba(0,0,0,0.1);border-radius:20px;padding:1px 7px;font-size:.82em;margin-left:5px}
+/* Row colori per stato */
+tr.row-da-validare td{background:rgba(232,118,45,0.05)}
+tr.row-da-validare:hover td{background:rgba(232,118,45,0.1)}
+tr.row-validato td{background:rgba(22,163,74,0.05)}
+tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
+/* Badge stato */
+.badge-validato{background:rgba(22,163,74,0.12);color:var(--green)}
+.badge-da-validare{background:rgba(232,118,45,0.12);color:var(--orange)}
+/* Modal textarea */
+.modal textarea{width:100%;padding:12px 14px;border:1px solid #E7E5E0;border-radius:10px;background:#fff;color:var(--text);font-size:.92em;outline:none;margin-bottom:12px;font-family:inherit;resize:vertical;min-height:70px}
+.modal textarea:focus{border-color:var(--accent)}
+.btn-valida{background:rgba(22,163,74,0.12);border:1.5px solid rgba(22,163,74,0.3);color:var(--green);font-weight:700;font-size:.78em;padding:6px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.btn-valida:hover{background:rgba(22,163,74,0.2)}
+.btn-modifica{background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);color:#6366F1;font-size:.78em;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
 
 /* Importo modal */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:none;align-items:center;justify-content:center;z-index:5000}
@@ -372,7 +394,11 @@ tr:last-child td{border-bottom:none}
 
     <!-- INTERVENTI -->
     <div class="page-section" id="page-interventi">
-      <div class="section-header">Tutti gli Interventi</div>
+      <div class="section-header">Gestione Interventi</div>
+      <div class="stato-tabs">
+        <button class="stato-tab da-validare active" id="tab-da-validare" onclick="switchStatoTab('inviato')">⏳ Da Validare <span class="stato-count" id="count-da-validare">0</span></button>
+        <button class="stato-tab validati" id="tab-validati" onclick="switchStatoTab('validato')">✅ Validati <span class="stato-count" id="count-validati">0</span></button>
+      </div>
       <div class="filters">
         <input class="filter-input" id="f-search" placeholder="Cerca codice sito, tecnico..." oninput="filterInterventi()">
         <select class="filter-select" id="f-tecnico" onchange="filterInterventi()"><option value="">Tutti i tecnici</option></select>
@@ -582,6 +608,25 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
+<!-- Modal modifica Report/Segnalazioni -->
+<div class="modal-bg" id="modal-edit" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal" style="width:520px">
+    <h3>✏️ Modifica Intervento</h3>
+    <div class="modal-sub" id="edit-modal-info"></div>
+    <label>Report</label>
+    <textarea id="edit-report" rows="4" placeholder="Report intervento..."></textarea>
+    <label>Segnalazioni</label>
+    <textarea id="edit-segnalazioni" rows="3" placeholder="Segnalazioni..."></textarea>
+    <div class="modal-buttons" style="flex-direction:column;gap:8px">
+      <div style="display:flex;gap:10px">
+        <button class="btn-cancel" style="flex:1;padding:12px;border-radius:10px;font-weight:700;font-size:.92em;cursor:pointer;border:1px solid #E7E5E0;background:#fff;color:var(--text)" onclick="closeEditModal()">Annulla</button>
+        <button class="btn-save" style="flex:1;padding:12px;border-radius:10px;font-weight:700;font-size:.92em;cursor:pointer;border:none;background:var(--accent);color:white" onclick="saveEdit()">💾 Salva modifiche</button>
+      </div>
+      <button id="btn-valida-modal" style="width:100%;padding:13px;border-radius:10px;font-weight:700;font-size:.95em;cursor:pointer;border:2px solid rgba(22,163,74,0.4);background:rgba(22,163,74,0.1);color:var(--green)" onclick="validaIntervento()">✅ VALIDA — Chiudi intervento</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal importo -->
 <div class="modal-bg" id="modal-importo">
   <div class="modal">
@@ -740,12 +785,26 @@ function renderOverview(){
   </tr>`).join('');
 }
 
+let currentStatoTab='inviato';
+
+function switchStatoTab(stato){
+  currentStatoTab=stato;
+  document.getElementById('tab-da-validare').classList.toggle('active',stato==='inviato');
+  document.getElementById('tab-validati').classList.toggle('active',stato==='validato');
+  filterInterventi();
+}
+
+function updateStatoCounts(){
+  document.getElementById('count-da-validare').textContent=allInterventi.filter(i=>i.stato==='inviato'||!i.stato).length;
+  document.getElementById('count-validati').textContent=allInterventi.filter(i=>i.stato==='validato').length;
+}
+
 function filterInterventi(){
   const q=document.getElementById('f-search').value.trim().toLowerCase();
   const tec=document.getElementById('f-tecnico').value;
   const cli=document.getElementById('f-cliente').value;
   const mese=document.getElementById('f-mese').value;
-  let filtered=allInterventi;
+  let filtered=allInterventi.filter(i=>currentStatoTab==='validato'?(i.stato==='validato'):(i.stato==='inviato'||!i.stato));
   if(tec)filtered=filtered.filter(i=>i.tecnico_id===tec);
   if(cli)filtered=filtered.filter(i=>i.cliente_finale===cli);
   if(mese)filtered=filtered.filter(i=>i.created_at?.startsWith(mese));
@@ -756,20 +815,75 @@ function filterInterventi(){
   renderInterventiTable(filtered);
 }
 
-function renderInterventi(){renderInterventiTable(allInterventi);}
+function renderInterventi(){updateStatoCounts();filterInterventi();}
 
 function renderInterventiTable(list){
-  document.getElementById('interventi-table').innerHTML=list.map(r=>`<tr>
-    <td class="td-code">${r.codice_sito||'—'}</td>
-    <td>${r.nome_sito||'—'}</td>
-    <td>${getTecName(r.tecnico_id)}</td>
-    <td>${r.cliente_finale||'—'}</td>
-    <td>${r.lavorazione||'—'}</td>
-    <td>${r.n_foto?`<button class="btn-action" onclick="viewFoto('${r.id}','${r.codice_sito||''}',${r.n_foto})">${r.n_foto} foto</button>`:'—'}</td>
-    <td>${r.importo!=null?`<span class="badge badge-importo">€${(+r.importo).toFixed(2)}</span>`:`<span class="badge badge-no">—</span>`}</td>
-    <td class="td-date">${formatDate(r.created_at)}</td>
-    <td><div style="display:flex;flex-direction:column;gap:4px;align-items:center;"><button class="btn-action" style="background:rgba(232,118,45,0.1);color:var(--orange);font-size:.75em;white-space:nowrap;border-color:rgba(232,118,45,0.2)" onclick="generateReport('${r.id}')">📄 Report</button><button class="btn-action primary" style="white-space:nowrap;" onclick="openImportoModal('${r.id}')">€ Importo</button></div></td>
-  </tr>`).join('');
+  const isValidati=currentStatoTab==='validato';
+  document.getElementById('interventi-table').innerHTML=list.map(r=>{
+    const rowClass=r.stato==='validato'?'row-validato':'row-da-validare';
+    const azioniBtn=r.stato==='validato'
+      ?`<div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+          <span class="badge badge-validato">✅ Validato</span>
+          <button class="btn-action" style="background:rgba(232,118,45,0.1);color:var(--orange);font-size:.75em;white-space:nowrap;border-color:rgba(232,118,45,0.2)" onclick="generateReport('${r.id}')">📄 Report</button>
+        </div>`
+      :`<div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+          <button class="btn-modifica" onclick="openEditModal('${r.id}')">✏️ Modifica / Valida</button>
+          <button class="btn-action" style="background:rgba(232,118,45,0.1);color:var(--orange);font-size:.75em;white-space:nowrap;border-color:rgba(232,118,45,0.2)" onclick="generateReport('${r.id}')">📄 Report</button>
+          <button class="btn-action primary" style="white-space:nowrap;" onclick="openImportoModal('${r.id}')">€ Importo</button>
+        </div>`;
+    return`<tr class="${rowClass}">
+      <td class="td-code">${r.codice_sito||'—'}</td>
+      <td>${r.nome_sito||'—'}</td>
+      <td>${getTecName(r.tecnico_id)}</td>
+      <td>${r.cliente_finale||'—'}</td>
+      <td>${r.lavorazione||'—'}</td>
+      <td>${r.n_foto?`<button class="btn-action" onclick="viewFoto('${r.id}','${r.codice_sito||''}',${r.n_foto})">${r.n_foto} foto</button>`:'—'}</td>
+      <td>${r.importo!=null?`<span class="badge badge-importo">€${(+r.importo).toFixed(2)}</span>`:`<span class="badge badge-no">—</span>`}</td>
+      <td class="td-date">${formatDate(r.created_at)}</td>
+      <td>${azioniBtn}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* === Modifica Report/Segnalazioni + Valida === */
+function openEditModal(intId){
+  const r=allInterventi.find(i=>i.id===intId);if(!r)return;
+  editingIntervento=r;
+  document.getElementById('edit-modal-info').textContent=`${r.codice_sito||''} · ${getTecName(r.tecnico_id)} · ${r.lavorazione||''}`;
+  document.getElementById('edit-report').value=r.note||'';
+  document.getElementById('edit-segnalazioni').value=r.segnalazioni||'';
+  document.getElementById('modal-edit').classList.add('open');
+}
+function closeEditModal(){document.getElementById('modal-edit').classList.remove('open');editingIntervento=null;}
+
+async function saveEdit(){
+  if(!editingIntervento)return;
+  const note=document.getElementById('edit-report').value.trim();
+  const segnalazioni=document.getElementById('edit-segnalazioni').value.trim();
+  const{error}=await sb.from('interventi').update({note:note||null,segnalazioni:segnalazioni||null}).eq('id',editingIntervento.id);
+  if(error){alert('Errore: '+error.message);return;}
+  editingIntervento.note=note||null;
+  editingIntervento.segnalazioni=segnalazioni||null;
+  closeEditModal();
+  renderInterventi();
+}
+
+async function validaIntervento(){
+  if(!editingIntervento)return;
+  const note=document.getElementById('edit-report').value.trim();
+  const segnalazioni=document.getElementById('edit-segnalazioni').value.trim();
+  const{error}=await sb.from('interventi').update({
+    note:note||null,
+    segnalazioni:segnalazioni||null,
+    stato:'validato'
+  }).eq('id',editingIntervento.id);
+  if(error){alert('Errore: '+error.message);return;}
+  editingIntervento.note=note||null;
+  editingIntervento.segnalazioni=segnalazioni||null;
+  editingIntervento.stato='validato';
+  closeEditModal();
+  renderInterventi();
+  renderOverview();
 }
 
 function renderTecnici(){
