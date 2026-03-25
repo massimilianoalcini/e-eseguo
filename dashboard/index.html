@@ -1772,7 +1772,7 @@ async function extractPDFText(file){
           const content=await page.getTextContent()
           text+=content.items.map(s=>s.str).join(' ')+'\n'
         }
-        resolve(text.slice(0,2000)) // max 2000 char per fattura
+        resolve(text.slice(0,4000)) // max 4000 char per fattura (aumentato per catturare importi)
       }catch(err){resolve('')}
     }
     reader.readAsArrayBuffer(file)
@@ -1807,7 +1807,7 @@ async function parseBanca(file,mese){
           const cols=line.split('\t')
           if(cols.length<7)continue
           const dataContabile=cols[1]?.trim()
-          const dare=cols[3]?.trim().replace('.','').replace(',','.')
+          const dare=cols[3]?.trim().replace(/\./g,'').replace(',','.')
           const causale=cols[5]?.trim()
           const descrizione=cols[6]?.trim()
           if(!dataContabile||!dataContabile.includes('/'))continue
@@ -1824,21 +1824,37 @@ async function parseBanca(file,mese){
   })
 }
 
-// ── Match banca: cerca movimento per nome fornitore + importo ──
+// ── Match banca: cerca movimento per nome fornitore e/o importo ──
 function matchConBanca(fornitore,importo,movimentiBanca){
-  const normForn=(fornitore||'').toLowerCase().replace(/\s+/g,' ').trim()
-  const words=normForn.split(' ').filter(w=>w.length>3)
+  const normForn=(fornitore||'').toLowerCase().replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ').trim()
+  // Prendi parole significative (>=3 lettere), escludi termini generici
+  const skip=['srl','spa','sas','srls','snc','del','per','con','pagamento','fattura']
+  const words=normForn.split(' ').filter(w=>w.length>=3&&!skip.includes(w))
+
+  let bestMatch=null, bestScore=0
+
   for(const mov of movimentiBanca){
-    const desc=(mov.descrizione||'').toLowerCase()
-    const matchParola=words.some(w=>desc.includes(w))
-    const importoFattura=Math.round(importo*100)
-    const importoBanca=Math.round(mov.importo*100)
-    const matchImporto=Math.abs(importoFattura-importoBanca)<=2 // tolleranza 2 centesimi
-    if(matchParola&&matchImporto)return mov
-    // Match solo importo (± 0.02€) per POS e bonifici sintetici
-    if(matchImporto&&!mov.usato)return mov
+    if(mov.usato)continue
+    const desc=(mov.descrizione||'').toLowerCase().replace(/[^a-z0-9\s]/g,'')
+    let score=0
+
+    // Match per parole del fornitore (max 3 punti)
+    const matchedWords=words.filter(w=>desc.includes(w))
+    score+=Math.min(matchedWords.length,3)
+
+    // Match per importo (3 punti se esatto, 1 punto se vicino)
+    if(importo&&importo>0){
+      const diff=Math.abs(Math.round(importo*100)-Math.round(mov.importo*100))
+      if(diff<=5)score+=3       // ±0.05€ → match esatto
+      else if(diff<=200)score+=1 // ±2€ → vicino
+    }
+
+    // Almeno 2 parole match OPPURE 1 parola + importo vicino
+    if(score>bestScore&&(matchedWords.length>=2||score>=4)){
+      bestScore=score;bestMatch=mov
+    }
   }
-  return null
+  return bestMatch
 }
 
 async function avviaAnalisiAI(){
@@ -1885,45 +1901,62 @@ async function avviaAnalisiAI(){
     status.textContent='🏦 Parsing estratto bancario...'
     const movimentiBanca=await parseBanca(aiCostiBanca,mese)
 
-    // 4. Chiama OpenAI per estrarre dati fatture
-    status.textContent='🤖 AI sta analizzando le fatture...'
-    const bundleText=fattureTexts.map(f=>
-      `[FILE: ${f.file} | CATEGORIA: ${f.categoria}]\n${f.text}`
-    ).join('\n\n---\n\n')
+    // 4. Chiama OpenAI per estrarre dati fatture (BATCH da 15 PDF per chiamata)
+    const BATCH_SIZE=15
+    const totalBatches=Math.ceil(fattureTexts.length/BATCH_SIZE)
+    let fatture=[]
 
-    const prompt=`Analizza queste fatture italiane ed estrai per OGNUNA un oggetto JSON.
+    for(let b=0;b<totalBatches;b++){
+      const batchStart=b*BATCH_SIZE
+      const batch=fattureTexts.slice(batchStart,batchStart+BATCH_SIZE)
+      status.textContent=`🤖 AI batch ${b+1}/${totalBatches} (${batch.length} fatture)...`
+
+      const bundleText=batch.map(f=>
+        `[FILE: ${f.file} | CATEGORIA: ${f.categoria}]\n${f.text}`
+      ).join('\n\n---\n\n')
+
+      const prompt=`Analizza queste ${batch.length} fatture italiane ed estrai per OGNUNA un oggetto JSON.
 Restituisci SOLO un array JSON valido, nessun testo aggiuntivo.
 
 Formato richiesto per ogni fattura:
 {"file":"nome_file","categoria":"categoria","fornitore":"nome_fornitore","num_fattura":"numero","data":"GG/MM/AAAA","importo_totale":123.45}
 
 Note:
-- importo_totale è l'importo TOTALE compreso IVA (cerca "Totale documento", "Totale fattura", "Importo totale" o somma le righe)
-- fornitore è il nome del FORNITORE (mittente), non del cliente
+- importo_totale è l'importo TOTALE compreso IVA (cerca "Totale documento", "Totale fattura", "Importo totale", "Totale da pagare" o simili)
+- fornitore è il nome del FORNITORE (mittente della fattura), non del cliente/destinatario
 - data è la data di emissione della fattura
 - se non trovi un campo, metti null
+- IMPORTANTE: cerca l'importo totale in TUTTO il testo, anche nelle ultime righe
 
 FATTURE:
-${bundleText.slice(0,50000)}`
+${bundleText}`
 
-    const res=await fetch('https://api.openai.com/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+openaiKey},
-      body:JSON.stringify({
-        model:'gpt-4o-mini',
-        messages:[{role:'user',content:prompt}],
-        max_tokens:4000,temperature:0
+      const res=await fetch('https://api.openai.com/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+openaiKey},
+        body:JSON.stringify({
+          model:'gpt-4o-mini',
+          messages:[{role:'user',content:prompt}],
+          max_tokens:6000,temperature:0
+        })
       })
-    })
-    const aiData=await res.json()
-    const rawReply=aiData.choices?.[0]?.message?.content||'[]'
+      const aiData=await res.json()
+      if(aiData.error){
+        throw new Error('OpenAI: '+(aiData.error.message||'Errore sconosciuto'))
+      }
+      const rawReply=aiData.choices?.[0]?.message?.content||'[]'
 
-    // Estrai JSON dall'output
-    let fatture=[]
-    try{
-      const match=rawReply.match(/\[[\s\S]*\]/)
-      fatture=match?JSON.parse(match[0]):[]
-    }catch(e){fatture=[]}
+      // Estrai JSON dal batch
+      try{
+        const match=rawReply.match(/\[[\s\S]*\]/)
+        const batchResult=match?JSON.parse(match[0]):[]
+        fatture=fatture.concat(batchResult)
+      }catch(e){
+        console.warn('Batch '+b+' JSON parse error:',e)
+      }
+    }
+
+    status.textContent=`✅ AI ha estratto ${fatture.length} fatture. Matching banca...`
 
     // 5. Matching banca per ogni fattura
     const movimentiBancaLocal=movimentiBanca.map(m=>({...m,usato:false}))
