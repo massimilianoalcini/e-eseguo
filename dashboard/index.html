@@ -372,6 +372,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
     <button class="nav-btn" data-page="manuali" onclick="showPage('manuali')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>🤖 Manuali AI</button>
     <div class="nav-section">Territorio</div>
     <button class="nav-btn" data-page="siti" onclick="showPage('siti')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>Siti & Mappa</button>
+    <button class="nav-btn" data-page="impostazioni" onclick="showPage('impostazioni')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81C14.36 2.57 14.16 2.4 13.92 2.4H10.08c-.24 0-.43.17-.47.41L9.25 5.35C8.66 5.59 8.12 5.92 7.63 6.29L5.24 5.33c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.22-.08.47.12.61l2.03 1.58C4.84 11.36 4.8 11.69 4.8 12s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>Impostazioni</button>
     <div style="flex:1"></div>
     <div class="dev-credit">sviluppato da<br><span>Massimiliano Alcini</span></div>
   </div>
@@ -419,6 +420,34 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         <thead><tr><th>Nome</th><th>Email</th><th>Area</th><th>Interventi</th><th>Foto</th></tr></thead>
         <tbody id="tecnici-table"></tbody>
       </table></div>
+    </div>
+
+    <!-- IMPOSTAZIONI -->
+    <div class="page-section" id="page-impostazioni">
+      <div class="section-header">⚙️ Impostazioni</div>
+      <div style="max-width:520px">
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:22px;margin-bottom:16px">
+          <div style="font-weight:700;color:#1e1b4b;margin-bottom:6px;font-size:.95em">🤖 Chiave API OpenAI</div>
+          <div style="font-size:.82em;color:#6b7280;margin-bottom:14px;line-height:1.5">
+            Inserisci la tua API key di OpenAI (<strong>sk-proj-...</strong>).<br>
+            Viene salvata in modo sicuro su Supabase e non è mai visibile nel codice sorgente.
+          </div>
+          <input id="cfg-openai-key" type="password" placeholder="sk-proj-..." autocomplete="off"
+            style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:.9em;outline:none;font-family:monospace;margin-bottom:10px">
+          <div style="display:flex;gap:8px;align-items:center">
+            <button onclick="saveOpenAIKey()" style="padding:10px 20px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:.88em">💾 Salva chiave</button>
+            <button onclick="toggleShowKey()" style="padding:10px 14px;background:#f3f4f6;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:.85em;color:#374151" id="btn-show-key">👁 Mostra</button>
+            <span id="cfg-key-msg" style="font-size:.82em;font-weight:600"></span>
+          </div>
+        </div>
+        <div style="background:#fefce8;border:1px solid #fde68a;border-radius:12px;padding:14px;font-size:.82em;color:#92400e;line-height:1.6">
+          <strong>ℹ️ Come ottenere la API key:</strong><br>
+          1. Vai su <strong>platform.openai.com</strong><br>
+          2. API Keys → Create new secret key<br>
+          3. Copia la chiave e incollala qui sopra<br>
+          4. Assicurati di avere credito sull'account OpenAI
+        </div>
+      </div>
     </div>
 
     <!-- MANUALI AI -->
@@ -1515,6 +1544,7 @@ function showPage(page){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   if(page==='siti'){setTimeout(()=>initDashMap(),100);renderTappe();}
   if(page==='manuali'){loadManuali();}
+  if(page==='impostazioni'){loadImpostazioni();}
 }
 
 /* === SITI & MAPPA === */
@@ -1615,6 +1645,33 @@ function closeSitiDetail(){
     if(p&&['coordinatore','amministratore'].includes(p.role))showApp();
   }
 })();
+
+// ── IMPOSTAZIONI ──────────────────────────────────────────
+async function loadImpostazioni(){
+  const{data}=await sb.from('config').select('value').eq('key','openai_api_key').single()
+  if(data?.value){
+    document.getElementById('cfg-openai-key').value=data.value
+    document.getElementById('cfg-key-msg').style.color='#16a34a'
+    document.getElementById('cfg-key-msg').textContent='✅ Chiave configurata'
+  }
+}
+
+async function saveOpenAIKey(){
+  const key=document.getElementById('cfg-openai-key').value.trim()
+  const msg=document.getElementById('cfg-key-msg')
+  if(!key){msg.style.color='#dc2626';msg.textContent='Inserisci la chiave';return}
+  if(!key.startsWith('sk-')){msg.style.color='#dc2626';msg.textContent='Chiave non valida (deve iniziare con sk-)';return}
+  const{error}=await sb.from('config').upsert({key:'openai_api_key',value:key,updated_at:new Date().toISOString()},{onConflict:'key'})
+  if(error){msg.style.color='#dc2626';msg.textContent='Errore: '+error.message;return}
+  msg.style.color='#16a34a';msg.textContent='✅ Chiave salvata!'
+}
+
+function toggleShowKey(){
+  const inp=document.getElementById('cfg-openai-key')
+  const btn=document.getElementById('btn-show-key')
+  if(inp.type==='password'){inp.type='text';btn.textContent='🙈 Nascondi'}
+  else{inp.type='password';btn.textContent='👁 Mostra'}
+}
 
 // ── GESTIONE MANUALI AI ────────────────────────────────────
 let allManuali=[];

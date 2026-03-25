@@ -685,7 +685,16 @@ function showToast(msg, type='info'){
 }
 
 // ── E.ESEGUO AI ASSISTANT ──────────────────────────────────
-const OPENAI_KEY='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'
+let OPENAI_KEY='' // caricata da Supabase config → non hardcodata nel codice
+
+async function loadOpenAIKey(){
+  if(OPENAI_KEY)return true
+  try{
+    const{data}=await sb.from('config').select('value').eq('key','openai_api_key').single()
+    if(data?.value){OPENAI_KEY=data.value;return true}
+  }catch(e){}
+  return false
+}
 
 const AI_BASE_PROMPT=`Sei E.ESEGUO AI, l'assistente tecnico intelligente di E.ESEGUO.
 Supporti tecnici di campo nella gestione di interventi TLC: shelter, cabinet, apparati di rete, router, PLC, stazioni di energia, condizionatori e sistemi correlati.
@@ -729,7 +738,13 @@ async function openAIChat(){
   const msgs=document.getElementById('ai-messages')
   msgs.innerHTML=''
   document.getElementById('ai-overlay').classList.add('show')
-  appendAIMessage('bot','⏳ Caricamento manuali...')
+  appendAIMessage('bot','⏳ Inizializzazione AI...')
+  const keyOk=await loadOpenAIKey()
+  if(!keyOk){
+    msgs.innerHTML=''
+    appendAIMessage('bot','⚠️ Chiave API OpenAI non configurata.<br>Il coordinatore deve inserirla nella Dashboard → Impostazioni.')
+    return
+  }
   aiManualeText=await fetchManuale()
   msgs.innerHTML=''
   const nManuali=aiManualeText?(aiManualeText.match(/=== MANUALE:/g)||[]).length:0
