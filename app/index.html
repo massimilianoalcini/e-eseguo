@@ -157,6 +157,31 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
 .int-foto-badge{background:var(--accent-light);color:var(--accent);font-size:.72em;font-weight:700;padding:3px 10px;border-radius:8px}
 .int-note{font-size:.78em;color:var(--text-dim);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .empty-interventi{text-align:center;padding:50px 20px;color:var(--text-dim)}
+.ei-title{font-size:1em;font-weight:600;color:var(--text-mid);margin-top:12px}.ei-sub{font-size:.82em;margin-top:4px;line-height:1.5}
+.int-card{cursor:pointer;transition:transform .15s,box-shadow .15s}.int-card:active{transform:scale(.97);box-shadow:0 4px 16px rgba(0,0,0,0.1)}
+.int-foto-tap{font-size:.7em;color:var(--accent);font-weight:600;display:flex;align-items:center;gap:4px}
+/* Foto viewer panel */
+.foto-panel{position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-radius:24px 24px 0 0;z-index:300;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);max-height:90%;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,0.15)}
+.foto-panel.open{transform:translateY(0)}
+.foto-panel-handle{width:40px;height:4px;background:rgba(0,0,0,0.12);border-radius:2px;margin:12px auto 0}
+.foto-panel-header{padding:14px 18px 12px;border-bottom:1px solid rgba(0,0,0,0.06);flex-shrink:0}
+.foto-panel-title{font-size:1em;font-weight:700;color:var(--text);display:flex;align-items:center;justify-content:space-between}
+.foto-panel-sub{font-size:.8em;color:var(--text-dim);margin-top:3px}
+.foto-panel-close{width:32px;height:32px;border-radius:50%;background:var(--bg);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1em;color:var(--text-dim)}
+.foto-panel-body{flex:1;overflow-y:auto;padding:14px}
+.foto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.foto-thumb-view{width:100%;aspect-ratio:1;border-radius:12px;overflow:hidden;cursor:pointer;position:relative;background:var(--bg)}
+.foto-thumb-view img{width:100%;height:100%;object-fit:cover;transition:transform .2s}
+.foto-thumb-view:active img{transform:scale(.95)}
+.foto-empty{text-align:center;padding:40px 20px;color:var(--text-dim);font-size:.88em}
+/* Lightbox */
+.foto-lightbox{position:absolute;inset:0;background:rgba(0,0,0,0.95);z-index:400;display:none;align-items:center;justify-content:center;flex-direction:column}
+.foto-lightbox.open{display:flex}
+.foto-lightbox img{max-width:100%;max-height:80vh;object-fit:contain;border-radius:8px}
+.foto-lightbox-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:white;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:1.3em;display:flex;align-items:center;justify-content:center}
+.foto-lightbox-nav{position:absolute;bottom:24px;display:flex;gap:12px;align-items:center}
+.foto-lb-btn{background:rgba(255,255,255,0.15);border:none;color:white;width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:1.2em;display:flex;align-items:center;justify-content:center}
+.foto-lb-counter{color:rgba(255,255,255,0.7);font-size:.85em;font-weight:600;min-width:50px;text-align:center}
 .empty-interventi svg{margin-bottom:12px}
 .empty-interventi .ei-title{font-size:1em;color:var(--text-mid);font-weight:600;margin-bottom:4px}
 .empty-interventi .ei-sub{font-size:.85em}
@@ -259,6 +284,31 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
     <button class="nav-item" data-tab="naviga" onclick="switchTab('naviga')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/></svg>Naviga</button>
     <button class="nav-item" data-tab="mappa" onclick="switchTab('mappa')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>Mappa</button>
     <button class="nav-item" onclick="doLogout()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>Esci</button>
+  </div>
+</div>
+<!-- Foto viewer panel -->
+<div class="overlay-bg" id="foto-overlay" onclick="closeFotoPanel()" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:299"></div>
+<div class="foto-panel" id="foto-panel">
+  <div class="foto-panel-handle"></div>
+  <div class="foto-panel-header">
+    <div class="foto-panel-title">
+      <div><span id="foto-panel-code" style="color:var(--accent)"></span> <span id="foto-panel-client" style="font-weight:500;color:var(--text-mid)"></span></div>
+      <button class="foto-panel-close" onclick="closeFotoPanel()">&times;</button>
+    </div>
+    <div class="foto-panel-sub" id="foto-panel-sub"></div>
+  </div>
+  <div class="foto-panel-body">
+    <div class="foto-grid" id="foto-grid"></div>
+  </div>
+</div>
+<!-- Lightbox -->
+<div class="foto-lightbox" id="foto-lightbox">
+  <button class="foto-lightbox-close" onclick="closeLightbox()">&times;</button>
+  <img id="foto-lightbox-img" src="" alt="foto">
+  <div class="foto-lightbox-nav">
+    <button class="foto-lb-btn" onclick="lbNav(-1)">&#8249;</button>
+    <span class="foto-lb-counter" id="foto-lb-counter"></span>
+    <button class="foto-lb-btn" onclick="lbNav(1)">&#8250;</button>
   </div>
 </div>
 <div class="overlay-bg" id="detail-overlay" onclick="closeDetail()"></div>
@@ -500,7 +550,8 @@ function renderInterventi(data){
   c.innerHTML=data.map(r=>{
     const dt=new Date(r.created_at);
     const ds=dt.toLocaleDateString('it-IT')+' '+dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-    return`<div class="int-card glass"><div class="int-top"><div><div class="int-code">${r.codice_sito||'N/D'}</div><div class="int-client">${r.cliente_finale||''} · ${r.lavorazione||''}</div></div><div class="int-date">${ds}</div></div>${r.note?`<div class="int-lav">${r.note}</div>`:''}<div class="int-bottom">${r.n_foto?`<span class="int-foto-badge">${r.n_foto} foto</span>`:''}</div></div>`;
+    const fotoBtn=r.n_foto?`<span class="int-foto-badge int-foto-tap" onclick="event.stopPropagation();openFotoPanel('${r.id}','${r.codice_sito||''}','${(r.cliente_finale||'').replace(/'/g,"\\'")}',${r.n_foto})"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>${r.n_foto} foto</span>`:'<span style="font-size:.75em;color:var(--text-dim)">Nessuna foto</span>';
+    return`<div class="int-card glass" onclick="openFotoPanel('${r.id}','${r.codice_sito||''}','${(r.cliente_finale||'').replace(/'/g,"\\'")}',${r.n_foto||0})"><div class="int-top"><div><div class="int-code">${r.codice_sito||'N/D'}</div><div class="int-client">${r.cliente_finale||''} · ${r.lavorazione||''}</div></div><div class="int-date">${ds}</div></div>${r.note?`<div class="int-lav">${r.note}</div>`:''}<div class="int-bottom">${fotoBtn}</div></div>`;
   }).join('');
 }
 let interventiSearchTimeout;
@@ -527,6 +578,38 @@ function clearInterventiSearch(){
   document.getElementById('interventi-count').style.display='none';
   renderInterventi(allInterventi);
 }
+
+/* === FOTO VIEWER === */
+let lbPhotos=[],lbIndex=0;
+async function openFotoPanel(intId,codice,cliente,nFoto){
+  document.getElementById('foto-panel-code').textContent=codice||'N/D';
+  document.getElementById('foto-panel-client').textContent=cliente;
+  document.getElementById('foto-panel-sub').textContent=nFoto>0?nFoto+' foto disponibili':'Nessuna foto per questo intervento';
+  document.getElementById('foto-grid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-dim);font-size:.88em">Caricamento foto...</div>';
+  document.getElementById('foto-overlay').style.display='';
+  document.getElementById('foto-panel').classList.add('open');
+  if(!nFoto){document.getElementById('foto-grid').innerHTML='<div class="foto-empty">Nessuna foto per questo intervento</div>';return;}
+  const{data:fotos}=await sb.from('foto').select('storage_path,filename').eq('intervento_id',intId).order('created_at');
+  if(!fotos||!fotos.length){document.getElementById('foto-grid').innerHTML='<div class="foto-empty">Nessuna foto trovata</div>';return;}
+  lbPhotos=fotos.map(f=>{const{data:u}=sb.storage.from('foto-interventi').getPublicUrl(f.storage_path);return u.publicUrl;});
+  document.getElementById('foto-grid').innerHTML=lbPhotos.map((url,i)=>`<div class="foto-thumb-view" onclick="openLightbox(${i})"><img src="${url}" loading="lazy" onerror="this.parentElement.style.background='#f0f0f0'"></div>`).join('');
+}
+function closeFotoPanel(){
+  document.getElementById('foto-panel').classList.remove('open');
+  document.getElementById('foto-overlay').style.display='none';
+  closeLightbox();
+}
+function openLightbox(i){
+  lbIndex=i;
+  document.getElementById('foto-lightbox').classList.add('open');
+  updateLightbox();
+}
+function closeLightbox(){document.getElementById('foto-lightbox').classList.remove('open');}
+function updateLightbox(){
+  document.getElementById('foto-lightbox-img').src=lbPhotos[lbIndex];
+  document.getElementById('foto-lb-counter').textContent=(lbIndex+1)+' / '+lbPhotos.length;
+}
+function lbNav(dir){lbIndex=(lbIndex+dir+lbPhotos.length)%lbPhotos.length;updateLightbox();}
 
 document.addEventListener('click',e=>{if(!e.target.closest('.site-picker'))document.getElementById('site-picker-results')?.classList.remove('open');});
 
