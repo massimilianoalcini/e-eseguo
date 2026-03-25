@@ -610,21 +610,21 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
                 <th style="padding:8px 10px;text-align:left;color:#6b7280;font-weight:700">N. FATTURA</th>
                 <th style="padding:8px 10px;text-align:left;color:#6b7280;font-weight:700">DATA</th>
                 <th style="padding:8px 10px;text-align:right;color:#6b7280;font-weight:700">IMPORTO</th>
-                <th style="padding:8px 10px;text-align:center;color:#6b7280;font-weight:700">BANCA</th>
+                <th style="padding:8px 10px;text-align:center;color:#6b7280;font-weight:700" title="Riscontro con estratto conto bancario">RISCONTRO</th>
               </tr></thead>
               <tbody id="ai-fatture-table"></tbody>
             </table>
           </div>
           <!-- Movimenti banca senza fattura -->
           <div id="ai-movimenti-box" style="display:none">
-            <div style="font-weight:700;color:#b45309;margin-bottom:8px;font-size:.9em">⚠️ MOVIMENTI BANCA SENZA FATTURA <span id="ai-movimenti-count" style="color:#b45309"></span></div>
-            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:20px">
+            <div style="font-weight:700;color:#6b7280;margin-bottom:8px;font-size:.9em">ℹ️ Altri movimenti bancari (senza fattura corrispondente) <span id="ai-movimenti-count" style="color:#6b7280"></span></div>
+            <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px;margin-bottom:20px">
               <table style="width:100%;border-collapse:collapse;font-size:.82em">
                 <thead><tr>
-                  <th style="padding:6px 8px;text-align:left;color:#92400e;font-weight:700">✓</th>
-                  <th style="padding:6px 8px;text-align:left;color:#92400e;font-weight:700">DATA</th>
-                  <th style="padding:6px 8px;text-align:left;color:#92400e;font-weight:700">DESCRIZIONE</th>
-                  <th style="padding:6px 8px;text-align:right;color:#92400e;font-weight:700">IMPORTO</th>
+                  <th style="padding:6px 8px;text-align:left;color:#6b7280;font-weight:700">✓</th>
+                  <th style="padding:6px 8px;text-align:left;color:#6b7280;font-weight:700">DATA</th>
+                  <th style="padding:6px 8px;text-align:left;color:#6b7280;font-weight:700">DESCRIZIONE</th>
+                  <th style="padding:6px 8px;text-align:right;color:#6b7280;font-weight:700">IMPORTO</th>
                 </tr></thead>
                 <tbody id="ai-movimenti-table"></tbody>
               </table>
@@ -632,7 +632,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           </div>
           <!-- Totale e azione -->
           <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;background:#f9fafb;border-radius:10px;flex-wrap:wrap;gap:10px">
-            <div style="font-size:.9em;color:#374151">Totale selezionato: <strong id="ai-totale-sel" style="color:#7c3aed">€ 0.00</strong></div>
+            <div style="font-size:.9em;color:#374151"><strong id="ai-totale-sel" style="color:#7c3aed">📄 Fatture: € 0.00</strong></div>
             <div style="display:flex;gap:10px">
               <button onclick="closeAIPreview()" style="padding:10px 18px;background:#f1f0f0;border:none;border-radius:10px;font-weight:700;cursor:pointer;color:#374151">Annulla</button>
               <button onclick="salvaAIFatture()" style="padding:10px 22px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer">✅ Salva in Altri Costi</button>
@@ -2042,9 +2042,9 @@ function mostraPreviewAI(mese){
     movBox.style.display=''
     movCount.textContent=`(${aiCostiMovimenti.length})`
     movTable.innerHTML=aiCostiMovimenti.map((m,i)=>`
-      <tr style="border-bottom:1px solid #fde68a">
+      <tr style="border-bottom:1px solid #e5e7eb">
         <td style="padding:6px 8px"><input type="checkbox" ${m.selected?'checked':''} onchange="toggleMovimento(${i},this.checked)"></td>
-        <td style="padding:6px 8px;color:#92400e;font-size:.82em">${m.data}</td>
+        <td style="padding:6px 8px;color:#6b7280;font-size:.82em">${m.data}</td>
         <td style="padding:6px 8px;color:#374151;font-size:.82em">${(m.descrizione||'').slice(0,60)}</td>
         <td style="padding:6px 8px;text-align:right;font-weight:700;color:#dc2626">€ ${m.importo.toFixed(2)}</td>
       </tr>`).join('')
