@@ -518,24 +518,51 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         </tr></tfoot>
       </table></div>
 
+      <!-- ★ AI UPLOAD FATTURE + BANCA -->
+      <div style="background:linear-gradient(135deg,#f5f3ff,#eff6ff);border:1.5px solid #ddd6fe;border-radius:14px;padding:18px;margin-top:24px">
+        <div style="font-weight:700;color:#4c1d95;font-size:.95em;margin-bottom:4px">🤖 AI Controllo Costi — Carica documenti del mese</div>
+        <div style="font-size:.8em;color:#6b7280;margin-bottom:14px">Carica la cartella delle fatture passive + l'estratto bancario. L'AI estrae e abbina tutto automaticamente.</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <!-- Upload fatture -->
+          <div style="flex:1;min-width:200px">
+            <label style="font-size:.78em;font-weight:700;color:#7c3aed;display:block;margin-bottom:6px">📁 FATTURE PASSIVE (PDF)</label>
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fff;border:1.5px dashed #c4b5fd;border-radius:10px;cursor:pointer;font-size:.85em;color:#6b7280">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#7c3aed"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
+              <span id="lbl-fatture">Seleziona cartella PASSIVE...</span>
+              <input type="file" id="input-fatture" accept=".pdf" multiple webkitdirectory style="display:none" onchange="onFattureSelected(this)">
+            </label>
+          </div>
+          <!-- Upload banca -->
+          <div style="flex:1;min-width:200px">
+            <label style="font-size:.78em;font-weight:700;color:#0369a1;display:block;margin-bottom:6px">📊 ESTRATTO BANCA (XLS/CSV)</label>
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fff;border:1.5px dashed #93c5fd;border-radius:10px;cursor:pointer;font-size:.85em;color:#6b7280">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#0369a1"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+              <span id="lbl-banca">Seleziona file XLS/CSV...</span>
+              <input type="file" id="input-banca" accept=".xls,.xlsx,.csv,.tsv" style="display:none" onchange="onBancaSelected(this)">
+            </label>
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <button onclick="avviaAnalisiAI()" id="btn-analisi-ai" disabled
+            style="padding:10px 22px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:.9em;opacity:.5;transition:opacity .2s">
+            🤖 Analizza e compila con AI
+          </button>
+          <div id="ai-analisi-status" style="font-size:.82em;color:#6b7280"></div>
+        </div>
+      </div>
+
       <!-- Tabella Altri Costi -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px">
         <div class="section-header" style="font-size:1em;margin:0">Altri Costi</div>
-        <div style="display:flex;gap:8px">
-          <button class="btn-action primary" onclick="openAddCosto()" style="padding:8px 16px;font-size:.85em">+ Aggiungi Costo</button>
-          <button class="btn-action" onclick="openAIControlCosti()" style="padding:8px 16px;font-size:.85em;background:linear-gradient(135deg,rgba(94,92,230,0.1),rgba(13,148,136,0.1));border-color:rgba(94,92,230,0.2);color:#0A7A70">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:4px"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/></svg>
-            AI Controllo Costi
-          </button>
-        </div>
+        <button class="btn-action primary" onclick="openAddCosto()" style="padding:8px 16px;font-size:.85em">+ Aggiungi Costo</button>
       </div>
       <div class="table-wrap" style="margin-top:10px"><table>
-        <thead><tr><th>Voce</th><th>Note</th><th style="text-align:right">Importo</th><th style="width:60px"></th></tr></thead>
+        <thead><tr><th>Categoria</th><th>Fornitore / Voce</th><th>Note</th><th style="text-align:right">Importo</th><th style="width:40px">🏦</th><th style="width:50px"></th></tr></thead>
         <tbody id="eco-costi-table"></tbody>
         <tfoot><tr style="background:rgba(239,68,68,0.06)">
-          <td colspan="2" style="font-weight:700;color:var(--red);text-align:right;padding-right:20px">TOTALE USCITE</td>
+          <td colspan="3" style="font-weight:700;color:var(--red);text-align:right;padding-right:20px">TOTALE USCITE</td>
           <td style="font-weight:800;color:var(--red);text-align:right" id="eco-uscite-footer">€ 0.00</td>
-          <td></td>
+          <td colspan="2"></td>
         </tr></tfoot>
       </table></div>
 
@@ -555,6 +582,62 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         <div class="modal-buttons">
           <button class="btn-cancel" onclick="closeCostoModal()">Annulla</button>
           <button class="btn-save" onclick="saveCosto()">Salva</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Preview AI Fatture -->
+    <div id="modal-ai-preview-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto">
+      <div style="background:#fff;border-radius:16px;width:100%;max-width:900px;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#7c3aed,#4f46e5);padding:18px 22px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="color:#fff;font-weight:800;font-size:1.05em">🤖 Risultati Analisi AI</div>
+            <div id="ai-preview-subtitle" style="color:rgba(255,255,255,.8);font-size:.82em;margin-top:2px"></div>
+          </div>
+          <button onclick="closeAIPreview()" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1em">✕</button>
+        </div>
+        <!-- Body -->
+        <div style="padding:20px">
+          <!-- Fatture estratte -->
+          <div style="font-weight:700;color:#1e1b4b;margin-bottom:8px;font-size:.9em">📄 FATTURE ESTRATTE <span id="ai-fatture-count" style="color:#7c3aed"></span></div>
+          <div style="overflow-x:auto;margin-bottom:20px">
+            <table style="width:100%;border-collapse:collapse;font-size:.82em">
+              <thead><tr style="background:#f5f3ff">
+                <th style="padding:8px 10px;text-align:left;color:#6b7280;font-weight:700;white-space:nowrap">✓</th>
+                <th style="padding:8px 10px;text-align:left;color:#6b7280;font-weight:700">CATEGORIA</th>
+                <th style="padding:8px 10px;text-align:left;color:#6b7280;font-weight:700">FORNITORE</th>
+                <th style="padding:8px 10px;text-align:left;color:#6b7280;font-weight:700">N. FATTURA</th>
+                <th style="padding:8px 10px;text-align:left;color:#6b7280;font-weight:700">DATA</th>
+                <th style="padding:8px 10px;text-align:right;color:#6b7280;font-weight:700">IMPORTO</th>
+                <th style="padding:8px 10px;text-align:center;color:#6b7280;font-weight:700">BANCA</th>
+              </tr></thead>
+              <tbody id="ai-fatture-table"></tbody>
+            </table>
+          </div>
+          <!-- Movimenti banca senza fattura -->
+          <div id="ai-movimenti-box" style="display:none">
+            <div style="font-weight:700;color:#b45309;margin-bottom:8px;font-size:.9em">⚠️ MOVIMENTI BANCA SENZA FATTURA <span id="ai-movimenti-count" style="color:#b45309"></span></div>
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:20px">
+              <table style="width:100%;border-collapse:collapse;font-size:.82em">
+                <thead><tr>
+                  <th style="padding:6px 8px;text-align:left;color:#92400e;font-weight:700">✓</th>
+                  <th style="padding:6px 8px;text-align:left;color:#92400e;font-weight:700">DATA</th>
+                  <th style="padding:6px 8px;text-align:left;color:#92400e;font-weight:700">DESCRIZIONE</th>
+                  <th style="padding:6px 8px;text-align:right;color:#92400e;font-weight:700">IMPORTO</th>
+                </tr></thead>
+                <tbody id="ai-movimenti-table"></tbody>
+              </table>
+            </div>
+          </div>
+          <!-- Totale e azione -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;background:#f9fafb;border-radius:10px;flex-wrap:wrap;gap:10px">
+            <div style="font-size:.9em;color:#374151">Totale selezionato: <strong id="ai-totale-sel" style="color:#7c3aed">€ 0.00</strong></div>
+            <div style="display:flex;gap:10px">
+              <button onclick="closeAIPreview()" style="padding:10px 18px;background:#f1f0f0;border:none;border-radius:10px;font-weight:700;cursor:pointer;color:#374151">Annulla</button>
+              <button onclick="salvaAIFatture()" style="padding:10px 22px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer">✅ Salva in Altri Costi</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1288,9 +1371,11 @@ async function loadEconomia(){
 
   // Tabella altri costi
   document.getElementById('eco-costi-table').innerHTML=allCosti.length?allCosti.map(c=>`<tr>
-    <td style="font-weight:600">${c.voce||''}</td>
-    <td style="color:var(--dim);font-size:.85em">${c.note||''}</td>
+    <td style="font-size:.78em;color:#7c3aed;font-weight:600">${c.categoria||'—'}</td>
+    <td style="font-weight:600">${c.fornitore||c.voce||''}</td>
+    <td style="color:var(--dim);font-size:.82em">${c.note||c.voce||''}</td>
     <td style="text-align:right;font-weight:700;color:var(--red)">€ ${parseFloat(c.importo).toFixed(2)}</td>
+    <td style="text-align:center;font-size:.9em">${c.match_banca?'✅':'—'}</td>
     <td><button class="btn-action" onclick="deleteCosto('${c.id}')" title="Elimina" style="color:var(--red);border-color:rgba(255,69,58,0.3)">✕</button></td>
   </tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--dim);padding:30px">Nessun costo inserito — clicca "+ Aggiungi Costo"</td></tr>';
   document.getElementById('eco-uscite-footer').textContent='€ '+totUscite.toFixed(2);
@@ -1645,6 +1730,334 @@ function closeSitiDetail(){
     if(p&&['coordinatore','amministratore'].includes(p.role))showApp();
   }
 })();
+
+// ── AI CONTROLLO COSTI ────────────────────────────────────
+let aiCostiFiles=[]      // File PDF fatture selezionati
+let aiCostiBanca=null    // File XLS/CSV banca selezionato
+let aiCostiResults=[]    // Fatture estratte dall'AI
+let aiCostiMovimenti=[]  // Movimenti banca senza fattura
+
+function onFattureSelected(input){
+  aiCostiFiles=Array.from(input.files).filter(f=>f.name.toLowerCase().endsWith('.pdf'))
+  document.getElementById('lbl-fatture').textContent=
+    aiCostiFiles.length>0?`${aiCostiFiles.length} PDF selezionati`:'Seleziona cartella PASSIVE...'
+  aggiornaStatoBtn()
+}
+
+function onBancaSelected(input){
+  aiCostiBanca=input.files[0]||null
+  document.getElementById('lbl-banca').textContent=aiCostiBanca?aiCostiBanca.name:'Seleziona file XLS/CSV...'
+  aggiornaStatoBtn()
+}
+
+function aggiornaStatoBtn(){
+  const btn=document.getElementById('btn-analisi-ai')
+  const pronto=aiCostiFiles.length>0&&aiCostiBanca
+  btn.disabled=!pronto
+  btn.style.opacity=pronto?'1':'0.5'
+}
+
+// ── PDFJS: estrae testo da un File PDF ──
+async function extractPDFText(file){
+  return new Promise((resolve)=>{
+    const reader=new FileReader()
+    reader.onload=async(e)=>{
+      try{
+        const pdfjsLib=window['pdfjs-dist/build/pdf']||window.pdfjsLib
+        if(!pdfjsLib){resolve('');return}
+        const pdf=await pdfjsLib.getDocument({data:new Uint8Array(e.target.result)}).promise
+        let text=''
+        for(let i=1;i<=Math.min(pdf.numPages,3);i++){
+          const page=await pdf.getPage(i)
+          const content=await page.getTextContent()
+          text+=content.items.map(s=>s.str).join(' ')+'\n'
+        }
+        resolve(text.slice(0,2000)) // max 2000 char per fattura
+      }catch(err){resolve('')}
+    }
+    reader.readAsArrayBuffer(file)
+  })
+}
+
+// ── Ottieni categoria dal percorso del file ──
+function getCategoriaFromPath(file){
+  const path=file.webkitRelativePath||file.name
+  const parts=path.split('/')
+  // es: PASSIVE/GASOLIO COMBO/EniMoov...pdf → GASOLIO COMBO
+  for(let i=parts.length-2;i>=0;i--){
+    const p=parts[i].toUpperCase()
+    if(!['PASSIVE','PASSIVE NO SDI','MARZO','ECONOMIA'].includes(p)&&p!==''){
+      return parts[i]
+    }
+  }
+  return 'ALTRO'
+}
+
+// ── Parsea TSV banca e filtra per mese ──
+async function parseBanca(file,mese){
+  return new Promise((resolve)=>{
+    const reader=new FileReader()
+    reader.onload=(e)=>{
+      try{
+        const text=e.target.result
+        const lines=text.split('\n').filter(l=>l.trim())
+        const meseStr=mese.split('-')[1]+'/'+mese.split('-')[0] // MM/YYYY
+        const movimenti=[]
+        for(const line of lines){
+          const cols=line.split('\t')
+          if(cols.length<7)continue
+          const dataContabile=cols[1]?.trim()
+          const dare=cols[3]?.trim().replace('.','').replace(',','.')
+          const causale=cols[5]?.trim()
+          const descrizione=cols[6]?.trim()
+          if(!dataContabile||!dataContabile.includes('/'))continue
+          if(!dataContabile.includes(meseStr))continue
+          const importo=parseFloat(dare)
+          if(!importo||importo<=0)continue
+          if(causale.toLowerCase().includes('commissioni'))continue // escludi commissioni bancarie
+          movimenti.push({data:dataContabile,importo,causale,descrizione:descrizione||causale})
+        }
+        resolve(movimenti)
+      }catch(err){resolve([])}
+    }
+    reader.readAsText(file,'utf-8')
+  })
+}
+
+// ── Match banca: cerca movimento per nome fornitore + importo ──
+function matchConBanca(fornitore,importo,movimentiBanca){
+  const normForn=(fornitore||'').toLowerCase().replace(/\s+/g,' ').trim()
+  const words=normForn.split(' ').filter(w=>w.length>3)
+  for(const mov of movimentiBanca){
+    const desc=(mov.descrizione||'').toLowerCase()
+    const matchParola=words.some(w=>desc.includes(w))
+    const importoFattura=Math.round(importo*100)
+    const importoBanca=Math.round(mov.importo*100)
+    const matchImporto=Math.abs(importoFattura-importoBanca)<=2 // tolleranza 2 centesimi
+    if(matchParola&&matchImporto)return mov
+    // Match solo importo (± 0.02€) per POS e bonifici sintetici
+    if(matchImporto&&!mov.usato)return mov
+  }
+  return null
+}
+
+async function avviaAnalisiAI(){
+  const btn=document.getElementById('btn-analisi-ai')
+  const status=document.getElementById('ai-analisi-status')
+  const mese=document.getElementById('eco-mese').value
+  if(!mese){alert('Seleziona prima il mese');return}
+
+  // Verifica chiave OpenAI
+  const{data:cfgData}=await sb.from('config').select('value').eq('key','openai_api_key').single()
+  const openaiKey=cfgData?.value
+  if(!openaiKey){
+    alert('Chiave OpenAI non configurata. Vai in Impostazioni e inseriscila.')
+    return
+  }
+
+  btn.disabled=true;btn.textContent='⏳ Analisi in corso...'
+  status.textContent=''
+
+  try{
+    // 1. Carica PDF.js se non già caricato
+    if(!window.pdfjsLib){
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script')
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
+        s.onload=()=>{window.pdfjsLib=window['pdfjs-dist/build/pdf'];window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';res()}
+        s.onerror=rej
+        document.head.appendChild(s)
+      })
+    }
+
+    // 2. Estrai testo da tutti i PDF
+    status.textContent=`📄 Estrazione testo da ${aiCostiFiles.length} PDF...`
+    const fattureTexts=[]
+    for(let i=0;i<aiCostiFiles.length;i++){
+      const file=aiCostiFiles[i]
+      const categoria=getCategoriaFromPath(file)
+      const text=await extractPDFText(file)
+      fattureTexts.push({file:file.name,categoria,text})
+      if(i%5===0)status.textContent=`📄 Estratto ${i+1}/${aiCostiFiles.length} PDF...`
+    }
+
+    // 3. Parsea banca
+    status.textContent='🏦 Parsing estratto bancario...'
+    const movimentiBanca=await parseBanca(aiCostiBanca,mese)
+
+    // 4. Chiama OpenAI per estrarre dati fatture
+    status.textContent='🤖 AI sta analizzando le fatture...'
+    const bundleText=fattureTexts.map(f=>
+      `[FILE: ${f.file} | CATEGORIA: ${f.categoria}]\n${f.text}`
+    ).join('\n\n---\n\n')
+
+    const prompt=`Analizza queste fatture italiane ed estrai per OGNUNA un oggetto JSON.
+Restituisci SOLO un array JSON valido, nessun testo aggiuntivo.
+
+Formato richiesto per ogni fattura:
+{"file":"nome_file","categoria":"categoria","fornitore":"nome_fornitore","num_fattura":"numero","data":"GG/MM/AAAA","importo_totale":123.45}
+
+Note:
+- importo_totale è l'importo TOTALE compreso IVA (cerca "Totale documento", "Totale fattura", "Importo totale" o somma le righe)
+- fornitore è il nome del FORNITORE (mittente), non del cliente
+- data è la data di emissione della fattura
+- se non trovi un campo, metti null
+
+FATTURE:
+${bundleText.slice(0,50000)}`
+
+    const res=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+openaiKey},
+      body:JSON.stringify({
+        model:'gpt-4o-mini',
+        messages:[{role:'user',content:prompt}],
+        max_tokens:4000,temperature:0
+      })
+    })
+    const aiData=await res.json()
+    const rawReply=aiData.choices?.[0]?.message?.content||'[]'
+
+    // Estrai JSON dall'output
+    let fatture=[]
+    try{
+      const match=rawReply.match(/\[[\s\S]*\]/)
+      fatture=match?JSON.parse(match[0]):[]
+    }catch(e){fatture=[]}
+
+    // 5. Matching banca per ogni fattura
+    const movimentiBancaLocal=movimentiBanca.map(m=>({...m,usato:false}))
+    aiCostiResults=fatture.map(f=>{
+      const match=matchConBanca(f.fornitore,f.importo_totale,movimentiBancaLocal)
+      if(match)match.usato=true
+      return{...f,matchBanca:!!match,movimentoMatch:match,selected:true}
+    })
+
+    // 6. Movimenti banca senza fattura
+    aiCostiMovimenti=movimentiBancaLocal.filter(m=>!m.usato).map(m=>({...m,selected:false}))
+
+    // 7. Mostra preview
+    mostraPreviewAI(mese)
+
+  }catch(err){
+    status.textContent='❌ Errore: '+err.message
+  }finally{
+    btn.disabled=false;btn.textContent='🤖 Analizza e compila con AI'
+    aggiornaStatoBtn()
+  }
+}
+
+function mostraPreviewAI(mese){
+  const subtitle=`Mese: ${mese} · ${aiCostiResults.length} fatture · ${aiCostiMovimenti.length} movimenti senza fattura`
+  document.getElementById('ai-preview-subtitle').textContent=subtitle
+  document.getElementById('ai-fatture-count').textContent=`(${aiCostiResults.length})`
+
+  // Tabella fatture
+  const tbody=document.getElementById('ai-fatture-table')
+  tbody.innerHTML=aiCostiResults.map((f,i)=>`
+    <tr style="border-bottom:1px solid #f3f4f6;${f.matchBanca?'':'background:#fffbeb'}">
+      <td style="padding:8px 10px"><input type="checkbox" ${f.selected?'checked':''} onchange="toggleFattura(${i},this.checked)"></td>
+      <td style="padding:8px 10px;font-size:.78em;color:#7c3aed;font-weight:600">${f.categoria||'—'}</td>
+      <td style="padding:8px 10px;font-weight:600">${f.fornitore||'—'}</td>
+      <td style="padding:8px 10px;color:#6b7280;font-size:.8em">${f.num_fattura||'—'}</td>
+      <td style="padding:8px 10px;color:#6b7280;font-size:.8em">${f.data||'—'}</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:700;color:#dc2626">€ ${f.importo_totale?parseFloat(f.importo_totale).toFixed(2):'—'}</td>
+      <td style="padding:8px 10px;text-align:center">${f.matchBanca?'✅':'🟡'}</td>
+    </tr>`).join('')
+
+  // Movimenti senza fattura
+  const movBox=document.getElementById('ai-movimenti-box')
+  const movCount=document.getElementById('ai-movimenti-count')
+  const movTable=document.getElementById('ai-movimenti-table')
+  if(aiCostiMovimenti.length>0){
+    movBox.style.display=''
+    movCount.textContent=`(${aiCostiMovimenti.length})`
+    movTable.innerHTML=aiCostiMovimenti.map((m,i)=>`
+      <tr style="border-bottom:1px solid #fde68a">
+        <td style="padding:6px 8px"><input type="checkbox" ${m.selected?'checked':''} onchange="toggleMovimento(${i},this.checked)"></td>
+        <td style="padding:6px 8px;color:#92400e;font-size:.82em">${m.data}</td>
+        <td style="padding:6px 8px;color:#374151;font-size:.82em">${(m.descrizione||'').slice(0,60)}</td>
+        <td style="padding:6px 8px;text-align:right;font-weight:700;color:#dc2626">€ ${m.importo.toFixed(2)}</td>
+      </tr>`).join('')
+  }else{
+    movBox.style.display='none'
+  }
+
+  aggiornaTotaleAI()
+  document.getElementById('modal-ai-preview-bg').style.display='flex'
+}
+
+function toggleFattura(i,checked){
+  aiCostiResults[i].selected=checked
+  aggiornaTotaleAI()
+}
+function toggleMovimento(i,checked){
+  aiCostiMovimenti[i].selected=checked
+  aggiornaTotaleAI()
+}
+function aggiornaTotaleAI(){
+  const totFatture=aiCostiResults.filter(f=>f.selected).reduce((s,f)=>s+(+f.importo_totale||0),0)
+  const totMovimenti=aiCostiMovimenti.filter(m=>m.selected).reduce((s,m)=>s+(+m.importo||0),0)
+  document.getElementById('ai-totale-sel').textContent='€ '+(totFatture+totMovimenti).toFixed(2)
+}
+
+function closeAIPreview(){
+  document.getElementById('modal-ai-preview-bg').style.display='none'
+}
+
+async function salvaAIFatture(){
+  const mese=document.getElementById('eco-mese').value
+  const rows=[]
+
+  // Fatture selezionate
+  for(const f of aiCostiResults.filter(x=>x.selected)){
+    rows.push({
+      voce:f.fornitore||(f.categoria+' — '+f.file),
+      importo:+f.importo_totale||0,
+      note:f.num_fattura?'Ft. '+f.num_fattura+(f.data?' del '+f.data:''):'',
+      mese:mese+'-01',
+      categoria:f.categoria||null,
+      fornitore:f.fornitore||null,
+      num_fattura:f.num_fattura||null,
+      data_fattura:f.data?parseDataIT(f.data):null,
+      fonte:'ai',
+      match_banca:f.matchBanca,
+      inserito_da:currentUser.id
+    })
+  }
+
+  // Movimenti bancari selezionati (senza fattura)
+  for(const m of aiCostiMovimenti.filter(x=>x.selected)){
+    rows.push({
+      voce:(m.descrizione||'Movimento bancario').slice(0,80),
+      importo:+m.importo||0,
+      note:'Movimento banca: '+m.data,
+      mese:mese+'-01',
+      categoria:'BANCA',
+      fonte:'ai',
+      match_banca:false,
+      inserito_da:currentUser.id
+    })
+  }
+
+  if(!rows.length){alert('Nessuna voce selezionata');return}
+
+  const{error}=await sb.from('costi_mensili').insert(rows)
+  if(error){alert('Errore salvataggio: '+error.message);return}
+
+  closeAIPreview()
+  loadEconomia()
+  document.getElementById('ai-analisi-status').textContent=`✅ Salvate ${rows.length} voci in Altri Costi`
+}
+
+function parseDataIT(str){
+  // "GG/MM/AAAA" → "AAAA-MM-GG"
+  try{
+    const p=str.split('/')
+    if(p.length===3)return`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`
+  }catch(e){}
+  return null
+}
 
 // ── IMPOSTAZIONI ──────────────────────────────────────────
 async function loadImpostazioni(){
