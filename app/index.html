@@ -328,6 +328,9 @@ async function loadDropdowns(){
   const{data:cl}=await sb.from('clienti').select('nome').eq('attivo',true).order('nome');
   const{data:lv}=await sb.from('lavorazioni').select('nome').eq('attivo',true).order('nome');
   const cs=document.getElementById('int-cliente'),ls=document.getElementById('int-lavorazione');
+  // Svuota opzioni esistenti per evitare duplicati
+  cs.innerHTML='<option value="">Seleziona cliente...</option>';
+  ls.innerHTML='<option value="">Seleziona lavorazione...</option>';
   if(cl)cl.forEach(c=>{const o=document.createElement('option');o.value=c.nome;o.textContent=c.nome;cs.appendChild(o);});
   if(lv)lv.forEach(l=>{const o=document.createElement('option');o.value=l.nome;o.textContent=l.nome;ls.appendChild(o);});
   // Aggiungi opzione "Altro"
@@ -468,7 +471,7 @@ async function loadInterventi(){
   c.innerHTML=data.map(r=>{
     const dt=new Date(r.created_at);
     const ds=dt.toLocaleDateString('it-IT')+' '+dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-    return`<div class="int-card glass"><div class="int-top"><div><div class="int-code">${r.codice_sito||'N/D'}</div><div class="int-client">${r.cliente_finale||''} · ${r.lavorazione||''}</div></div><div class="int-date">${ds}</div></div>${r.note?`<div class="int-lav">${r.note}</div>`:''}<div class="int-bottom">${r.n_foto?`<span class="int-foto-badge">${r.n_foto} foto</span>`:''}${r.importo?`<span style="color:var(--green);font-size:.82em;font-weight:700">&euro; ${(+r.importo).toFixed(2)}</span>`:''}</div></div>`;
+    return`<div class="int-card glass"><div class="int-top"><div><div class="int-code">${r.codice_sito||'N/D'}</div><div class="int-client">${r.cliente_finale||''} · ${r.lavorazione||''}</div></div><div class="int-date">${ds}</div></div>${r.note?`<div class="int-lav">${r.note}</div>`:''}<div class="int-bottom">${r.n_foto?`<span class="int-foto-badge">${r.n_foto} foto</span>`:''}</div></div>`;
   }).join('');
 }
 
