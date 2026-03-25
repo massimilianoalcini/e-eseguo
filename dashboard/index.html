@@ -1767,12 +1767,18 @@ async function extractPDFText(file){
         if(!pdfjsLib){resolve('');return}
         const pdf=await pdfjsLib.getDocument({data:new Uint8Array(e.target.result)}).promise
         let text=''
-        for(let i=1;i<=Math.min(pdf.numPages,3);i++){
+        // Leggi TUTTE le pagine (max 8) per trovare importi nelle ultime pagine
+        for(let i=1;i<=Math.min(pdf.numPages,8);i++){
           const page=await pdf.getPage(i)
           const content=await page.getTextContent()
           text+=content.items.map(s=>s.str).join(' ')+'\n'
         }
-        resolve(text.slice(0,4000)) // max 4000 char per fattura (aumentato per catturare importi)
+        // Se il testo è molto lungo, prendi inizio (fornitore/data) + fine (totale)
+        if(text.length>5000){
+          resolve(text.slice(0,2500)+'\n...\n'+text.slice(-2500))
+        }else{
+          resolve(text)
+        }
       }catch(err){resolve('')}
     }
     reader.readAsArrayBuffer(file)
@@ -1824,33 +1830,61 @@ async function parseBanca(file,mese){
   })
 }
 
-// ── Match banca: cerca movimento per nome fornitore e/o importo ──
-function matchConBanca(fornitore,importo,movimentiBanca){
+// ── Match banca: cerca movimento per nome fornitore, importo E data ──
+function matchConBanca(fornitore,importo,dataFattura,movimentiBanca){
   const normForn=(fornitore||'').toLowerCase().replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ').trim()
-  // Prendi parole significative (>=3 lettere), escludi termini generici
-  const skip=['srl','spa','sas','srls','snc','del','per','con','pagamento','fattura']
+  const skip=['srl','spa','sas','srls','snc','del','per','con','pagamento','fattura','societa','societa','italia','italian','group','service','servizi']
   const words=normForn.split(' ').filter(w=>w.length>=3&&!skip.includes(w))
+
+  // Parsa data fattura per confronto prossimità (GG/MM/AAAA → Date)
+  const dateFatt=parseDataToDate(dataFattura)
 
   let bestMatch=null, bestScore=0
 
   for(const mov of movimentiBanca){
     if(mov.usato)continue
-    const desc=(mov.descrizione||'').toLowerCase().replace(/[^a-z0-9\s]/g,'')
+    const desc=((mov.descrizione||'')+' '+(mov.causale||'')).toLowerCase().replace(/[^a-z0-9\s]/g,'')
     let score=0
+    let nameScore=0
 
-    // Match per parole del fornitore (max 3 punti)
+    // Match per parole del fornitore (max 4 punti)
     const matchedWords=words.filter(w=>desc.includes(w))
-    score+=Math.min(matchedWords.length,3)
+    nameScore=matchedWords.length
+    score+=Math.min(nameScore,4)
 
-    // Match per importo (3 punti se esatto, 1 punto se vicino)
+    // Match per importo
+    let importoExact=false
     if(importo&&importo>0){
       const diff=Math.abs(Math.round(importo*100)-Math.round(mov.importo*100))
-      if(diff<=5)score+=3       // ±0.05€ → match esatto
-      else if(diff<=200)score+=1 // ±2€ → vicino
+      if(diff<=5){score+=4;importoExact=true}        // ±0.05€ → match esatto
+      else if(diff<=100)score+=2  // ±1€ → molto vicino
+      else if(diff<=500)score+=1  // ±5€ → vicino
     }
 
-    // Almeno 2 parole match OPPURE 1 parola + importo vicino
-    if(score>bestScore&&(matchedWords.length>=2||score>=4)){
+    // Match per data (prossimità temporale)
+    let dateDiff=999
+    if(dateFatt){
+      const dateMov=parseDataToDate(mov.data)
+      if(dateMov){
+        dateDiff=Math.abs(dateFatt.getTime()-dateMov.getTime())/(1000*60*60*24)
+        if(dateDiff<=2)score+=2       // stessa data o ±2 giorni
+        else if(dateDiff<=7)score+=1  // stessa settimana
+      }
+    }
+
+    // CRITERI DI MATCH (più permissivi):
+    // A) Importo esatto + data vicina (≤7gg) → MATCH anche senza nome (es. pagamenti POS)
+    // B) Almeno 2 parole nome match → MATCH (indipendentemente da importo)
+    // C) 1 parola nome + importo esatto → MATCH
+    // D) Score totale ≥ 5 → MATCH
+    const isValid = (
+      (importoExact && dateDiff<=7) ||          // A
+      (nameScore>=2) ||                          // B
+      (nameScore>=1 && importoExact) ||          // C
+      (score>=5)                                 // D
+    )
+
+    if(isValid && score>bestScore){
       bestScore=score;bestMatch=mov
     }
   }
@@ -1961,7 +1995,7 @@ ${bundleText}`
     // 5. Matching banca per ogni fattura
     const movimentiBancaLocal=movimentiBanca.map(m=>({...m,usato:false}))
     aiCostiResults=fatture.map(f=>{
-      const match=matchConBanca(f.fornitore,f.importo_totale,movimentiBancaLocal)
+      const match=matchConBanca(f.fornitore,f.importo_totale,f.data,movimentiBancaLocal)
       if(match)match.usato=true
       return{...f,matchBanca:!!match,movimentoMatch:match,selected:true}
     })
@@ -2081,6 +2115,25 @@ async function salvaAIFatture(){
   closeAIPreview()
   loadEconomia()
   document.getElementById('ai-analisi-status').textContent=`✅ Salvate ${rows.length} voci in Altri Costi`
+}
+
+function parseDataToDate(str){
+  // "GG/MM/AAAA" o "GG/MM/AA" → Date object
+  try{
+    if(!str)return null
+    const p=str.trim().split('/')
+    if(p.length>=3){
+      let y=parseInt(p[2]);if(y<100)y+=2000
+      return new Date(y,parseInt(p[1])-1,parseInt(p[0]))
+    }
+    // Prova anche formato "GG.MM.AA" o "GG.MM.AAAA"
+    const p2=str.trim().split('.')
+    if(p2.length>=3){
+      let y=parseInt(p2[2]);if(y<100)y+=2000
+      return new Date(y,parseInt(p2[1])-1,parseInt(p2[0]))
+    }
+  }catch(e){}
+  return null
 }
 
 function parseDataIT(str){
