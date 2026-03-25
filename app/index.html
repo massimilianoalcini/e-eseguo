@@ -248,6 +248,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
     </div></div>
     <div class="tab-page" id="tab-interventi"><div class="interventi-scroll">
       <div class="interventi-title"><svg width="22" height="22" viewBox="0 0 24 24" fill="var(--accent)"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 9V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/></svg>Interventi Inviati</div>
+      <div class="search-wrap" style="margin-bottom:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input type="text" id="interventi-search" placeholder="Cerca per codice sito, nome o localita..." autocomplete="off" oninput="searchInterventi()"><button class="clear-btn" id="interventi-clear-btn" onclick="clearInterventiSearch()" style="display:none">&times;</button></div>
+      <div class="results-count" id="interventi-count" style="display:none;font-size:.78em;color:var(--text-dim);margin-bottom:8px"></div>
       <div id="interventi-list"></div>
     </div></div>
   </div>
@@ -465,11 +467,27 @@ function resetForm(){
 }
 
 /* === FASE 5: Interventi Inviati === */
+let allInterventi=[];
 async function loadInterventi(){
   const c=document.getElementById('interventi-list');
+  const cnt=document.getElementById('interventi-count');
   const{data,error}=await sb.from('interventi').select('*').eq('tecnico_id',currentUser.id).order('created_at',{ascending:false});
   if(error||!data||!data.length){
+    allInterventi=[];
+    cnt.style.display='none';
     c.innerHTML=`<div class="empty-interventi"><svg width="48" height="48" viewBox="0 0 24 24" fill="#d0d0d5"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg><div class="ei-title">Nessun intervento</div><div class="ei-sub">I tuoi interventi appariranno qui</div></div>`;
+    return;
+  }
+  allInterventi=data;
+  renderInterventi(data);
+}
+function renderInterventi(data){
+  const c=document.getElementById('interventi-list');
+  const cnt=document.getElementById('interventi-count');
+  const q=document.getElementById('interventi-search').value.trim();
+  if(q){cnt.style.display='';cnt.textContent=data.length+' intervento/i trovato/i';}else{cnt.style.display='none';}
+  if(!data.length){
+    c.innerHTML=`<div class="empty-interventi"><svg width="48" height="48" viewBox="0 0 24 24" fill="#d0d0d5"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg><div class="ei-title">Nessun risultato</div><div class="ei-sub">Prova con un altro termine di ricerca</div></div>`;
     return;
   }
   c.innerHTML=data.map(r=>{
@@ -477,6 +495,30 @@ async function loadInterventi(){
     const ds=dt.toLocaleDateString('it-IT')+' '+dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
     return`<div class="int-card glass"><div class="int-top"><div><div class="int-code">${r.codice_sito||'N/D'}</div><div class="int-client">${r.cliente_finale||''} · ${r.lavorazione||''}</div></div><div class="int-date">${ds}</div></div>${r.note?`<div class="int-lav">${r.note}</div>`:''}<div class="int-bottom">${r.n_foto?`<span class="int-foto-badge">${r.n_foto} foto</span>`:''}</div></div>`;
   }).join('');
+}
+let interventiSearchTimeout;
+function searchInterventi(){
+  const q=document.getElementById('interventi-search').value.trim().toLowerCase();
+  document.getElementById('interventi-clear-btn').style.display=q?'block':'none';
+  clearTimeout(interventiSearchTimeout);
+  interventiSearchTimeout=setTimeout(()=>{
+    if(!q){renderInterventi(allInterventi);return;}
+    const filtered=allInterventi.filter(r=>{
+      const code=(r.codice_sito||'').toLowerCase();
+      const nome=(r.nome_sito||'').toLowerCase();
+      const cliente=(r.cliente_finale||'').toLowerCase();
+      const lav=(r.lavorazione||'').toLowerCase();
+      const note=(r.note||'').toLowerCase();
+      return code.includes(q)||nome.includes(q)||cliente.includes(q)||lav.includes(q)||note.includes(q);
+    });
+    renderInterventi(filtered);
+  },200);
+}
+function clearInterventiSearch(){
+  document.getElementById('interventi-search').value='';
+  document.getElementById('interventi-clear-btn').style.display='none';
+  document.getElementById('interventi-count').style.display='none';
+  renderInterventi(allInterventi);
 }
 
 document.addEventListener('click',e=>{if(!e.target.closest('.site-picker'))document.getElementById('site-picker-results')?.classList.remove('open');});
