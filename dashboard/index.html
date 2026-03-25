@@ -650,7 +650,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
     </div>
     <div style="padding:22px;overflow-y:auto;flex:1;">
       <div id="m-note-box" style="display:none;margin:0 0 16px;background:rgba(232,118,45,0.08);border:1.5px solid rgba(232,118,45,0.2);border-radius:10px;padding:12px 14px;">
-        <div style="font-size:11px;font-weight:800;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Note Intervento</div>
+        <div style="font-size:11px;font-weight:800;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Report Intervento</div>
         <div id="m-note-text" style="font-size:13px;color:var(--text);line-height:1.5;"></div>
       </div>
       <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Fotografie (<span id="m-nfoto">0</span>)</div>
@@ -1004,7 +1004,7 @@ async function generateReport(intId) {
     </div>
   </div>
 
-  ${inv.note?`<div class="section"><div class="section-title">Note Intervento</div><div class="note-box">${inv.note}</div></div>`:''}
+  ${inv.note?`<div class="section"><div class="section-title">Report Intervento</div><div class="note-box">${inv.note}</div></div>`:''}
 
   <div class="section">
     <div class="section-title">Fotografie ${fotos?.length>12?`(prime 12 di ${fotos.length})`:`(${fotos?.length||0})`}</div>
@@ -1148,7 +1148,7 @@ function fmSendOutlook(){
     `  Data:         ${new Date(inv.created_at).toLocaleDateString('it-IT')}\n`+
     `  Foto totali:  ${inv.n_foto}\n`+
     (sel>0?`  Foto selezionate: ${sel} (scaricabili dal portale)\n`:'')+
-    (inv.note?`\nNote:\n${inv.note}\n`:'')+
+    (inv.note?`\nReport:\n${inv.note}\n`:'')+
     `\nCordiali saluti,\nE.ESEGUO`
   )
   window.location.href=`mailto:?subject=${subject}&body=${body}`
