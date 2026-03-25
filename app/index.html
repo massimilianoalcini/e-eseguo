@@ -215,6 +215,20 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
 .popup-code{font-weight:700;color:var(--accent)}
 .popup-name{color:var(--text-dim);font-size:.88em}
 .popup-btn{display:inline-block;margin-top:8px;padding:7px 14px;background:var(--accent);color:white;border-radius:8px;text-decoration:none;font-size:.82em;font-weight:700;cursor:pointer;border:none}
+/* ── TOAST ── */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:#1e1b4b;color:#fff;padding:10px 18px;border-radius:12px;font-size:.85em;font-weight:600;z-index:9999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;max-width:90%}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.warn{background:#92400e}
+/* ── AI CHAT ── */
+#ai-overlay{display:flex!important;}
+#ai-overlay:not(.show){display:none!important;}
+.ai-msg{max-width:85%;padding:10px 13px;border-radius:16px;font-size:13px;line-height:1.5;}
+.ai-user{background:#7c3aed;color:#fff;align-self:flex-end;border-bottom-right-radius:4px;}
+.ai-bot{background:#fff;color:#1e1b4b;align-self:flex-start;border-bottom-left-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.ai-typing{color:#7c3aed;font-size:20px;letter-spacing:4px;animation:ai-blink 1s infinite;}
+@keyframes ai-blink{0%,100%{opacity:1}50%{opacity:.3}}
+.tts-btn{background:none;border:none;font-size:13px;cursor:pointer;opacity:.5;padding:2px 6px;border-radius:8px;align-self:flex-start;transition:opacity .2s;margin-top:4px;display:block;}
+.tts-btn:hover{opacity:1;background:rgba(124,58,237,.1);}
 </style>
 </head>
 <body>
@@ -241,6 +255,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
         <button class="action-btn primary" onclick="switchTab('intervento')"><svg viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Nuovo Intervento</button>
         <button class="action-btn secondary" onclick="switchTab('interventi')"><svg viewBox="0 0 24 24" fill="#A8A29E"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>Interventi Inviati</button>
         <button class="action-btn navigate" onclick="switchTab('naviga')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/></svg>Naviga verso un Sito</button>
+        <button class="action-btn" onclick="openAIChat()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;box-shadow:0 4px 16px rgba(124,58,237,0.3)"><svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>🤖 Assistente AI Tecnico</button>
       </div>
       <div class="section-title">Ultimi Interventi</div>
       <div class="recent-list" id="recent-list"><div class="empty-recent">Nessun intervento recente</div></div>
@@ -323,6 +338,45 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
   </div>
 </div>
 <div class="sync-overlay" id="sync-overlay"><div class="sync-card"><h3>Sincronizzazione Siti</h3><div class="sync-progress"><div class="sync-progress-bar" id="sync-bar"></div></div><div class="sync-status" id="sync-status">Connessione...</div></div></div>
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+<!-- AI CHAT MODAL -->
+<div id="ai-overlay" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;">
+  <div style="width:100%;max-width:600px;background:#fff;border-radius:20px 20px 0 0;display:flex;flex-direction:column;height:75vh;overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.3);">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#7c3aed,#4f46e5);padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;">
+      <div style="font-size:22px;">🤖</div>
+      <div style="flex:1;min-width:0;">
+        <div style="color:#fff;font-weight:800;font-size:14px;">E.ESEGUO AI Assistant</div>
+        <div id="ai-ctx-label" style="color:rgba(255,255,255,.8);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Assistente Tecnico TLC</div>
+      </div>
+      <!-- Toggle modalità: Solo Manuali / Conoscenza Estesa -->
+      <div onclick="toggleAIMode()" title="Cambia modalità risposta AI"
+           style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;margin-right:6px;flex-shrink:0;">
+        <div id="ai-toggle"
+             style="width:40px;height:20px;background:#10b981;border-radius:10px;position:relative;transition:background .25s;">
+          <div id="ai-toggle-knob"
+               style="position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .25s;box-shadow:0 1px 3px rgba(0,0,0,.3);"></div>
+        </div>
+        <div id="ai-mode-label" style="font-size:9px;color:rgba(255,255,255,.9);white-space:nowrap;font-weight:600;">📚 Solo Manuali</div>
+      </div>
+      <button onclick="closeAIChat()" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <!-- Messages -->
+    <div id="ai-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#f5f3ff;"></div>
+    <!-- Input -->
+    <div style="padding:10px 12px;border-top:1px solid #e5e7eb;display:flex;gap:8px;background:#fff;flex-shrink:0;align-items:center;">
+      <button id="ai-mic" onclick="toggleVoiceInput()"
+        title="Input vocale"
+        style="width:40px;height:40px;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:50%;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;box-shadow:0 2px 6px rgba(16,185,129,.4);">🎙️</button>
+      <input id="ai-input" type="text" placeholder="Chiedi qualcosa o premi 🎙️ per parlare..."
+        style="flex:1;padding:10px 14px;border:1.5px solid #d0dbe8;border-radius:24px;font-size:13px;outline:none;"
+        onkeydown="if(event.key==='Enter')sendAIMessage()">
+      <button id="ai-send" onclick="sendAIMessage()"
+        style="width:40px;height:40px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;border-radius:50%;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">➤</button>
+    </div>
+  </div>
+</div>
 </div><!-- /mobile-frame -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -618,6 +672,220 @@ function lbNav(dir){lbIndex=(lbIndex+dir+lbPhotos.length)%lbPhotos.length;update
 document.addEventListener('click',e=>{if(!e.target.closest('.site-picker'))document.getElementById('site-picker-results')?.classList.remove('open');});
 
 (async()=>{if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});const{data:{session}}=await sb.auth.getSession();if(session){currentUser=session.user;await initApp();}})();
+
+// ── TOAST ─────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type='info'){
+  const t=document.getElementById('toast');
+  t.className='toast '+(type==='warn'?'warn':'');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ── E.ESEGUO AI ASSISTANT ──────────────────────────────────
+const OPENAI_KEY='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'
+
+const AI_BASE_PROMPT=`Sei E.ESEGUO AI, l'assistente tecnico intelligente di E.ESEGUO.
+Supporti tecnici di campo nella gestione di interventi TLC: shelter, cabinet, apparati di rete, router, PLC, stazioni di energia, condizionatori e sistemi correlati.
+Rispondi SEMPRE in italiano. Sii conciso, pratico e diretto. Fornisci istruzioni step-by-step quando utile.
+Non inventare informazioni non presenti nei manuali caricati. Se non sai qualcosa, dillo chiaramente.`
+
+let aiChatHistory=[]
+let aiManualeText=''
+let aiManualiOnly=true
+
+async function fetchManuale(){
+  try{
+    const{data}=await sb.from('manuali').select('testo,tipo_apparato,titolo').order('tipo_apparato')
+    if(data&&data.length>0){
+      return data.map(r=>`=== MANUALE: ${r.titolo||r.tipo_apparato||'Generico'} ===\n${r.testo}`).join('\n\n')
+    }
+  }catch(e){}
+  return ''
+}
+
+function toggleAIMode(){
+  aiManualiOnly=!aiManualiOnly
+  const toggle=document.getElementById('ai-toggle')
+  const knob=document.getElementById('ai-toggle-knob')
+  const label=document.getElementById('ai-mode-label')
+  if(aiManualiOnly){
+    toggle.style.background='#10b981';knob.style.left='2px';label.textContent='📚 Solo Manuali'
+    appendAIMessage('bot','🔒 Modalità <strong>Solo Manuali</strong> attivata. Rispondo esclusivamente in base ai manuali caricati.')
+  }else{
+    toggle.style.background='#f97316';knob.style.left='22px';label.textContent='🌐 Conoscenza Estesa'
+    appendAIMessage('bot','🌐 Modalità <strong>Conoscenza Estesa</strong> attivata. Posso rispondere anche su argomenti non coperti dai manuali.')
+  }
+}
+
+async function openAIChat(){
+  aiChatHistory=[];aiManualeText='';aiManualiOnly=true
+  const tog=document.getElementById('ai-toggle')
+  const kn=document.getElementById('ai-toggle-knob')
+  const lb=document.getElementById('ai-mode-label')
+  if(tog){tog.style.background='#10b981';kn.style.left='2px';lb.textContent='📚 Solo Manuali'}
+  const msgs=document.getElementById('ai-messages')
+  msgs.innerHTML=''
+  document.getElementById('ai-overlay').classList.add('show')
+  appendAIMessage('bot','⏳ Caricamento manuali...')
+  aiManualeText=await fetchManuale()
+  msgs.innerHTML=''
+  const nManuali=aiManualeText?(aiManualeText.match(/=== MANUALE:/g)||[]).length:0
+  const manualiInfo=nManuali>0?` Ho caricato <strong>${nManuali} manuale/i</strong> tecnico/i.`:'  Nessun manuale tecnico ancora caricato — il coordinatore può aggiungerli dalla dashboard.'
+  appendAIMessage('bot',`Ciao! Sono <strong>E.ESEGUO AI</strong>. 🔒 Modalità <strong>Solo Manuali</strong> attiva.${manualiInfo}<br><br>Usa il toggle 🔄 per attivare la <strong>Conoscenza Estesa</strong> se hai bisogno di info generali. 💡`)
+  setTimeout(()=>document.getElementById('ai-input').focus(),100)
+}
+
+function closeAIChat(){
+  document.getElementById('ai-overlay').classList.remove('show')
+  stopVoiceInput()
+}
+
+// ── VOICE INPUT ────────────────────────────────────────────
+let aiRecognition=null,ttsAudio=null,aiIsListening=false
+
+function toggleVoiceInput(){
+  if(aiIsListening){stopVoiceInput();return}
+  const SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition
+  if(!SpeechRec){showToast('Riconoscimento vocale non supportato su questo dispositivo','warn');return}
+  aiRecognition=new SpeechRec()
+  aiRecognition.lang='it-IT'
+  aiRecognition.continuous=false
+  aiRecognition.interimResults=true
+  const mic=document.getElementById('ai-mic')
+  const inp=document.getElementById('ai-input')
+  aiRecognition.onstart=()=>{
+    aiIsListening=true
+    mic.style.background='#fee2e2';mic.style.borderColor='#ef4444'
+    mic.textContent='⏹️';mic.title='Tocca per interrompere'
+    inp.placeholder='🎙️ In ascolto...'
+  }
+  aiRecognition.onresult=(e)=>{
+    let interim='',final=''
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript
+      e.results[i].isFinal?final+=t:interim+=t
+    }
+    inp.value=final||interim
+    if(final){stopVoiceInput();setTimeout(()=>sendAIMessage(),300)}
+  }
+  aiRecognition.onerror=(e)=>{stopVoiceInput();if(e.error!=='aborted')showToast('Errore microfono: '+e.error,'warn')}
+  aiRecognition.onend=()=>stopVoiceInput()
+  aiRecognition.start()
+}
+
+function stopVoiceInput(){
+  aiIsListening=false
+  if(aiRecognition){try{aiRecognition.stop()}catch(e){}aiRecognition=null}
+  const mic=document.getElementById('ai-mic')
+  const inp=document.getElementById('ai-input')
+  if(!mic)return
+  mic.style.background='linear-gradient(135deg,#10b981,#059669)'
+  mic.style.border='none'
+  mic.style.boxShadow='0 2px 6px rgba(16,185,129,.4)'
+  mic.textContent='🎙️';mic.title='Input vocale'
+  inp.placeholder='Chiedi qualcosa o premi 🎙️ per parlare...'
+}
+
+function appendAIMessage(role,html){
+  const msgs=document.getElementById('ai-messages')
+  const div=document.createElement('div')
+  div.className='ai-msg ai-'+role
+  if(role==='bot'){
+    const content=document.createElement('div')
+    content.innerHTML=html
+    const speakBtn=document.createElement('button')
+    speakBtn.className='tts-btn';speakBtn.textContent='🔊'
+    speakBtn.dataset.playing='0';speakBtn.title='Ascolta risposta'
+    speakBtn.onclick=function(){
+      if(this.dataset.playing==='1'){
+        stopTTS()
+      }else{
+        document.querySelectorAll('.tts-btn').forEach(b=>{b.textContent='🔊';b.dataset.playing='0'})
+        this.textContent='⏹';this.dataset.playing='1'
+        speakAIResponse(content.innerHTML)
+      }
+    }
+    div.appendChild(content);div.appendChild(speakBtn)
+  }else{
+    div.innerHTML=html
+  }
+  msgs.appendChild(div)
+  msgs.scrollTop=msgs.scrollHeight
+}
+
+function escHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+async function sendAIMessage(){
+  const inp=document.getElementById('ai-input')
+  const text=inp.value.trim()
+  if(!text)return
+  appendAIMessage('user',escHtml(text))
+  inp.value=''
+  aiChatHistory.push({role:'user',content:text})
+  const modeDirective=aiManualiOnly
+    ?'\n\n⚠️ REGOLA ASSOLUTA — MODALITÀ SOLO MANUALI: Rispondi ESCLUSIVAMENTE usando le informazioni presenti nei manuali tecnici qui sopra. Se la risposta non è nei manuali, rispondi esattamente: "Questa informazione non è presente nei manuali caricati. Per una risposta più ampia attiva 🌐 Conoscenza Estesa con il toggle in alto." Non usare mai conoscenza esterna o generale.'
+    :'\n\nMODALITÀ CONOSCENZA ESTESA: Puoi usare sia i manuali tecnici forniti che la tua conoscenza generale su reti TLC, apparati e procedure. Cita i manuali quando disponibili.'
+  const btn=document.getElementById('ai-send')
+  btn.disabled=true;btn.textContent='...'
+  appendAIMessage('bot','<span class="ai-typing">● ● ●</span>')
+  try{
+    const res=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+OPENAI_KEY},
+      body:JSON.stringify({
+        model:'gpt-4o-mini',
+        messages:[
+          {role:'system',content:AI_BASE_PROMPT+(aiManualeText?'\n\n'+aiManualeText:'')+modeDirective},
+          ...aiChatHistory
+        ],
+        max_tokens:600,temperature:0.3
+      })
+    })
+    const data=await res.json()
+    const reply=data.choices?.[0]?.message?.content||'Errore nella risposta.'
+    aiChatHistory.push({role:'assistant',content:reply})
+    const msgs=document.getElementById('ai-messages')
+    msgs.lastChild.remove()
+    appendAIMessage('bot',reply.replace(/\n/g,'<br>'))
+  }catch(e){
+    document.getElementById('ai-messages').lastChild.remove()
+    appendAIMessage('bot','❌ Errore di connessione. Controlla la chiave API e la rete.')
+  }
+  btn.disabled=false;btn.textContent='➤'
+}
+
+// ── TTS (OpenAI) ───────────────────────────────────────────
+async function speakAIResponse(html){
+  stopTTS()
+  const clean=html.replace(/<[^>]*>/g,'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').trim()
+  if(!clean)return
+  try{
+    const res=await fetch('https://api.openai.com/v1/audio/speech',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+OPENAI_KEY},
+      body:JSON.stringify({model:'tts-1',input:clean.slice(0,1000),voice:'shimmer'})
+    })
+    if(!res.ok)throw new Error()
+    const blob=await res.blob()
+    const url=URL.createObjectURL(blob)
+    ttsAudio=new Audio(url)
+    ttsAudio.onended=()=>{
+      URL.revokeObjectURL(url);ttsAudio=null
+      document.querySelectorAll('.tts-btn').forEach(b=>{b.textContent='🔊';b.dataset.playing='0'})
+    }
+    ttsAudio.play()
+  }catch(e){showToast('Voce AI non disponibile','warn')}
+}
+
+function stopTTS(){
+  if(ttsAudio){ttsAudio.pause();ttsAudio=null}
+  document.querySelectorAll('.tts-btn').forEach(b=>{b.textContent='🔊';b.dataset.playing='0'})
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAIChat()})
 </script>
 </body>
 </html>
