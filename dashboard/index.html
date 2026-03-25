@@ -2015,24 +2015,26 @@ ${bundleText}`
 }
 
 function mostraPreviewAI(mese){
-  const subtitle=`Mese: ${mese} · ${aiCostiResults.length} fatture · ${aiCostiMovimenti.length} movimenti senza fattura`
+  const totMatch=aiCostiResults.filter(f=>f.matchBanca).length
+  const totFatture=aiCostiResults.reduce((s,f)=>s+(+f.importo_totale||0),0)
+  const subtitle=`Mese: ${mese} · ${aiCostiResults.length} fatture estratte · Totale: € ${totFatture.toFixed(2)} · ${totMatch} con riscontro banca`
   document.getElementById('ai-preview-subtitle').textContent=subtitle
   document.getElementById('ai-fatture-count').textContent=`(${aiCostiResults.length})`
 
-  // Tabella fatture
+  // Tabella fatture — match banca è solo informativo, niente sfondo giallo
   const tbody=document.getElementById('ai-fatture-table')
   tbody.innerHTML=aiCostiResults.map((f,i)=>`
-    <tr style="border-bottom:1px solid #f3f4f6;${f.matchBanca?'':'background:#fffbeb'}">
+    <tr style="border-bottom:1px solid #f3f4f6">
       <td style="padding:8px 10px"><input type="checkbox" ${f.selected?'checked':''} onchange="toggleFattura(${i},this.checked)"></td>
       <td style="padding:8px 10px;font-size:.78em;color:#7c3aed;font-weight:600">${f.categoria||'—'}</td>
       <td style="padding:8px 10px;font-weight:600">${f.fornitore||'—'}</td>
       <td style="padding:8px 10px;color:#6b7280;font-size:.8em">${f.num_fattura||'—'}</td>
       <td style="padding:8px 10px;color:#6b7280;font-size:.8em">${f.data||'—'}</td>
       <td style="padding:8px 10px;text-align:right;font-weight:700;color:#dc2626">€ ${f.importo_totale?parseFloat(f.importo_totale).toFixed(2):'—'}</td>
-      <td style="padding:8px 10px;text-align:center">${f.matchBanca?'✅':'🟡'}</td>
+      <td style="padding:8px 10px;text-align:center;opacity:.7" title="${f.matchBanca?'Riscontro trovato in estratto conto':'Nessun riscontro in estratto conto (solo informativo)'}">${f.matchBanca?'✅':'➖'}</td>
     </tr>`).join('')
 
-  // Movimenti senza fattura
+  // Movimenti senza fattura — sezione informativa, non selezionabile per default
   const movBox=document.getElementById('ai-movimenti-box')
   const movCount=document.getElementById('ai-movimenti-count')
   const movTable=document.getElementById('ai-movimenti-table')
@@ -2063,9 +2065,14 @@ function toggleMovimento(i,checked){
   aggiornaTotaleAI()
 }
 function aggiornaTotaleAI(){
-  const totFatture=aiCostiResults.filter(f=>f.selected).reduce((s,f)=>s+(+f.importo_totale||0),0)
-  const totMovimenti=aiCostiMovimenti.filter(m=>m.selected).reduce((s,m)=>s+(+m.importo||0),0)
-  document.getElementById('ai-totale-sel').textContent='€ '+(totFatture+totMovimenti).toFixed(2)
+  const selFatture=aiCostiResults.filter(f=>f.selected)
+  const selMovimenti=aiCostiMovimenti.filter(m=>m.selected)
+  const totFatture=selFatture.reduce((s,f)=>s+(+f.importo_totale||0),0)
+  const totMovimenti=selMovimenti.reduce((s,m)=>s+(+m.importo||0),0)
+  let label=`📄 Fatture: € ${totFatture.toFixed(2)} (${selFatture.length}/${aiCostiResults.length})`
+  if(totMovimenti>0) label+=` + 🏦 Banca: € ${totMovimenti.toFixed(2)} (${selMovimenti.length})`
+  label+=` · TOTALE: € ${(totFatture+totMovimenti).toFixed(2)}`
+  document.getElementById('ai-totale-sel').textContent=label
 }
 
 function closeAIPreview(){
@@ -2109,12 +2116,20 @@ async function salvaAIFatture(){
 
   if(!rows.length){alert('Nessuna voce selezionata');return}
 
+  // Calcola totali per conferma
+  const nFatture=aiCostiResults.filter(x=>x.selected).length
+  const totFatture=rows.filter(r=>r.categoria!=='BANCA').reduce((s,r)=>s+r.importo,0)
+  const nMovimenti=rows.length-nFatture
+
   const{error}=await sb.from('costi_mensili').insert(rows)
   if(error){alert('Errore salvataggio: '+error.message);return}
 
   closeAIPreview()
   loadEconomia()
-  document.getElementById('ai-analisi-status').textContent=`✅ Salvate ${rows.length} voci in Altri Costi`
+  let msg=`✅ Salvate ${nFatture} fatture per € ${totFatture.toFixed(2)} in Altri Costi`
+  if(nMovimenti>0) msg+=` + ${nMovimenti} movimenti banca`
+  document.getElementById('ai-analisi-status').textContent=msg
+  alert(msg)
 }
 
 function parseDataToDate(str){
