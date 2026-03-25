@@ -239,7 +239,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
       <div class="form-group"><label class="form-label">Sito *</label><div class="site-picker"><input class="form-input" id="int-site-search" placeholder="Cerca codice PCN o citta..." autocomplete="off" oninput="searchSiteForForm()"><div class="site-picker-results" id="site-picker-results"></div></div><div id="selected-site-box"></div></div>
       <div class="form-group"><label class="form-label">Cliente finale *</label><select class="form-select" id="int-cliente"><option value="">Seleziona cliente...</option></select></div>
       <div class="form-group"><label class="form-label">Lavorazione *</label><select class="form-select" id="int-lavorazione" onchange="toggleLavorazioneAltro()"><option value="">Seleziona lavorazione...</option></select><input class="form-input" id="int-lavorazione-altro" placeholder="Descrivi la lavorazione..." style="display:none;margin-top:8px;"></div>
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-textarea" id="int-note" placeholder="Note aggiuntive (opzionale)..."></textarea></div>
+      <div class="form-group"><label class="form-label">Report</label><textarea class="form-textarea" id="int-note" placeholder="Report intervento (opzionale)..."></textarea></div>
+      <div class="form-group"><label class="form-label">Segnalazioni</label><textarea class="form-textarea" id="int-segnalazioni" placeholder="Segnalazioni (opzionale)..." style="min-height:60px"></textarea></div>
       <div class="form-group"><label class="form-label">Foto</label><div class="photo-zone" id="photo-zone" onclick="document.getElementById('photo-input').click()"><div class="photo-zone-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="#0D9488"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></div><div class="photo-zone-text">Tocca per scattare o selezionare foto</div><div class="photo-zone-sub">Massimo 10 foto per intervento</div></div><input type="file" id="photo-input" accept="image/*" capture="environment" multiple style="display:none" onchange="handlePhotos(this)"><div class="photo-preview" id="photo-preview"></div></div>
       <div class="form-group"><label class="form-label">Posizione GPS</label><div class="gps-badge no" id="gps-status"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span id="gps-text">In attesa del GPS...</span></div></div>
       <button class="btn-submit" id="btn-submit" onclick="submitIntervento()"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>Invia Intervento</button>
@@ -405,6 +406,7 @@ async function submitIntervento(){
   if(lavorazione==='__altro__'){lavorazione=document.getElementById('int-lavorazione-altro').value.trim();}
   if(!lavorazione){msg.textContent='Seleziona o descrivi la lavorazione';msg.className='submit-msg err';return;}
   const note=document.getElementById('int-note').value.trim();
+  const segnalazioni=document.getElementById('int-segnalazioni').value.trim();
 
   btn.disabled=true;btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="animation:spin 1s linear infinite"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>Invio in corso...';
 
@@ -418,6 +420,7 @@ async function submitIntervento(){
       cliente_finale:cliente,
       lavorazione:lavorazione,
       note:note||null,
+      segnalazioni:segnalazioni||null,
       lat_invio:myLat||null,
       lng_invio:myLng||null,
       n_foto:formPhotos.length
@@ -457,6 +460,7 @@ function resetForm(){
   document.getElementById('int-lavorazione').value='';
   document.getElementById('int-lavorazione-altro').value='';document.getElementById('int-lavorazione-altro').style.display='none';
   document.getElementById('int-note').value='';
+  document.getElementById('int-segnalazioni').value='';
   document.getElementById('photo-preview').innerHTML='';
 }
 
