@@ -591,7 +591,11 @@ async function openFotoPanel(intId,codice,cliente,nFoto){
   if(!nFoto){document.getElementById('foto-grid').innerHTML='<div class="foto-empty">Nessuna foto per questo intervento</div>';return;}
   const{data:fotos}=await sb.from('foto').select('storage_path,filename').eq('intervento_id',intId).order('created_at');
   if(!fotos||!fotos.length){document.getElementById('foto-grid').innerHTML='<div class="foto-empty">Nessuna foto trovata</div>';return;}
-  lbPhotos=fotos.map(f=>{const{data:u}=sb.storage.from('foto-interventi').getPublicUrl(f.storage_path);return u.publicUrl;});
+  // Bucket privato → usiamo createSignedUrls (URL temporanei validi 1 ora)
+  const paths=fotos.map(f=>f.storage_path);
+  const{data:signed}=await sb.storage.from('foto-interventi').createSignedUrls(paths,3600);
+  if(!signed||!signed.length){document.getElementById('foto-grid').innerHTML='<div class="foto-empty">Errore caricamento foto</div>';return;}
+  lbPhotos=signed.map(s=>s.signedUrl);
   document.getElementById('foto-grid').innerHTML=lbPhotos.map((url,i)=>`<div class="foto-thumb-view" onclick="openLightbox(${i})"><img src="${url}" loading="lazy" onerror="this.parentElement.style.background='#f0f0f0'"></div>`).join('');
 }
 function closeFotoPanel(){
