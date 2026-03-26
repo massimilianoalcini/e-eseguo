@@ -257,7 +257,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
         <button class="action-btn navigate" onclick="switchTab('naviga')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/></svg>Naviga verso un Sito</button>
         <button class="action-btn" onclick="openAIChat()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;box-shadow:0 4px 16px rgba(124,58,237,0.3)"><svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>🤖 Assistente AI Tecnico</button>
       </div>
-      <div class="section-title">Ultimi Interventi</div>
+      <div class="section-title">Interventi di Oggi</div>
       <div class="recent-list" id="recent-list"><div class="empty-recent">Nessun intervento recente</div></div>
       <div style="text-align:center;padding:20px 0 10px;margin-top:10px;border-top:1px solid rgba(0,0,0,0.04)"><div style="font-size:.75em;color:#78756E;font-weight:600;letter-spacing:.3px">sviluppato da <span style="color:#57534E;font-weight:700">Massimiliano Alcini</span></div></div>
     </div></div>
@@ -406,7 +406,24 @@ async function initApp(){
 }
 function updateUserCard(){if(!userProfile)return;const n=userProfile.full_name||currentUser.email;document.getElementById('user-avatar').textContent=n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);document.getElementById('user-name').textContent=n;document.getElementById('user-role-area').textContent=(userProfile.role||'tecnico').charAt(0).toUpperCase()+(userProfile.role||'tecnico').slice(1)+(userProfile.area?' · '+userProfile.area:'');}
 async function loadStats(){const{count:n}=await sb.from('interventi').select('*',{count:'exact',head:true}).eq('tecnico_id',currentUser.id);const{data:fd}=await sb.from('interventi').select('n_foto').eq('tecnico_id',currentUser.id);document.getElementById('stat-interventi').textContent=n||0;document.getElementById('stat-foto').textContent=fd?fd.reduce((s,r)=>s+(r.n_foto||0),0):0;}
-async function loadRecent(){const{data}=await sb.from('interventi').select('id,codice_sito,nome_sito,cliente_finale,n_foto,created_at').eq('tecnico_id',currentUser.id).order('created_at',{ascending:false}).limit(5);const c=document.getElementById('recent-list');if(!data||!data.length){c.innerHTML='<div class="empty-recent">Nessun intervento recente</div>';return;}c.innerHTML=data.map((r,i)=>{const dt=new Date(r.created_at),ds=dt.toLocaleDateString('it-IT')+' '+dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});let rd='';if(data.length===1)rd='border-radius:var(--radius)';else if(i===0)rd='border-radius:var(--radius) var(--radius) 0 0';else if(i===data.length-1)rd='border-radius:0 0 var(--radius) var(--radius)';return`<div class="recent-item glass-strong" style="${rd};margin-bottom:1px"><div><div class="ri-code">${r.codice_sito||'N/D'}</div><div class="ri-city">${r.nome_sito||''} · ${ds}</div></div><div>${r.n_foto?`<span class="ri-badge">${r.n_foto} foto</span>`:''}</div></div>`;}).join('');}
+async function loadRecent(){
+  // Solo interventi di OGGI
+  const oggi=new Date();oggi.setHours(0,0,0,0);
+  const oggiISO=oggi.toISOString();
+  const{data}=await sb.from('interventi').select('id,codice_sito,nome_sito,cliente_finale,n_foto,created_at').eq('tecnico_id',currentUser.id).gte('created_at',oggiISO).order('created_at',{ascending:false});
+  const c=document.getElementById('recent-list');
+  if(!data||!data.length){c.innerHTML='<div class="empty-recent">Nessun intervento oggi</div>';return;}
+  c.innerHTML=data.map((r,i)=>{
+    const dt=new Date(r.created_at),ds=dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    let rd='';
+    if(data.length===1)rd='border-radius:var(--radius)';
+    else if(i===0)rd='border-radius:var(--radius) var(--radius) 0 0';
+    else if(i===data.length-1)rd='border-radius:0 0 var(--radius) var(--radius)';
+    const clienteSafe=(r.cliente_finale||'').replace(/'/g,"\\'");
+    const fotoLabel=r.n_foto?`<span class="ri-badge" style="cursor:pointer">${r.n_foto} foto</span>`:'';
+    return`<div class="recent-item glass-strong" style="${rd};margin-bottom:1px;cursor:pointer" onclick="openFotoPanel('${r.id}','${r.codice_sito||''}','${clienteSafe}',${r.n_foto||0})"><div><div class="ri-code">${r.codice_sito||'N/D'}</div><div class="ri-city">${r.nome_sito||''} · ${ds}</div></div><div>${fotoLabel}</div></div>`;
+  }).join('');
+}
 
 function switchTab(t){currentTab=t;document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+t)?.classList.add('active');document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.tab===t));if(t==='mappa')setTimeout(()=>{initMap();map?.invalidateSize();renderMapMarkers();},100);if(t==='interventi')loadInterventi();if(t==='intervento')updateGPSBadge();}
 
