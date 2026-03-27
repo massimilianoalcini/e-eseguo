@@ -195,6 +195,20 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
 .detail-info .value{color:var(--text);font-size:.82em}
 .detail-access{background:rgba(232,118,45,0.06);border:1px solid rgba(232,118,45,0.12);border-radius:12px;padding:14px;margin-bottom:18px;font-size:.82em;color:#C2631F}
 .detail-access strong{display:block;margin-bottom:6px}
+.detail-route{background:rgba(13,148,136,0.05);border:1px solid rgba(13,148,136,0.12);border-radius:14px;padding:14px;margin-bottom:18px}
+.detail-route-title{font-size:.82em;font-weight:700;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.route-btn{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:.88em;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 15px var(--accent-glow)}
+.route-btn:active{transform:scale(.96)}
+.route-btn:disabled{opacity:.5;cursor:not-allowed}
+.route-result{margin-top:12px;display:none}
+.route-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.route-stat{background:#fff;border-radius:10px;padding:10px 12px;text-align:center;border:1px solid rgba(0,0,0,0.04)}
+.route-stat .rs-value{font-size:1.1em;font-weight:800;color:var(--text)}
+.route-stat .rs-label{font-size:.7em;color:var(--text-dim);font-weight:600;margin-top:2px}
+.route-stat.fuel{border-color:rgba(232,118,45,0.15);background:rgba(232,118,45,0.04)}
+.route-stat.fuel .rs-value{color:var(--orange)}
+.route-show-map{width:100%;padding:10px;background:linear-gradient(135deg,#0D9488,#0A7A70);color:#fff;border:none;border-radius:10px;font-size:.82em;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px}
+.route-show-map:active{transform:scale(.97)}
 .detail-nav-buttons{display:flex;gap:10px}
 .detail-nav-btn{flex:1;padding:15px;border:none;border-radius:14px;font-size:.95em;font-weight:700;cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;color:white;transition:transform .15s}
 .detail-nav-btn:active{transform:scale(.96)}
@@ -332,6 +346,19 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
   <div style="display:flex;align-items:center;justify-content:space-between"><h2 id="detail-code"></h2><button onclick="closeDetail()" style="background:#EAE7E1;border:1px solid rgba(0,0,0,0.06);color:#57534E;width:34px;height:34px;border-radius:50%;font-size:1.1em;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">&times;</button></div><div class="detail-name" id="detail-name"></div>
   <div class="detail-info" id="detail-info"></div>
   <div class="detail-access" id="detail-access" style="display:none"></div>
+  <div class="detail-route" id="detail-route" style="display:none">
+    <div class="detail-route-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/></svg>Calcola Percorso</div>
+    <button class="route-btn" id="route-btn" onclick="calcolaPercorso()"><svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/></svg><span id="route-btn-text">Calcola distanza e percorso</span></button>
+    <div class="route-result" id="route-result">
+      <div class="route-stats">
+        <div class="route-stat"><div class="rs-value" id="route-km">—</div><div class="rs-label">Distanza</div></div>
+        <div class="route-stat"><div class="rs-value" id="route-time">—</div><div class="rs-label">Tempo stimato</div></div>
+        <div class="route-stat fuel"><div class="rs-value" id="route-fuel">—</div><div class="rs-label">Consumo stimato</div></div>
+        <div class="route-stat fuel"><div class="rs-value" id="route-cost">—</div><div class="rs-label">Costo benzina</div></div>
+      </div>
+      <button class="route-show-map" onclick="mostraPercorsoMappa()"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>Vedi percorso sulla Mappa</button>
+    </div>
+  </div>
   <div class="detail-nav-buttons">
     <a class="detail-nav-btn maps" id="btn-maps" href="#" target="_blank"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>Google Maps</a>
     <a class="detail-nav-btn waze" id="btn-waze" href="#" target="_blank"><svg width="20" height="20" viewBox="0 0 24 24" fill="#000"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>Waze</a>
@@ -444,8 +471,74 @@ function initMap(){if(map)return;map=L.map('map',{zoomControl:false}).setView([4
 function renderMapMarkers(){if(!markersLayer)return;markersLayer.clearLayers();const sites=(filteredSiti.length>0?filteredSiti:allSiti.slice(0,200)).filter(s=>s.latitudine&&s.longitudine);const bounds=[];sites.forEach(s=>{const la=+s.latitudine,lo=+s.longitudine;bounds.push([la,lo]);const m=L.circleMarker([la,lo],{radius:7,fillColor:'#0D9488',color:'#fff',weight:2,opacity:1,fillOpacity:.85});m.bindPopup(`<div class="popup-code">${s.codice_sito}</div><div class="popup-name">${s.nome_sito||''}</div><div style="color:#A8A29E;font-size:.85em">${s.citta||''}</div><button class="popup-btn" onclick="openDetail('${s.codice_sito}')">Dettagli</button>`);markersLayer.addLayer(m);});if(myLat&&myLng)bounds.push([myLat,myLng]);if(bounds.length>0)map.fitBounds(bounds,{padding:[30,30],maxZoom:14});}
 function updateMyMarker(){if(!map||!myLat||!myLng)return;if(myMarker)myMarker.setLatLng([myLat,myLng]);else myMarker=L.circleMarker([myLat,myLng],{radius:10,fillColor:'#16A34A',color:'#fff',weight:3,opacity:1,fillOpacity:.9}).addTo(map).bindPopup('La tua posizione');}
 
-async function openDetail(codice){let s=allSiti.find(x=>x.codice_sito===codice);if(!s)return;if(!s._full){const{data:full}=await sb.from('siti').select('*').eq('codice_sito',codice).single();if(full){Object.assign(s,full);s._full=true;}}selectedSite=s;document.getElementById('detail-code').textContent=s.codice_sito;document.getElementById('detail-name').textContent=s.nome_sito||'';const fields=[['Territorio',s.territorio],['Regione',s.regione],['Provincia',s.provincia],['Citta',s.citta],['Indirizzo',s.indirizzo],['CAP',s.cap],['Tipo',s.tipo_impianto],['Stato',s.stato_sito],['Struttura',s.struttura_civile],['Manutenzione',s.tipologia_manutenzione],['Coordinate',s.latitudine&&s.longitudine?`${(+s.latitudine).toFixed(5)}, ${(+s.longitudine).toFixed(5)}`:null]];document.getElementById('detail-info').innerHTML=fields.filter(f=>f[1]).map(f=>`<div class="label">${f[0]}</div><div class="value">${f[1]}</div>`).join('');const acc=document.getElementById('detail-access'),parts=[s.itinerario,s.descrizione_accesso,s.note_accesso].filter(Boolean);if(parts.length){acc.style.display='';acc.innerHTML='<strong>Informazioni accesso:</strong>'+(s.itinerario?'<div style="margin-top:5px"><em>Itinerario:</em> '+s.itinerario+'</div>':'')+(s.descrizione_accesso?'<div style="margin-top:5px"><em>Accesso:</em> '+s.descrizione_accesso+'</div>':'')+(s.note_accesso?'<div style="margin-top:5px"><em>Note:</em> '+s.note_accesso+'</div>':'');}else acc.style.display='none';const la=s.latitudine,lo=s.longitudine,bm=document.getElementById('btn-maps'),bw=document.getElementById('btn-waze');if(la&&lo){bm.href=`https://www.google.com/maps/dir/?api=1&destination=${la},${lo}`;bw.href=`https://waze.com/ul?ll=${la},${lo}&navigate=yes`;bm.style.opacity='1';bm.style.pointerEvents='';bw.style.opacity='1';bw.style.pointerEvents='';}else{bm.href='#';bw.href='#';bm.style.opacity='.3';bm.style.pointerEvents='none';bw.style.opacity='.3';bw.style.pointerEvents='none';}document.getElementById('detail-overlay').classList.add('show');document.getElementById('detail-panel').classList.add('open');}
+let routeLayer=null,lastRouteCoords=null;
+const FUEL_KM_PER_L=14, FUEL_PRICE_PER_L=1.85;
+
+async function openDetail(codice){let s=allSiti.find(x=>x.codice_sito===codice);if(!s)return;if(!s._full){const{data:full}=await sb.from('siti').select('*').eq('codice_sito',codice).single();if(full){Object.assign(s,full);s._full=true;}}selectedSite=s;document.getElementById('detail-code').textContent=s.codice_sito;document.getElementById('detail-name').textContent=s.nome_sito||'';const fields=[['Territorio',s.territorio],['Regione',s.regione],['Provincia',s.provincia],['Citta',s.citta],['Indirizzo',s.indirizzo],['CAP',s.cap],['Tipo',s.tipo_impianto],['Stato',s.stato_sito],['Struttura',s.struttura_civile],['Manutenzione',s.tipologia_manutenzione],['Coordinate',s.latitudine&&s.longitudine?`${(+s.latitudine).toFixed(5)}, ${(+s.longitudine).toFixed(5)}`:null]];document.getElementById('detail-info').innerHTML=fields.filter(f=>f[1]).map(f=>`<div class="label">${f[0]}</div><div class="value">${f[1]}</div>`).join('');const acc=document.getElementById('detail-access'),parts=[s.itinerario,s.descrizione_accesso,s.note_accesso].filter(Boolean);if(parts.length){acc.style.display='';acc.innerHTML='<strong>Informazioni accesso:</strong>'+(s.itinerario?'<div style="margin-top:5px"><em>Itinerario:</em> '+s.itinerario+'</div>':'')+(s.descrizione_accesso?'<div style="margin-top:5px"><em>Accesso:</em> '+s.descrizione_accesso+'</div>':'')+(s.note_accesso?'<div style="margin-top:5px"><em>Note:</em> '+s.note_accesso+'</div>':'');}else acc.style.display='none';
+/* Route section: show only if GPS + site coords available */
+const routeDiv=document.getElementById('detail-route'),routeRes=document.getElementById('route-result');
+if(myLat&&myLng&&s.latitudine&&s.longitudine){routeDiv.style.display='';routeRes.style.display='none';document.getElementById('route-btn').disabled=false;document.getElementById('route-btn-text').textContent='Calcola distanza e percorso';}else{routeDiv.style.display='none';}
+const la=s.latitudine,lo=s.longitudine,bm=document.getElementById('btn-maps'),bw=document.getElementById('btn-waze');if(la&&lo){bm.href=`https://www.google.com/maps/dir/?api=1&destination=${la},${lo}`;bw.href=`https://waze.com/ul?ll=${la},${lo}&navigate=yes`;bm.style.opacity='1';bm.style.pointerEvents='';bw.style.opacity='1';bw.style.pointerEvents='';}else{bm.href='#';bw.href='#';bm.style.opacity='.3';bm.style.pointerEvents='none';bw.style.opacity='.3';bw.style.pointerEvents='none';}document.getElementById('detail-overlay').classList.add('show');document.getElementById('detail-panel').classList.add('open');}
+
 function closeDetail(){document.getElementById('detail-panel').classList.remove('open');document.getElementById('detail-overlay').classList.remove('show');selectedSite=null;}
+
+/* === CALCOLA PERCORSO (OSRM) === */
+async function calcolaPercorso(){
+  if(!selectedSite||!myLat||!myLng)return;
+  const btn=document.getElementById('route-btn'),btnTxt=document.getElementById('route-btn-text');
+  btn.disabled=true; btnTxt.textContent='Calcolo in corso...';
+  const sLat=+selectedSite.latitudine, sLng=+selectedSite.longitudine;
+  try{
+    const url=`https://router.project-osrm.org/route/v1/driving/${myLng},${myLat};${sLng},${sLat}?overview=full&geometries=geojson`;
+    const resp=await fetch(url);
+    const data=await resp.json();
+    if(data.code!=='Ok'||!data.routes||!data.routes.length)throw new Error('Percorso non trovato');
+    const route=data.routes[0];
+    const distKm=route.distance/1000;
+    const durSec=route.duration;
+    const litri=distKm/FUEL_KM_PER_L;
+    const costo=litri*FUEL_PRICE_PER_L;
+    /* Format time */
+    const ore=Math.floor(durSec/3600), min=Math.round((durSec%3600)/60);
+    const tempoStr=ore>0?`${ore}h ${min}min`:`${min} min`;
+    /* Display results */
+    document.getElementById('route-km').textContent=distKm<10?distKm.toFixed(1)+' km':Math.round(distKm)+' km';
+    document.getElementById('route-time').textContent=tempoStr;
+    document.getElementById('route-fuel').textContent=litri.toFixed(1)+' L';
+    document.getElementById('route-cost').textContent='€ '+costo.toFixed(2);
+    document.getElementById('route-result').style.display='';
+    btnTxt.textContent='Ricalcola percorso';
+    btn.disabled=false;
+    /* Store route geometry for map */
+    lastRouteCoords=route.geometry.coordinates.map(c=>[c[1],c[0]]);
+  }catch(err){
+    btnTxt.textContent='Errore — riprova';
+    btn.disabled=false;
+    console.error('OSRM error:',err);
+    setTimeout(()=>{btnTxt.textContent='Calcola distanza e percorso';},2500);
+  }
+}
+
+function mostraPercorsoMappa(){
+  if(!lastRouteCoords||!lastRouteCoords.length)return;
+  closeDetail();
+  switchTab('mappa');
+  setTimeout(()=>{
+    initMap(); map?.invalidateSize();
+    /* Remove old route */
+    if(routeLayer){map.removeLayer(routeLayer);routeLayer=null;}
+    /* Draw route polyline */
+    routeLayer=L.polyline(lastRouteCoords,{color:'#4F46E5',weight:5,opacity:.8,smoothFactor:1,dashArray:null}).addTo(map);
+    /* Add start/end markers */
+    const startIcon=L.circleMarker(lastRouteCoords[0],{radius:10,fillColor:'#16A34A',color:'#fff',weight:3,fillOpacity:.9});
+    const endIcon=L.circleMarker(lastRouteCoords[lastRouteCoords.length-1],{radius:10,fillColor:'#EF4444',color:'#fff',weight:3,fillOpacity:.9});
+    startIcon.bindPopup('Partenza (tu)');
+    endIcon.bindPopup(selectedSite?selectedSite.codice_sito:'Destinazione');
+    routeLayer=L.layerGroup([routeLayer,startIcon,endIcon]).addTo(map);
+    /* Fit bounds to route */
+    map.fitBounds(L.polyline(lastRouteCoords).getBounds(),{padding:[40,40]});
+  },200);
+}
 
 /* === FASE 5: Nuovo Intervento === */
 async function loadDropdowns(){
