@@ -730,6 +730,31 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           </div>
         </div>
 
+        <!-- Partenza / Arrivo azienda -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;padding:12px;background:rgba(13,148,136,0.04);border:1px solid rgba(13,148,136,0.1);border-radius:10px">
+          <div>
+            <div style="font-size:.72em;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">🏢 Partenza (Azienda)</div>
+            <div style="position:relative">
+              <input class="filter-input" id="perc-partenza" placeholder="Indirizzo partenza..." oninput="geocodeAddress('partenza')" style="font-size:.85em;padding:8px 10px">
+              <div id="perc-partenza-results" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--card-border);border-radius:8px;max-height:150px;overflow-y:auto;z-index:100;display:none;box-shadow:var(--card-shadow-md)"></div>
+            </div>
+            <div id="perc-partenza-badge" style="display:none;margin-top:4px;font-size:.75em;color:var(--green);font-weight:600"></div>
+          </div>
+          <div>
+            <div style="font-size:.72em;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">🏢 Arrivo (Rientro)</div>
+            <div style="position:relative">
+              <input class="filter-input" id="perc-arrivo" placeholder="Indirizzo arrivo..." oninput="geocodeAddress('arrivo')" style="font-size:.85em;padding:8px 10px">
+              <div id="perc-arrivo-results" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--card-border);border-radius:8px;max-height:150px;overflow-y:auto;z-index:100;display:none;box-shadow:var(--card-shadow-md)"></div>
+            </div>
+            <div id="perc-arrivo-badge" style="display:none;margin-top:4px;font-size:.75em;color:var(--green);font-weight:600"></div>
+          </div>
+          <div style="grid-column:1/-1;display:flex;gap:8px;align-items:center">
+            <button class="btn-action" onclick="copiaPartenzaInArrivo()" style="font-size:.75em;padding:4px 10px">📋 Copia Partenza → Arrivo</button>
+            <button class="btn-action" onclick="salvaIndirizzoAzienda()" style="font-size:.75em;padding:4px 10px;background:rgba(22,163,74,0.08);border-color:rgba(22,163,74,0.2);color:var(--green)">💾 Salva come predefinito</button>
+            <span id="perc-save-msg" style="font-size:.72em;color:var(--green);font-weight:600;display:none">Salvato!</span>
+          </div>
+        </div>
+
         <!-- Cerca e aggiungi siti al percorso -->
         <div style="display:flex;gap:8px;margin-bottom:12px">
           <input class="filter-input" id="percorso-search" placeholder="Cerca sito da aggiungere al percorso..." oninput="searchPercorsoSito()" style="flex:1">
@@ -1440,6 +1465,99 @@ async function deleteCosto(id){
 let percorsoTappe=[];
 let percorsoRoute=null;
 let percorsoSearchTimeout=null;
+let percPartenza={label:'',lat:null,lng:null};
+let percArrivo={label:'',lat:null,lng:null};
+let geocodeTimeout=null;
+
+/* Geocoding con Nominatim (OSM) — gratuito */
+function geocodeAddress(tipo){
+  clearTimeout(geocodeTimeout);
+  const input=document.getElementById('perc-'+tipo);
+  const box=document.getElementById('perc-'+tipo+'-results');
+  const q=input.value.trim();
+  if(q.length<3){box.style.display='none';box.innerHTML='';return;}
+  geocodeTimeout=setTimeout(async()=>{
+    try{
+      const resp=await fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=it&limit=5&q='+encodeURIComponent(q));
+      const results=await resp.json();
+      if(!results.length){box.innerHTML='<div style="padding:8px;font-size:.82em;color:var(--dim)">Nessun risultato</div>';box.style.display='';return;}
+      box.innerHTML=results.map(r=>`
+        <div style="padding:8px 10px;cursor:pointer;font-size:.82em;border-bottom:1px solid rgba(0,0,0,0.04)"
+             onmouseover="this.style.background='rgba(13,148,136,0.06)'" onmouseout="this.style.background=''"
+             onclick="selectGeoResult('${tipo}',${r.lat},${r.lon},'${r.display_name.replace(/'/g,"\\'")}')">
+          <div style="font-weight:600;color:var(--text)">${r.display_name.split(',').slice(0,3).join(',')}</div>
+          <div style="font-size:.78em;color:var(--dim);margin-top:2px">${r.display_name}</div>
+        </div>`).join('');
+      box.style.display='';
+    }catch(e){console.error('Geocode error:',e);}
+  },400);
+}
+
+function selectGeoResult(tipo,lat,lng,label){
+  const shortLabel=label.split(',').slice(0,3).join(',');
+  const obj={label:shortLabel,lat:+lat,lng:+lng};
+  if(tipo==='partenza'){percPartenza=obj;}else{percArrivo=obj;}
+  document.getElementById('perc-'+tipo).value=shortLabel;
+  document.getElementById('perc-'+tipo+'-results').style.display='none';
+  const badge=document.getElementById('perc-'+tipo+'-badge');
+  badge.textContent='✅ '+lat.toFixed(5)+', '+lng.toFixed(5);
+  badge.style.display='';
+  updateCalcolaBtn();
+  /* Aggiungi marker sulla mappa */
+  if(dashMap){
+    const color=tipo==='partenza'?'#16A34A':'#EF4444';
+    const existing=dashMap._percMarker?.[tipo];
+    if(existing)dashMap.removeLayer(existing);
+    if(!dashMap._percMarker)dashMap._percMarker={};
+    dashMap._percMarker[tipo]=L.circleMarker([+lat,+lng],{radius:12,fillColor:color,color:'#fff',weight:3,fillOpacity:.9}).addTo(dashMap);
+    dashMap._percMarker[tipo].bindTooltip(tipo==='partenza'?'🏢 Partenza':'🏢 Arrivo',{permanent:true,direction:'top'});
+  }
+}
+
+function copiaPartenzaInArrivo(){
+  if(!percPartenza.lat){alert('Imposta prima la partenza');return;}
+  percArrivo={...percPartenza};
+  document.getElementById('perc-arrivo').value=percPartenza.label;
+  const badge=document.getElementById('perc-arrivo-badge');
+  badge.textContent='✅ '+percArrivo.lat.toFixed(5)+', '+percArrivo.lng.toFixed(5);
+  badge.style.display='';
+  selectGeoResult('arrivo',percArrivo.lat,percArrivo.lng,percArrivo.label);
+}
+
+async function salvaIndirizzoAzienda(){
+  if(!percPartenza.lat){alert('Imposta prima la partenza');return;}
+  const val=JSON.stringify({partenza:percPartenza,arrivo:percArrivo.lat?percArrivo:percPartenza});
+  await sb.from('config').upsert({key:'indirizzo_azienda',value:val},{onConflict:'key'});
+  const msg=document.getElementById('perc-save-msg');
+  msg.style.display='';setTimeout(()=>msg.style.display='none',2500);
+}
+
+async function caricaIndirizzoAzienda(){
+  try{
+    const{data}=await sb.from('config').select('value').eq('key','indirizzo_azienda').single();
+    if(data&&data.value){
+      const obj=JSON.parse(data.value);
+      if(obj.partenza&&obj.partenza.lat){
+        percPartenza=obj.partenza;
+        document.getElementById('perc-partenza').value=obj.partenza.label;
+        document.getElementById('perc-partenza-badge').textContent='✅ '+obj.partenza.lat.toFixed(5)+', '+obj.partenza.lng.toFixed(5);
+        document.getElementById('perc-partenza-badge').style.display='';
+      }
+      if(obj.arrivo&&obj.arrivo.lat){
+        percArrivo=obj.arrivo;
+        document.getElementById('perc-arrivo').value=obj.arrivo.label;
+        document.getElementById('perc-arrivo-badge').textContent='✅ '+obj.arrivo.lat.toFixed(5)+', '+obj.arrivo.lng.toFixed(5);
+        document.getElementById('perc-arrivo-badge').style.display='';
+      }
+      updateCalcolaBtn();
+    }
+  }catch(e){}
+}
+
+function updateCalcolaBtn(){
+  const btn=document.getElementById('btn-calcola-percorso');
+  btn.disabled=!(percPartenza.lat&&percorsoTappe.length>=1);
+}
 
 function searchPercorsoSito(){
   clearTimeout(percorsoSearchTimeout);
@@ -1481,11 +1599,10 @@ let dragSrcIdx=null;
 
 function renderTappe(){
   const box=document.getElementById('percorso-tappe');
-  const btn=document.getElementById('btn-calcola-percorso');
-  btn.disabled=percorsoTappe.length<2;
+  updateCalcolaBtn();
   document.getElementById('btn-ottimizza').disabled=percorsoTappe.length<3;
   if(!percorsoTappe.length){
-    box.innerHTML='<div style="text-align:center;color:var(--dim);font-size:.85em;padding:12px">Cerca e aggiungi almeno 2 siti per calcolare il percorso</div>';
+    box.innerHTML='<div style="text-align:center;color:var(--dim);font-size:.85em;padding:12px">Aggiungi i siti da visitare. Imposta Partenza (e Arrivo) per il calcolo completo.</div>';
     document.getElementById('percorso-risultato').style.display='none';
     return;
   }
@@ -1523,12 +1640,18 @@ function renderTappe(){
 }
 
 async function calcolaPercorso(){
-  if(percorsoTappe.length<2)return;
+  if(percorsoTappe.length<1)return;
+  if(!percPartenza.lat){alert('Imposta l\'indirizzo di Partenza (azienda)');return;}
   const btn=document.getElementById('btn-calcola-percorso');
   btn.textContent='Calcolo in corso...';btn.disabled=true;
 
+  // Costruisci array completo: Partenza + Siti + Arrivo
+  const fullStops=[{codice:'🏢 Partenza',lat:percPartenza.lat,lng:percPartenza.lng}];
+  percorsoTappe.forEach(t=>fullStops.push(t));
+  if(percArrivo.lat){fullStops.push({codice:'🏢 Arrivo',lat:percArrivo.lat,lng:percArrivo.lng});}
+
   // Crea stringa coordinate per OSRM: lng,lat;lng,lat;...
-  const coords=percorsoTappe.map(t=>t.lng+','+t.lat).join(';');
+  const coords=fullStops.map(t=>t.lng+','+t.lat).join(';');
   try{
     const resp=await fetch('https://router.project-osrm.org/route/v1/driving/'+coords+'?overview=full&geometries=geojson&steps=true');
     const data=await resp.json();
@@ -1546,7 +1669,7 @@ async function calcolaPercorso(){
       const litri=(parseFloat(km)/consumo).toFixed(1);
       const costoCarb=(litri*prezzo).toFixed(2);
 
-      document.getElementById('perc-n-tappe').textContent=percorsoTappe.length;
+      document.getElementById('perc-n-tappe').textContent=fullStops.length;
       document.getElementById('perc-km').textContent=km+' km';
       document.getElementById('perc-tempo').textContent=tempoStr;
       document.getElementById('perc-litri').textContent=litri+' l';
@@ -1562,7 +1685,7 @@ async function calcolaPercorso(){
           const legKm=(leg.distance/1000).toFixed(1);
           const legMin=Math.round(leg.duration/60);
           dettaglio+=`<div style="display:flex;justify-content:space-between;padding:4px 0">
-            <span>${percorsoTappe[i].codice} → ${percorsoTappe[i+1].codice}</span>
+            <span>${fullStops[i].codice} → ${fullStops[i+1].codice}</span>
             <span style="color:var(--mid);font-weight:600">${legKm} km — ${legMin} min</span>
           </div>`;
         });
@@ -1652,7 +1775,7 @@ function showPage(page){
   document.querySelectorAll('.page-section').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page)?.classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
-  if(page==='siti'){setTimeout(()=>initDashMap(),100);renderTappe();}
+  if(page==='siti'){setTimeout(()=>initDashMap(),100);renderTappe();caricaIndirizzoAzienda();}
   if(page==='manuali'){loadManuali();}
   if(page==='impostazioni'){loadImpostazioni();}
 }
