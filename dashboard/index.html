@@ -1600,7 +1600,7 @@ let dragSrcIdx=null;
 function renderTappe(){
   const box=document.getElementById('percorso-tappe');
   updateCalcolaBtn();
-  document.getElementById('btn-ottimizza').disabled=percorsoTappe.length<3;
+  document.getElementById('btn-ottimizza').disabled=percorsoTappe.length<2;
   if(!percorsoTappe.length){
     box.innerHTML='<div style="text-align:center;color:var(--dim);font-size:.85em;padding:12px">Aggiungi i siti da visitare. Imposta Partenza (e Arrivo) per il calcolo completo.</div>';
     document.getElementById('percorso-risultato').style.display='none';
@@ -1710,21 +1710,31 @@ async function calcolaPercorso(){
 }
 
 async function ottimizzaPercorso(){
-  if(percorsoTappe.length<3)return;
+  if(percorsoTappe.length<2)return;
   const btn=document.getElementById('btn-ottimizza');
   const origText=btn.innerHTML;
   btn.innerHTML='Ottimizzazione...';btn.disabled=true;
 
+  // Costruisci percorso completo: Partenza + Siti + Arrivo per ottimizzazione reale
+  const fullStops=[];
+  if(percPartenza.lat)fullStops.push({lng:percPartenza.lng,lat:percPartenza.lat,_tipo:'partenza'});
+  percorsoTappe.forEach((t,i)=>fullStops.push({lng:t.lng,lat:t.lat,_tipo:'tappa',_idx:i}));
+  if(percArrivo.lat)fullStops.push({lng:percArrivo.lng,lat:percArrivo.lat,_tipo:'arrivo'});
+
   // Usa OSRM trip endpoint che risolve il TSP (Travelling Salesman Problem)
-  const coords=percorsoTappe.map(t=>t.lng+','+t.lat).join(';');
+  const coords=fullStops.map(t=>t.lng+','+t.lat).join(';');
+  // source=first (partenza fissa), destination=last (arrivo fisso se presente)
+  const destParam=percArrivo.lat?'&destination=last':'';
   try{
-    const resp=await fetch('https://router.project-osrm.org/trip/v1/driving/'+coords+'?roundtrip=false&source=first&geometries=geojson&overview=full');
+    const resp=await fetch('https://router.project-osrm.org/trip/v1/driving/'+coords+'?roundtrip=false&source=first'+destParam+'&geometries=geojson&overview=full');
     const data=await resp.json();
     if(data.code==='Ok'&&data.waypoints){
-      // Riordina le tappe secondo l'ordine ottimale
-      const newOrder=data.waypoints.sort((a,b)=>a.waypoint_index-b.waypoint_index).map(w=>w.waypoint_index);
-      const reordered=newOrder.map(i=>percorsoTappe[i]);
-      percorsoTappe=reordered;
+      // Estrai solo le tappe-sito dall'ordine ottimale (escludi partenza/arrivo)
+      const wpSorted=data.waypoints
+        .map((w,origIdx)=>({...w,origIdx,stop:fullStops[origIdx]}))
+        .sort((a,b)=>a.waypoint_index-b.waypoint_index);
+      const reorderedTappe=wpSorted.filter(w=>w.stop._tipo==='tappa').map(w=>percorsoTappe[w.stop._idx]);
+      percorsoTappe=reorderedTappe;
       renderTappe();
       renderPercorsoOnMap();
       // Calcola il percorso con il nuovo ordine
@@ -1735,7 +1745,7 @@ async function ottimizzaPercorso(){
   }catch(e){
     alert('Errore connessione: '+e.message);
   }
-  btn.innerHTML=origText;btn.disabled=percorsoTappe.length<3;
+  btn.innerHTML=origText;btn.disabled=percorsoTappe.length<2;
 }
 
 function ricalcolaCarburante(){
