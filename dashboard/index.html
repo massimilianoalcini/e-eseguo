@@ -367,7 +367,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
     <button class="nav-btn active" data-page="overview" onclick="showPage('overview')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Dashboard</button>
     <div class="nav-section">Gestione</div>
     <button class="nav-btn" data-page="interventi" onclick="showPage('interventi')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 9V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/></svg>Interventi</button>
-    <button class="nav-btn" data-page="tecnici" onclick="showPage('tecnici')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Tecnici</button>
+    <button class="nav-btn" data-page="tecnici" onclick="showPage('tecnici')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>👥 Utenti</button>
     <button class="nav-btn" data-page="economia" onclick="showPage('economia')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>Economia</button>
     <button class="nav-btn" data-page="manuali" onclick="showPage('manuali')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>🤖 Manuali AI</button>
     <div class="nav-section">Territorio</div>
@@ -415,11 +415,62 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
 
     <!-- TECNICI -->
     <div class="page-section" id="page-tecnici">
-      <div class="section-header">Tecnici</div>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Nome</th><th>Email</th><th>Area</th><th>Interventi</th><th>Foto</th></tr></thead>
-        <tbody id="tecnici-table"></tbody>
-      </table></div>
+      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+        <span>👥 Gestione Utenti</span>
+        <button class="btn-action" onclick="openCreaUtente()" id="btn-crea-utente" style="background:linear-gradient(135deg,#0D9488,#0A7A70);color:#fff;border:none;padding:8px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.88em">+ Nuovo Utente</button>
+      </div>
+
+      <!-- Form creazione utente (nascosto) -->
+      <div id="crea-utente-box" style="display:none;background:#fff;border:2px solid rgba(13,148,136,0.2);border-radius:14px;padding:20px;margin-bottom:18px">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:14px;font-size:.95em">Crea nuovo utente</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div>
+            <label style="font-size:.75em;font-weight:600;color:var(--dim);display:block;margin-bottom:3px">Nome completo *</label>
+            <input class="filter-input" id="nu-nome" placeholder="es. Mario Rossi" style="width:100%;padding:10px 12px">
+          </div>
+          <div>
+            <label style="font-size:.75em;font-weight:600;color:var(--dim);display:block;margin-bottom:3px">Email *</label>
+            <input class="filter-input" id="nu-email" type="email" placeholder="es. mario@azienda.it" style="width:100%;padding:10px 12px">
+          </div>
+          <div>
+            <label style="font-size:.75em;font-weight:600;color:var(--dim);display:block;margin-bottom:3px">Password *</label>
+            <input class="filter-input" id="nu-password" type="password" placeholder="Min. 6 caratteri" style="width:100%;padding:10px 12px">
+          </div>
+          <div>
+            <label style="font-size:.75em;font-weight:600;color:var(--dim);display:block;margin-bottom:3px">Ruolo *</label>
+            <select class="filter-input" id="nu-ruolo" style="width:100%;padding:10px 12px">
+              <option value="">Seleziona ruolo...</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:.75em;font-weight:600;color:var(--dim);display:block;margin-bottom:3px">Area / Zona</label>
+            <input class="filter-input" id="nu-area" placeholder="es. Terni, Roma Nord..." style="width:100%;padding:10px 12px">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="creaNuovoUtente()" style="padding:10px 22px;background:linear-gradient(135deg,#0D9488,#0A7A70);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:.88em" id="btn-salva-utente">✅ Crea Utente</button>
+          <button onclick="closeCreaUtente()" style="padding:10px 16px;background:#f3f4f6;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:.85em;color:#374151">Annulla</button>
+          <span id="nu-msg" style="font-size:.82em;font-weight:600;margin-left:8px"></span>
+        </div>
+      </div>
+
+      <!-- Tabella coordinatori (visibile solo per admin) -->
+      <div id="coordinatori-section" style="display:none;margin-bottom:18px">
+        <div style="font-weight:700;font-size:.9em;color:var(--accent);margin-bottom:8px">📋 Coordinatori</div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Nome</th><th>Email</th><th>Area</th><th>Ruolo</th></tr></thead>
+          <tbody id="coordinatori-table"></tbody>
+        </table></div>
+      </div>
+
+      <!-- Tabella tecnici -->
+      <div style="margin-bottom:8px">
+        <div style="font-weight:700;font-size:.9em;color:var(--orange);margin-bottom:8px">🔧 Tecnici</div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Nome</th><th>Email</th><th>Area</th><th>Interventi</th><th>Foto</th></tr></thead>
+          <tbody id="tecnici-table"></tbody>
+        </table></div>
+      </div>
     </div>
 
     <!-- IMPOSTAZIONI -->
@@ -924,12 +975,13 @@ function showApp(){
   document.getElementById('main-area').style.display='';
   const n=userProfile.full_name||currentUser.email;
   document.getElementById('tb-avatar').textContent=n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);
-  document.getElementById('tb-name').textContent=n;
+  const roleLabel=userProfile.role==='amministratore'?'Amministratore':'Coordinatore';
+  document.getElementById('tb-name').textContent=n+' · '+roleLabel;
   loadAllData();
 }
 
 async function loadAllData(){
-  // Load profiles
+  // Load profiles (include email)
   const{data:profiles}=await sb.from('profiles').select('*').order('full_name');
   allProfiles=profiles||[];
 
@@ -948,6 +1000,10 @@ async function loadAllData(){
   renderInterventi();
   renderTecnici();
   initEconomia();
+}
+
+async function loadUserEmails(){
+  /* emails are now in profiles table directly */
 }
 
 function populateFilters(){
@@ -1090,18 +1146,106 @@ async function validaIntervento(){
 }
 
 function renderTecnici(){
+  const isAdmin=userProfile&&userProfile.role==='amministratore';
+  /* Coordinatori (solo per admin) */
+  const coordSection=document.getElementById('coordinatori-section');
+  if(isAdmin){
+    coordSection.style.display='';
+    const coords=allProfiles.filter(p=>p.role==='coordinatore');
+    document.getElementById('coordinatori-table').innerHTML=coords.map(t=>`<tr>
+      <td style="font-weight:700">${t.full_name||'—'}</td>
+      <td style="color:var(--dim)">${t.email||t.id.slice(0,8)+'...'}</td>
+      <td>${t.area||'—'}</td>
+      <td><span class="badge" style="background:rgba(13,148,136,0.1);color:var(--accent)">Coordinatore</span></td>
+    </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--dim)">Nessun coordinatore</td></tr>';
+  }else{coordSection.style.display='none';}
+  /* Tecnici */
   const tecnici=allProfiles.filter(p=>p.role==='tecnico');
   document.getElementById('tecnici-table').innerHTML=tecnici.map(t=>{
     const ints=allInterventi.filter(i=>i.tecnico_id===t.id);
     const foto=ints.reduce((s,i)=>s+(i.n_foto||0),0);
     return`<tr>
       <td style="font-weight:700">${t.full_name||'—'}</td>
-      <td style="color:var(--dim)">${t.id.slice(0,8)}...</td>
+      <td style="color:var(--dim)">${t.email||t.id.slice(0,8)+'...'}</td>
       <td>${t.area||'—'}</td>
       <td><span class="badge badge-foto">${ints.length}</span></td>
       <td>${foto}</td>
     </tr>`;
-  }).join('');
+  }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--dim)">Nessun tecnico</td></tr>';
+  /* Popola ruoli nel form creazione */
+  populateRuoliSelect();
+}
+
+function populateRuoliSelect(){
+  const sel=document.getElementById('nu-ruolo');
+  sel.innerHTML='<option value="">Seleziona ruolo...</option>';
+  const isAdmin=userProfile&&userProfile.role==='amministratore';
+  if(isAdmin){
+    sel.innerHTML+='<option value="coordinatore">Coordinatore</option>';
+  }
+  sel.innerHTML+='<option value="tecnico">Tecnico</option>';
+}
+
+function openCreaUtente(){
+  document.getElementById('crea-utente-box').style.display='';
+  document.getElementById('nu-nome').value='';
+  document.getElementById('nu-email').value='';
+  document.getElementById('nu-password').value='';
+  document.getElementById('nu-ruolo').value='';
+  document.getElementById('nu-area').value='';
+  document.getElementById('nu-msg').textContent='';
+  populateRuoliSelect();
+}
+
+function closeCreaUtente(){
+  document.getElementById('crea-utente-box').style.display='none';
+}
+
+async function creaNuovoUtente(){
+  const nome=document.getElementById('nu-nome').value.trim();
+  const email=document.getElementById('nu-email').value.trim();
+  const password=document.getElementById('nu-password').value;
+  const ruolo=document.getElementById('nu-ruolo').value;
+  const area=document.getElementById('nu-area').value.trim();
+  const msg=document.getElementById('nu-msg');
+
+  if(!nome||!email||!password||!ruolo){msg.style.color='var(--red)';msg.textContent='Compila tutti i campi obbligatori';return;}
+  if(password.length<6){msg.style.color='var(--red)';msg.textContent='Password: minimo 6 caratteri';return;}
+
+  const btn=document.getElementById('btn-salva-utente');
+  btn.disabled=true;btn.textContent='Creazione...';
+  msg.textContent='';
+
+  try{
+    const{data:{session}}=await sb.auth.getSession();
+    const resp=await fetch('https://gohtmuxaidwzijzrgzfh.supabase.co/functions/v1/create-user',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+session.access_token,
+        'apikey':SUPA_KEY
+      },
+      body:JSON.stringify({email,password,full_name:nome,role:ruolo,area:area||null})
+    });
+    const result=await resp.json();
+    if(result.success){
+      msg.style.color='var(--green)';
+      msg.textContent='✅ Utente '+nome+' creato con successo!';
+      closeCreaUtente();
+      // Ricarica profili
+      const{data:profiles}=await sb.from('profiles').select('*').order('full_name');
+      allProfiles=profiles||[];
+      await loadUserEmails();
+      renderTecnici();
+    }else{
+      msg.style.color='var(--red)';
+      msg.textContent='❌ '+result.error;
+    }
+  }catch(e){
+    msg.style.color='var(--red)';
+    msg.textContent='❌ Errore: '+e.message;
+  }
+  btn.disabled=false;btn.textContent='✅ Crea Utente';
 }
 
 /* Importo modal */
