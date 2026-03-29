@@ -51,9 +51,9 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
 .teal-panel h1{color:white;font-size:1.7em;font-weight:800;margin-bottom:6px}
 .teal-panel p{color:rgba(255,255,255,0.85);font-size:.88em;line-height:1.6;margin:10px 0 28px;font-weight:500;max-width:280px}
 .teal-panel .teal-welcome{transition:opacity .3s;display:flex;flex-direction:column;align-items:center}
-.teal-panel .teal-info{position:absolute;opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;padding:40px;text-align:center}
+.teal-panel .teal-info{position:absolute;opacity:0;pointer-events:none;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;padding:40px;text-align:center}
 .teal-panel.moved .teal-welcome{opacity:0;pointer-events:none}
-.teal-panel.moved .teal-info{opacity:1}
+.teal-panel.moved .teal-info{opacity:1;pointer-events:auto}
 .btn-ghost{background:transparent;border:2px solid rgba(255,255,255,0.6);color:white;padding:12px 40px;border-radius:50px;font-size:.85em;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.8px;text-transform:uppercase;transition:all .2s}
 .btn-ghost:hover{background:rgba(255,255,255,0.12);border-color:white}
 .btn-ghost:active{transform:scale(0.96)}
@@ -425,13 +425,13 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         <div class="logo-wrap"><img src="../app/LOGOTRSP.png" class="logo-img" alt="E.ESEGUO"></div>
         <h1>Bentornato!</h1>
         <p>Accedi alla dashboard per gestire siti, percorsi e tecnici.</p>
-        <button class="btn-ghost" onclick="document.getElementById('tealPanel').classList.add('moved')">ACCEDI</button>
+        <button class="btn-ghost" onclick="slidePanel()">ACCEDI</button>
       </div>
       <div class="teal-info">
         <div class="logo-wrap"><img src="../app/LOGOTRSP.png" class="logo-img" alt="E.ESEGUO"></div>
         <h1>E.ESEGUO</h1>
         <p>Il tuo sistema di gestione manutenzione intelligente.</p>
-        <button class="btn-ghost" onclick="document.getElementById('tealPanel').classList.remove('moved')">INDIETRO</button>
+        <button class="btn-ghost" onclick="slidePanel()">INDIETRO</button>
       </div>
     </div>
   </div>
@@ -1028,6 +1028,9 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
   <div class="lb-counter" id="lb-counter"></div>
 </div>
 
+<script>
+function slidePanel(){document.getElementById('tealPanel').classList.toggle('moved');}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
