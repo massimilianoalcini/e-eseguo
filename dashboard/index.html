@@ -495,7 +495,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         <select class="filter-select" id="f-mese" onchange="filterInterventi()"><option value="">Tutti i mesi</option></select>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Codice Sito</th><th>Sito</th><th>Tecnico</th><th>Cliente</th><th>Lavorazione</th><th>Foto</th><th>Importo</th><th>Data</th><th>Azioni</th></tr></thead>
+        <thead><tr><th>Codice Sito</th><th>Sito</th><th>Tecnico</th><th>Cliente</th><th>Lavorazione</th><th>Foto</th><th>Durata</th><th>Importo</th><th>Data</th><th>Azioni</th></tr></thead>
         <tbody id="interventi-table"></tbody>
       </table></div>
     </div>
@@ -1111,6 +1111,7 @@ function populateFilters(){
 function formatMese(m){const[y,mo]=m.split('-');const nomi=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];return nomi[parseInt(mo)-1]+' '+y;}
 function getTecName(id){const p=allProfiles.find(x=>x.id===id);return p?p.full_name||'N/D':'N/D';}
 function formatDate(d){if(!d)return'';const dt=new Date(d);return dt.toLocaleDateString('it-IT')+' '+dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});}
+function formatDurata(min){if(min==null||min===''||isNaN(min))return'—';const m=+min;if(m<60)return m+'min';return Math.floor(m/60)+'h '+(m%60?m%60+'min':'');}
 
 function renderOverview(){
   const now=new Date(),ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
@@ -1187,6 +1188,7 @@ function renderInterventiTable(list){
       <td>${r.cliente_finale||'—'}</td>
       <td>${r.lavorazione||'—'}</td>
       <td>${r.n_foto?`<button class="btn-action" onclick="viewFoto('${r.id}','${r.codice_sito||''}',${r.n_foto})">${r.n_foto} foto</button>`:'—'}</td>
+      <td><span style="font-weight:700;color:var(--accent)">${formatDurata(r.durata_minuti)}</span></td>
       <td>${r.importo!=null?`<span class="badge badge-importo">€${(+r.importo).toFixed(2)}</span>`:`<span class="badge badge-no">—</span>`}</td>
       <td class="td-date">${formatDate(r.created_at)}</td>
       <td>${azioniBtn}</td>
@@ -1382,6 +1384,8 @@ async function generateReport(intId) {
   const dataInvio = new Date(inv.created_at).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
   const gps = inv.lat_invio?`${inv.lat_invio}°N  ${inv.lng_invio}°E`:'Non rilevato'
   const tecName = getTecName(inv.tecnico_id)
+  const oraInizio = inv.ora_inizio ? new Date(inv.ora_inizio).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) : '—'
+  const durataStr = (inv.durata_minuti!=null&&!isNaN(inv.durata_minuti)) ? (inv.durata_minuti<60 ? inv.durata_minuti+'min' : Math.floor(inv.durata_minuti/60)+'h '+(inv.durata_minuti%60?inv.durata_minuti%60+'min':'')) : '—'
 
   const html = `<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">
   <title>Report Intervento ${inv.codice_sito}</title>
@@ -1435,6 +1439,8 @@ async function generateReport(intId) {
       <div class="info-box"><div class="info-label">Lavorazione</div><div class="info-val">${inv.lavorazione||'–'}</div></div>
       <div class="info-box"><div class="info-label">Tecnico</div><div class="info-val">${tecName}</div></div>
       <div class="info-box"><div class="info-label">Data Intervento</div><div class="info-val">${dataInvio}</div></div>
+      <div class="info-box"><div class="info-label">Ora Inizio</div><div class="info-val">${oraInizio}</div></div>
+      <div class="info-box"><div class="info-label">Durata Intervento</div><div class="info-val">${durataStr}</div></div>
       <div class="info-box"><div class="info-label">Coordinate GPS</div><div class="info-val">${gps}</div></div>
       <div class="info-box"><div class="info-label">N° Foto</div><div class="info-val">${inv.n_foto||0} foto</div></div>
       <div class="info-box"><div class="info-label">Importo</div><div class="info-val">${inv.importo!=null?'€ '+(+inv.importo).toFixed(2):'Non assegnato'}</div></div>

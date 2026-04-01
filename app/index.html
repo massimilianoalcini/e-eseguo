@@ -297,6 +297,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
       <div class="form-group"><label class="form-label">Segnalazioni</label><textarea class="form-textarea" id="int-segnalazioni" placeholder="Segnalazioni (opzionale)..." style="min-height:60px"></textarea></div>
       <div class="form-group"><label class="form-label">Foto</label><div class="photo-zone" id="photo-zone" onclick="document.getElementById('photo-input').click()"><div class="photo-zone-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="#0D9488"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></div><div class="photo-zone-text">Tocca per scattare o selezionare foto</div><div class="photo-zone-sub">Massimo 10 foto per intervento</div></div><input type="file" id="photo-input" accept="image/*" capture="environment" multiple style="display:none" onchange="handlePhotos(this)"><div class="photo-preview" id="photo-preview"></div></div>
       <div class="form-group"><label class="form-label">Posizione GPS</label><div class="gps-badge no" id="gps-status"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span id="gps-text">In attesa del GPS...</span></div></div>
+      <div class="form-group"><label class="form-label">Ora inizio intervento</label><input type="time" class="form-input" id="int-ora-inizio" style="font-size:1.1em;font-weight:700;color:var(--accent);letter-spacing:.5px"></div>
       <button class="btn-submit" id="btn-submit" onclick="submitIntervento()"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>Invia Intervento</button>
       <div class="submit-msg" id="submit-msg"></div>
     </div></div>
@@ -452,7 +453,8 @@ async function loadRecent(){
   }).join('');
 }
 
-function switchTab(t){currentTab=t;document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+t)?.classList.add('active');document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.tab===t));if(t==='mappa')setTimeout(()=>{initMap();map?.invalidateSize();renderMapMarkers();},100);if(t==='interventi')loadInterventi();if(t==='intervento')updateGPSBadge();}
+function switchTab(t){currentTab=t;document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+t)?.classList.add('active');document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.tab===t));if(t==='mappa')setTimeout(()=>{initMap();map?.invalidateSize();renderMapMarkers();},100);if(t==='interventi')loadInterventi();if(t==='intervento'){updateGPSBadge();prefillOraInizio();}}
+function prefillOraInizio(){const el=document.getElementById('int-ora-inizio');if(!el)return;const now=new Date();const hh=String(now.getHours()).padStart(2,'0');const mm=String(now.getMinutes()).padStart(2,'0');el.value=hh+':'+mm;}
 
 async function startSync(){const o=document.getElementById('sync-overlay'),b=document.getElementById('sync-bar'),s=document.getElementById('sync-status');o.classList.add('show');b.style.width='30%';s.textContent='Connessione al database...';try{const{data:cnt}=await sb.rpc('get_siti_count');window._sitiTotal=cnt||0;b.style.width='100%';s.textContent=`${window._sitiTotal} siti disponibili!`;const tm=await openDB();const t=tm.transaction(STORE_META,'readwrite');t.objectStore(STORE_META).put({key:'lastSync',value:new Date().toISOString()});await new Promise(r=>{t.oncomplete=r});tm.close();await updateSyncBadge();setTimeout(()=>o.classList.remove('show'),800);}catch(err){s.textContent='Errore: '+err.message;setTimeout(()=>o.classList.remove('show'),2000);}}
 async function updateSyncBadge(){const ls=await getLastSync(),dot=document.getElementById('sync-dot'),lbl=document.getElementById('sync-label');if(!ls){dot.className='sync-dot none';lbl.textContent='Sync';return;}const h=(Date.now()-new Date(ls).getTime())/3600000;if(h<24){dot.className='sync-dot ok';lbl.textContent=h<1?'Sync OK':`${Math.floor(h)}h fa`;}else{dot.className='sync-dot stale';lbl.textContent=`${Math.floor(h/24)}g fa`;}}
@@ -624,6 +626,17 @@ async function submitIntervento(){
   const note=document.getElementById('int-note').value.trim();
   const segnalazioni=document.getElementById('int-segnalazioni').value.trim();
 
+  // Calcola ora_inizio e durata_minuti
+  const oraInizioVal=document.getElementById('int-ora-inizio').value; // "HH:MM"
+  let oraInizioISO=null, durata_minuti=null;
+  if(oraInizioVal){
+    const now=new Date();
+    const [hh,mm]=oraInizioVal.split(':').map(Number);
+    const start=new Date(now.getFullYear(),now.getMonth(),now.getDate(),hh,mm,0,0);
+    oraInizioISO=start.toISOString();
+    durata_minuti=Math.max(0,Math.round((Date.now()-start.getTime())/60000));
+  }
+
   btn.disabled=true;btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="animation:spin 1s linear infinite"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>Invio in corso...';
 
   try{
@@ -639,7 +652,9 @@ async function submitIntervento(){
       segnalazioni:segnalazioni||null,
       lat_invio:myLat||null,
       lng_invio:myLng||null,
-      n_foto:formPhotos.length
+      n_foto:formPhotos.length,
+      ora_inizio:oraInizioISO||null,
+      durata_minuti:durata_minuti
     }).select().single();
     if(intErr)throw intErr;
     const intId=intData.id;
@@ -678,6 +693,7 @@ function resetForm(){
   document.getElementById('int-note').value='';
   document.getElementById('int-segnalazioni').value='';
   document.getElementById('photo-preview').innerHTML='';
+  prefillOraInizio();
 }
 
 /* === FASE 5: Interventi Inviati === */
