@@ -1095,6 +1095,8 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <div class="stat-card"><div class="label">Ore di Guida</div><div class="value green" id="g-kpi-guida">—</div><div class="stat-icon" style="background:linear-gradient(135deg,#16A34A,#34D399);color:#fff"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/></svg></div></div>
           <div class="stat-card"><div class="label">N. Soste</div><div class="value orange" id="g-kpi-stops">—</div><div class="stat-icon" style="background:linear-gradient(135deg,#E8762D,#F59E0B);color:#fff"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg></div></div>
           <div class="stat-card"><div class="label">Velocità Max</div><div class="value" id="g-kpi-vmax" style="color:#6366F1">—</div><div class="stat-icon" style="background:linear-gradient(135deg,#6366F1,#818CF8);color:#fff"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.46 10c.06.5.13 1 .13 1.5 0 1.34-.27 2.61-.74 3.79l1.49 1.49c.97-1.45 1.59-3.18 1.69-5.04l-2.57-1.74zM5.27 5.27L4 6.55l3.21 3.21c-.13.4-.21.84-.21 1.29 0 1.86.61 3.59 1.62 5.04L5.39 19.39C3.85 17.39 3 14.83 3 12c0-1.49.27-2.91.76-4.22L5.27 5.27z"/></svg></div></div>
+          <div class="stat-card" title="Stima: km / consumo medio (default 14 km/l)"><div class="label">Carburante <small style="color:var(--dim);font-weight:600;font-size:.7em">stimato</small></div><div class="value" id="g-kpi-fuel-l" style="color:#D97706">—</div><div class="stat-icon" style="background:linear-gradient(135deg,#D97706,#F59E0B);color:#fff"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77zM12 10H6V5h6v5zm6 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg></div></div>
+          <div class="stat-card" title="Stima: litri × prezzo medio (default €1.85/l)"><div class="label">Costo Stimato</div><div class="value" id="g-kpi-fuel-eur" style="color:#DC2626">—</div><div class="stat-icon" style="background:linear-gradient(135deg,#DC2626,#EF4444);color:#fff"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div></div>
         </div>
 
         <div class="flotta-map" id="g-map-wrap" style="display:none"><div id="g-map-el"></div></div>
@@ -2560,6 +2562,19 @@ async function loadGiornata(){
     document.getElementById('g-kpi-guida').textContent=drivingHours+' h';
     document.getElementById('g-kpi-stops').textContent=stops.length;
     document.getElementById('g-kpi-vmax').textContent=vMax.toFixed(0)+' km/h';
+    // Stima carburante: km / consumo medio (14 km/l) e costo
+    const FUEL_KM_PER_L=14;     // stessi default di pagina Siti
+    const FUEL_PRICE_PER_L=1.85;
+    const kmNum=parseFloat(km);
+    if(!isNaN(kmNum)&&kmNum>0){
+      const litri=kmNum/FUEL_KM_PER_L;
+      const euro=litri*FUEL_PRICE_PER_L;
+      document.getElementById('g-kpi-fuel-l').textContent=litri.toFixed(1)+' l';
+      document.getElementById('g-kpi-fuel-eur').textContent='€ '+euro.toFixed(2);
+    }else{
+      document.getElementById('g-kpi-fuel-l').textContent='—';
+      document.getElementById('g-kpi-fuel-eur').textContent='—';
+    }
 
     // Mappa
     document.getElementById('g-map-wrap').style.display='';
