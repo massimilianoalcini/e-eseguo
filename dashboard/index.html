@@ -268,6 +268,25 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
 .flotta-center-btn{background:transparent;border:1px solid var(--accent);color:var(--accent);padding:4px 10px;border-radius:6px;font-size:.75em;font-weight:700;cursor:pointer}
 .flotta-center-btn:hover{background:var(--accent-light)}
 
+/* TABS Live | Giornate */
+.flotta-tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:2px solid rgba(0,0,0,0.06);padding-bottom:0}
+.flotta-tab-btn{padding:10px 18px;border:none;background:transparent;color:var(--dim);font-size:.92em;font-weight:700;cursor:pointer;border-radius:10px 10px 0 0;border-bottom:3px solid transparent;transition:all .15s;display:flex;align-items:center;gap:6px}
+.flotta-tab-btn:hover{color:var(--text);background:rgba(0,0,0,0.02)}
+.flotta-tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(13,148,136,0.04)}
+.flotta-tab-content{display:none}
+.flotta-tab-content.active{display:block}
+
+/* Controls Giornate */
+.giornate-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;padding:14px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow)}
+.giornate-controls .field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:180px}
+.giornate-controls .field label{font-size:.72em;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.giornate-controls select,.giornate-controls input[type=date]{padding:9px 12px;border:1px solid var(--input-border);border-radius:10px;background:#fff;font-size:.9em;color:var(--text);font-family:inherit;outline:none}
+.giornate-controls select:focus,.giornate-controls input[type=date]:focus{border-color:var(--accent)}
+.giornate-controls .btn-flotta-refresh{align-self:flex-end;height:fit-content}
+
+/* Marker numerati Stop sulla mappa */
+.stop-marker-num{background:var(--accent);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85em;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.25)}
+
 /* Percorso tappe */
 .tappa-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border:2px solid rgba(0,0,0,0.04);border-radius:10px;margin-bottom:6px;transition:border-color .2s,opacity .2s}
 .tappa-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.75em;font-weight:800;flex-shrink:0}
@@ -982,6 +1001,18 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--accent)"><path d="M18 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM19.5 9.5l1.96 2.5H17V9.5h2.5zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM20 8h-3V4H3c-1.1 0-2 .89-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z"/></svg>
           Mezzi &middot; Tracking GPS
         </div>
+      </div>
+
+      <!-- TABS Live | Giornate -->
+      <div class="flotta-tabs">
+        <button class="flotta-tab-btn active" data-tab="live" onclick="switchFlottaTab('live')">🟢 Live</button>
+        <button class="flotta-tab-btn" data-tab="giornate" onclick="switchFlottaTab('giornate')">📅 Giornate</button>
+      </div>
+
+      <!-- ──────── TAB LIVE ──────── -->
+      <div class="flotta-tab-content active" id="flotta-tab-live">
+      <div class="flotta-header" style="margin-bottom:14px">
+        <div class="title" style="font-size:.95em;color:var(--mid)">Posizioni in tempo reale</div>
         <div class="actions">
           <div class="flotta-sync-badge" id="flotta-sync-badge">Non ancora caricato</div>
           <button class="btn-flotta-refresh" id="btn-flotta-refresh" onclick="loadFlotta()">
@@ -1026,6 +1057,67 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           </tbody>
         </table>
       </div>
+      </div><!-- /flotta-tab-live -->
+
+      <!-- ──────── TAB GIORNATE ──────── -->
+      <div class="flotta-tab-content" id="flotta-tab-giornate">
+
+        <div class="flotta-banner-info">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+          <span>Audit storico: scegli <strong>autista</strong> e <strong>data</strong> per vedere il percorso del giorno con stop, soste e km percorsi.</span>
+        </div>
+
+        <div class="giornate-controls">
+          <div class="field">
+            <label>Autista (mezzo)</label>
+            <select id="g-autista">
+              <option value="">Carica prima i mezzi nella tab Live...</option>
+            </select>
+          </div>
+          <div class="field" style="max-width:200px">
+            <label>Data</label>
+            <input type="date" id="g-data">
+          </div>
+          <div class="field" style="max-width:160px;flex-grow:0">
+            <label>Soglia sosta (min)</label>
+            <input type="number" id="g-soglia" value="5" min="1" max="60">
+          </div>
+          <button class="btn-flotta-refresh" id="btn-g-load" onclick="loadGiornata()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Carica giornata
+          </button>
+        </div>
+
+        <div id="g-err" class="flotta-err" style="display:none"></div>
+
+        <div class="stats-row" id="g-kpi-row" style="display:none">
+          <div class="stat-card"><div class="label">Km Percorsi</div><div class="value blue" id="g-kpi-km">—</div><div class="stat-icon" style="background:linear-gradient(135deg,#0D9488,#14B8A6);color:#fff"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg></div></div>
+          <div class="stat-card"><div class="label">Ore di Guida</div><div class="value green" id="g-kpi-guida">—</div><div class="stat-icon" style="background:linear-gradient(135deg,#16A34A,#34D399);color:#fff"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/></svg></div></div>
+          <div class="stat-card"><div class="label">N. Soste</div><div class="value orange" id="g-kpi-stops">—</div><div class="stat-icon" style="background:linear-gradient(135deg,#E8762D,#F59E0B);color:#fff"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg></div></div>
+          <div class="stat-card"><div class="label">Velocità Max</div><div class="value" id="g-kpi-vmax" style="color:#6366F1">—</div><div class="stat-icon" style="background:linear-gradient(135deg,#6366F1,#818CF8);color:#fff"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.46 10c.06.5.13 1 .13 1.5 0 1.34-.27 2.61-.74 3.79l1.49 1.49c.97-1.45 1.59-3.18 1.69-5.04l-2.57-1.74zM5.27 5.27L4 6.55l3.21 3.21c-.13.4-.21.84-.21 1.29 0 1.86.61 3.59 1.62 5.04L5.39 19.39C3.85 17.39 3 14.83 3 12c0-1.49.27-2.91.76-4.22L5.27 5.27z"/></svg></div></div>
+        </div>
+
+        <div class="flotta-map" id="g-map-wrap" style="display:none"><div id="g-map-el"></div></div>
+
+        <div class="section-header" id="g-timeline-header" style="font-size:1em;margin-top:6px;display:none">Timeline Soste</div>
+        <div class="table-wrap" id="g-timeline-wrap" style="display:none">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40px">#</th>
+                <th>Arrivo</th>
+                <th>Partenza</th>
+                <th>Durata</th>
+                <th>Indirizzo</th>
+                <th style="text-align:right">Azione</th>
+              </tr>
+            </thead>
+            <tbody id="g-timeline"></tbody>
+          </table>
+        </div>
+
+      </div><!-- /flotta-tab-giornate -->
+
     </div>
 
   </div>
@@ -2313,8 +2405,211 @@ function flottaCenterOn(plate){
   if(!r||!r.loc||r.loc.Latitude==null)return;
   if(!flottaMap)return;
   flottaMap.setView([r.loc.Latitude,r.loc.Longitude],15,{animate:true});
-  // scroll automatico alla mappa
   document.querySelector('.flotta-map')?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+/* === MEZZI / TAB GIORNATE === */
+let gMap=null,gPolyline=null,gStopMarkers=null,gData=null;
+
+function switchFlottaTab(name){
+  document.querySelectorAll('.flotta-tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  document.querySelectorAll('.flotta-tab-content').forEach(c=>c.classList.toggle('active',c.id==='flotta-tab-'+name));
+  if(name==='giornate'){
+    populateGiornataAutisti();
+    // default data: oggi
+    const dInp=document.getElementById('g-data');
+    if(!dInp.value){
+      const d=new Date();dInp.value=d.toISOString().slice(0,10);
+    }
+  }
+}
+
+function populateGiornataAutisti(){
+  const sel=document.getElementById('g-autista');
+  if(!flottaData||!flottaData.length){
+    sel.innerHTML='<option value="">⚠️ Carica prima i mezzi nella tab Live</option>';
+    return;
+  }
+  // Costruisci opzioni: "Driver Name — Make Model (Plate)"
+  const opts=flottaData.map(r=>{
+    const plate=r.v.RegistrationNumber||r.v.VehicleNumber||'?';
+    const driver=(r.loc?.DriverName||'').trim().replace(/\s+/g,' ');
+    const make=(r.v.Make||'').trim();
+    const model=(r.v.Model||'').trim();
+    const veh=[make,model].filter(Boolean).join(' ').replace(/\b\w/g,c=>c.toUpperCase())||(r.v.Name||plate);
+    const driverLabel=driver?driver.replace(/\b\w/g,c=>c.toUpperCase()):'(autista non assegnato)';
+    return`<option value="${plate}">${driverLabel} — ${veh} (${plate})</option>`;
+  }).join('');
+  sel.innerHTML='<option value="">Seleziona...</option>'+opts;
+}
+
+function gSetErr(msg){
+  const el=document.getElementById('g-err');
+  if(!el)return;
+  if(!msg){el.style.display='none';el.textContent='';return;}
+  el.style.display='block';el.textContent='Errore: '+msg;
+}
+
+function initGiornataMap(){
+  if(gMap){gMap.invalidateSize();return;}
+  gMap=L.map('g-map-el',{zoomControl:true}).setView([43.0,12.0],6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OSM',maxZoom:19}).addTo(gMap);
+  gStopMarkers=L.layerGroup().addTo(gMap);
+}
+
+// Algoritmo: raggruppa punti consecutivi con Speed=0 in soste >= soglia minuti
+function detectStops(points,minDurationMin){
+  const stops=[];
+  let cur=null;
+  for(const p of points){
+    if((p.Speed||0)===0){
+      if(!cur)cur={start:p.UpdateUtc,end:p.UpdateUtc,lat:p.Latitude,lon:p.Longitude,addr:p.Address?.AddressLine1||'',points:[p]};
+      else{cur.end=p.UpdateUtc;cur.points.push(p);}
+    }else{
+      if(cur){
+        const dur=(new Date(cur.end+'Z').getTime()-new Date(cur.start+'Z').getTime())/60000;
+        if(dur>=minDurationMin){cur.durationMin=Math.round(dur);stops.push(cur);}
+        cur=null;
+      }
+    }
+  }
+  if(cur){
+    const dur=(new Date(cur.end+'Z').getTime()-new Date(cur.start+'Z').getTime())/60000;
+    if(dur>=minDurationMin){cur.durationMin=Math.round(dur);stops.push(cur);}
+  }
+  return stops;
+}
+
+function fmtTime(iso){
+  const d=new Date(iso+(iso.endsWith('Z')?'':'Z'));
+  if(isNaN(d))return iso;
+  return d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+}
+function fmtDuration(min){
+  if(min<60)return min+' min';
+  const h=Math.floor(min/60),m=min%60;
+  return h+'h'+(m?' '+m+'m':'');
+}
+
+async function loadGiornata(){
+  const plate=document.getElementById('g-autista').value;
+  const dataStr=document.getElementById('g-data').value;
+  const soglia=parseInt(document.getElementById('g-soglia').value)||5;
+  const btn=document.getElementById('btn-g-load');
+  gSetErr('');
+  if(!plate){gSetErr('Seleziona un autista');return;}
+  if(!dataStr){gSetErr('Seleziona una data');return;}
+
+  btn.disabled=true;
+  const orig=btn.innerHTML;
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>Caricamento...';
+
+  try{
+    // Costruisco range UTC per il giorno selezionato (00:00 -> 23:59:59 LOCALE convertito UTC)
+    const from=new Date(dataStr+'T00:00:00');
+    const to=new Date(dataStr+'T23:59:59');
+    const fromUtc=from.toISOString().replace(/\.\d{3}Z$/,'Z');
+    const toUtc=to.toISOString().replace(/\.\d{3}Z$/,'Z');
+    const path=`/rad/v1/vehicles/${encodeURIComponent(plate)}/status/history?startdatetimeutc=${fromUtc}&enddatetimeutc=${toUtc}`;
+    const data=await verizonProxyCall(path);
+    const points=Array.isArray(data)?data:[];
+    if(!points.length){
+      gSetErr('Nessun dato GPS per questa giornata. Veicolo non in movimento o data fuori range.');
+      // pulisci UI
+      document.getElementById('g-kpi-row').style.display='none';
+      document.getElementById('g-map-wrap').style.display='none';
+      document.getElementById('g-timeline-wrap').style.display='none';
+      document.getElementById('g-timeline-header').style.display='none';
+      return;
+    }
+
+    // Sort per timestamp
+    points.sort((a,b)=>(a.UpdateUtc<b.UpdateUtc?-1:1));
+    gData=points;
+
+    // KPI
+    const odoStart=points[0].OdometerInKM,odoEnd=points[points.length-1].OdometerInKM;
+    const km=(odoEnd!=null&&odoStart!=null)?Math.max(0,odoEnd-odoStart).toFixed(1):'—';
+    let drivingMs=0,prevTs=null,prevSpeed=0,vMax=0;
+    points.forEach(p=>{
+      const t=new Date(p.UpdateUtc+'Z').getTime();
+      if(prevTs&&prevSpeed>0){drivingMs+=(t-prevTs);}
+      prevTs=t;prevSpeed=p.Speed||0;
+      if((p.Speed||0)>vMax)vMax=p.Speed;
+    });
+    const drivingHours=(drivingMs/3600000).toFixed(1);
+    const stops=detectStops(points,soglia);
+
+    document.getElementById('g-kpi-row').style.display='';
+    document.getElementById('g-kpi-km').textContent=km+' km';
+    document.getElementById('g-kpi-guida').textContent=drivingHours+' h';
+    document.getElementById('g-kpi-stops').textContent=stops.length;
+    document.getElementById('g-kpi-vmax').textContent=vMax.toFixed(0)+' km/h';
+
+    // Mappa
+    document.getElementById('g-map-wrap').style.display='';
+    setTimeout(()=>initGiornataMap(),50);
+    setTimeout(()=>{
+      gMap.invalidateSize();
+      // pulisci layers
+      if(gPolyline){gMap.removeLayer(gPolyline);gPolyline=null;}
+      gStopMarkers.clearLayers();
+      // polyline percorso
+      const latlngs=points.filter(p=>p.Latitude!=null&&p.Longitude!=null).map(p=>[p.Latitude,p.Longitude]);
+      if(latlngs.length){
+        gPolyline=L.polyline(latlngs,{color:'#0D9488',weight:4,opacity:0.75}).addTo(gMap);
+      }
+      // stop marker numerati
+      stops.forEach((s,i)=>{
+        const num=i+1;
+        const icon=L.divIcon({className:'stop-marker-icon',html:`<div class="stop-marker-num">${num}</div>`,iconSize:[28,28],iconAnchor:[14,14]});
+        L.marker([s.lat,s.lon],{icon}).bindPopup(
+          `<div style="font-family:inherit;min-width:200px">
+            <div style="font-weight:800;color:var(--accent)">Sosta #${num}</div>
+            <div style="font-size:.85em;margin-top:4px"><strong>Arrivo:</strong> ${fmtTime(s.start)}</div>
+            <div style="font-size:.85em"><strong>Partenza:</strong> ${fmtTime(s.end)}</div>
+            <div style="font-size:.85em"><strong>Durata:</strong> ${fmtDuration(s.durationMin)}</div>
+            <div style="font-size:.82em;margin-top:6px;color:#57534E">📍 ${s.addr||'—'}</div>
+          </div>`
+        ).addTo(gStopMarkers);
+      });
+      if(latlngs.length){
+        gMap.fitBounds(latlngs,{padding:[40,40],maxZoom:14});
+      }
+    },150);
+
+    // Timeline tabella
+    document.getElementById('g-timeline-header').style.display='';
+    document.getElementById('g-timeline-wrap').style.display='';
+    const tb=document.getElementById('g-timeline');
+    if(!stops.length){
+      tb.innerHTML='<tr><td colspan="6" class="flotta-loading">Nessuna sosta &gt;= '+soglia+' min in questa giornata.</td></tr>';
+    }else{
+      tb.innerHTML=stops.map((s,i)=>`<tr>
+        <td style="font-weight:800;color:var(--accent)">${i+1}</td>
+        <td>${fmtTime(s.start)}</td>
+        <td>${fmtTime(s.end)}</td>
+        <td><strong>${fmtDuration(s.durationMin)}</strong></td>
+        <td style="font-size:.88em">${s.addr||'—'}</td>
+        <td style="text-align:right"><button class="flotta-center-btn" onclick="gCenterStop(${i})">🎯 Centra</button></td>
+      </tr>`).join('');
+    }
+
+    gData={points,stops};
+  }catch(e){
+    gSetErr(e.message);
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML=orig;
+  }
+}
+
+function gCenterStop(idx){
+  if(!gData||!gData.stops)return;
+  const s=gData.stops[idx];if(!s)return;
+  if(!gMap)return;
+  gMap.setView([s.lat,s.lon],16,{animate:true});
+  document.getElementById('g-map-wrap')?.scrollIntoView({behavior:'smooth',block:'center'});
 }
 
 /* === SITI & MAPPA === */
