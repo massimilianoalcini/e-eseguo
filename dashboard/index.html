@@ -945,7 +945,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <input class="filter-input" id="percorso-search" placeholder="Cerca sito o indirizzo (es. 'via Roma 12 Massa Martana')..." oninput="searchPercorsoSito()" style="flex:1">
         </div>
         <div style="font-size:.72em;color:var(--dim);margin-bottom:10px;padding-left:2px">
-          💡 <strong>Tip:</strong> per indirizzi specifici da Maps scrivi <em>via + civico + comune</em>. Solo il nome del paese restituisce il centro abitato.
+          💡 <strong>Tip:</strong> oltre ai siti DB cerco anche su Maps (es. <em>"via Roma Massa Martana"</em>, <em>"piazza Garibaldi Spoleto"</em>).
         </div>
         <div id="percorso-search-results" style="max-height:150px;overflow-y:auto;margin-bottom:12px"></div>
 
@@ -1993,15 +1993,28 @@ function searchPercorsoSito(){
   if(q.length<2){box.innerHTML='';return;}
   percorsoSearchTimeout=setTimeout(async()=>{
     box.innerHTML='<div style="padding:10px;color:var(--dim);font-size:.85em">Ricerca in corso...</div>';
-    // Ricerca in parallelo: DB siti + Nominatim per localita generiche
-    const [sitiRes, mapsRes] = await Promise.all([
+    // Ricerca in parallelo: DB siti + Photon (komoot, basato OSM ma indicizzato meglio per IT)
+    const [sitiRes, photonRes] = await Promise.all([
       sb.rpc('search_siti',{q:q,max_results:6}).then(r=>r.data).catch(()=>[]),
-      fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=it&limit=8&addressdetails=1&q='+encodeURIComponent(q))
-        .then(r=>r.json()).catch(()=>[])
+      fetch('https://photon.komoot.io/api/?q='+encodeURIComponent(q)+'&limit=10')
+        .then(r=>r.json()).catch(()=>({features:[]}))
     ]);
     const siti=(Array.isArray(sitiRes)?sitiRes:[]).filter(s=>s.latitudine&&s.longitudine);
-    // Dedup risultati Nominatim per display_name (Nominatim torna spesso la stessa localita 2-3 volte)
-    const mapsRaw=(Array.isArray(mapsRes)?mapsRes:[]).filter(m=>m.lat&&m.lon);
+    // Photon -> normalizzo formato compatibile con addTappaMaps(name, lat, lng)
+    const photonFeats=(photonRes&&photonRes.features)?photonRes.features:[];
+    const mapsRaw=photonFeats
+      .filter(f=>f.properties&&f.properties.countrycode==='IT'&&f.geometry&&f.geometry.coordinates)
+      .map(f=>{
+        const p=f.properties;
+        const parts=[p.name,p.housenumber,p.city||p.county,p.state,p.country].filter(Boolean);
+        return{
+          lat:f.geometry.coordinates[1],
+          lon:f.geometry.coordinates[0],
+          display_name:parts.join(', '),
+          _type:p.type||''
+        };
+      });
+    // Dedup per display_name (sicurezza, Photon raramente duplica)
     const seen=new Set();
     const maps=[];
     for(const m of mapsRaw){
