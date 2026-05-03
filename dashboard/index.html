@@ -941,8 +941,11 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         </div>
 
         <!-- Cerca e aggiungi siti al percorso -->
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <input class="filter-input" id="percorso-search" placeholder="Cerca sito da aggiungere al percorso..." oninput="searchPercorsoSito()" style="flex:1">
+        <div style="display:flex;gap:8px;margin-bottom:4px">
+          <input class="filter-input" id="percorso-search" placeholder="Cerca sito o indirizzo (es. 'via Roma 12 Massa Martana')..." oninput="searchPercorsoSito()" style="flex:1">
+        </div>
+        <div style="font-size:.72em;color:var(--dim);margin-bottom:10px;padding-left:2px">
+          💡 <strong>Tip:</strong> per indirizzi specifici da Maps scrivi <em>via + civico + comune</em>. Solo il nome del paese restituisce il centro abitato.
         </div>
         <div id="percorso-search-results" style="max-height:150px;overflow-y:auto;margin-bottom:12px"></div>
 
@@ -989,6 +992,12 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
             </div>
           </div>
           <div id="perc-dettaglio" style="margin-top:12px;font-size:.82em;color:var(--dim)"></div>
+          <div style="margin-top:14px;text-align:right">
+            <button class="btn-action primary" onclick="apriInvioPercorso()" style="font-size:.88em;padding:9px 16px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:6px"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+              Invia Percorso via Email
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1210,6 +1219,7 @@ function slidePanel(){document.getElementById('tealPanel').classList.toggle('mov
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-image@0.4.0/leaflet-image.js"></script>
 <script>
 const SUPA_URL='https://gohtmuxaidwzijzrgzfh.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvaHRtdXhhaWR3emlqenJnemZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwODQzNzQsImV4cCI6MjA4OTY2MDM3NH0.TOVZgCuRiCk9B50zTd_BpOKZGpIaHEXFwA2L7TKFJVQ';
@@ -1986,11 +1996,20 @@ function searchPercorsoSito(){
     // Ricerca in parallelo: DB siti + Nominatim per localita generiche
     const [sitiRes, mapsRes] = await Promise.all([
       sb.rpc('search_siti',{q:q,max_results:6}).then(r=>r.data).catch(()=>[]),
-      fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=it&limit=4&addressdetails=1&q='+encodeURIComponent(q))
+      fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=it&limit=8&addressdetails=1&q='+encodeURIComponent(q))
         .then(r=>r.json()).catch(()=>[])
     ]);
     const siti=(Array.isArray(sitiRes)?sitiRes:[]).filter(s=>s.latitudine&&s.longitudine);
-    const maps=(Array.isArray(mapsRes)?mapsRes:[]).filter(m=>m.lat&&m.lon);
+    // Dedup risultati Nominatim per display_name (Nominatim torna spesso la stessa localita 2-3 volte)
+    const mapsRaw=(Array.isArray(mapsRes)?mapsRes:[]).filter(m=>m.lat&&m.lon);
+    const seen=new Set();
+    const maps=[];
+    for(const m of mapsRaw){
+      const key=(m.display_name||'').toLowerCase().trim();
+      if(seen.has(key))continue;
+      seen.add(key);
+      maps.push(m);
+    }
 
     let html='';
     // Sezione 1: Siti del database
@@ -2140,6 +2159,10 @@ async function calcolaPercorso(){
       document.getElementById('perc-costo').textContent='€ '+costoCarb;
       // Salva km globale per ricalcolo
       window._lastPercKm=parseFloat(km);
+      // Salva dati per Invia Percorso (JPEG mappa + KML)
+      window._lastPercRoute=route;
+      window._lastPercFullStops=fullStops;
+      window._lastPercSummary={km,tempo:tempoStr,litri,costo:costoCarb,nTappe:fullStops.length};
 
       // Dettaglio tratte
       let dettaglio='';
@@ -2692,8 +2715,8 @@ function gCenterStop(idx){
 /* === SITI & MAPPA === */
 function initDashMap(){
   if(dashMap){dashMap.invalidateSize();return;}
-  dashMap=L.map('dash-map',{zoomControl:true}).setView([42.56,12.64],6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OSM',maxZoom:19}).addTo(dashMap);
+  dashMap=L.map('dash-map',{zoomControl:true,preferCanvas:true}).setView([42.56,12.64],6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OSM',maxZoom:19,crossOrigin:true}).addTo(dashMap);
   dashMarkers=L.layerGroup().addTo(dashMap);
   document.getElementById('siti-count').textContent=(window._sitiTotal||0)+' siti disponibili — cerca per visualizzare';
 }
@@ -3492,6 +3515,230 @@ function closeStorico(){document.getElementById('modal-storico').classList.remov
     </div>
   </div>
 </div>
+
+<!-- ========== MODAL INVIA PERCORSO ========== -->
+<div class="modal-bg" id="modal-invia-percorso" onclick="if(event.target===this)chiudiInvioPercorso()">
+  <div class="modal" style="width:560px;max-width:95vw">
+    <div style="font-size:1.1em;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--accent)"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      Invia Percorso via Email
+    </div>
+    <div class="modal-sub" id="ip-summary" style="margin-bottom:14px"></div>
+
+    <label style="font-size:.78em;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px">Destinatario</label>
+    <input type="email" id="ip-to" placeholder="es. tecnico@elettrotlc.it" class="filter-input" style="width:100%;margin-top:4px;margin-bottom:14px">
+
+    <label style="font-size:.78em;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px">Oggetto</label>
+    <input type="text" id="ip-subject" class="filter-input" style="width:100%;margin-top:4px;margin-bottom:14px">
+
+    <label style="font-size:.78em;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px">Messaggio (opzionale)</label>
+    <textarea id="ip-note" rows="3" class="filter-input" placeholder="Note aggiuntive per il destinatario..." style="width:100%;margin-top:4px;margin-bottom:14px;font-family:inherit;resize:vertical"></textarea>
+
+    <div style="background:rgba(13,148,136,0.06);border:1px solid rgba(13,148,136,0.15);border-radius:10px;padding:10px 12px;font-size:.82em;color:var(--mid);margin-bottom:14px">
+      <div style="font-weight:700;color:var(--accent);margin-bottom:4px">Allegati inclusi automaticamente:</div>
+      <div>📷 <strong>percorso.jpg</strong> — screenshot mappa con polyline</div>
+      <div>📍 <strong>percorso.kml</strong> — apribile in Google Maps</div>
+    </div>
+
+    <div id="ip-status" style="display:none;font-size:.85em;padding:10px;border-radius:8px;margin-bottom:10px"></div>
+
+    <div class="modal-buttons">
+      <button class="btn-cancel" style="flex:1;padding:12px;border-radius:10px;font-weight:700;font-size:.92em;cursor:pointer;border:1px solid #E7E5E0;background:#fff;color:var(--text)" onclick="chiudiInvioPercorso()">Annulla</button>
+      <button class="btn-action primary" id="ip-btn-invia" style="flex:1.5;padding:12px;border-radius:10px;font-weight:700;font-size:.92em;cursor:pointer" onclick="inviaPercorsoEmail()">Invia</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== INVIA PERCORSO VIA EMAIL ==========
+
+function apriInvioPercorso(){
+  if(!window._lastPercFullStops||!window._lastPercFullStops.length){
+    alert('Calcola prima un percorso con "Calcola KM"');
+    return;
+  }
+  const s=window._lastPercSummary||{};
+  document.getElementById('ip-summary').textContent=
+    `${s.nTappe||0} tappe · ${s.km||'?'} km · ${s.tempo||'?'} · stima € ${s.costo||'?'}`;
+  // Subject default
+  const dataIt=new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
+  document.getElementById('ip-subject').value=`Percorso E.ESEGUO del ${dataIt} (${s.nTappe||0} tappe · ${s.km||'?'} km)`;
+  document.getElementById('ip-to').value='';
+  document.getElementById('ip-note').value='';
+  document.getElementById('ip-status').style.display='none';
+  document.getElementById('modal-invia-percorso').classList.add('open');
+}
+
+function chiudiInvioPercorso(){
+  document.getElementById('modal-invia-percorso').classList.remove('open');
+}
+
+// Genera KML da partenza + tappe + arrivo
+function generaKMLPercorso(){
+  const stops=window._lastPercFullStops||[];
+  const route=window._lastPercRoute;
+  const placemarks=stops.map((s,i)=>{
+    const nome=(s.codice||('Tappa '+(i+1))).replace(/[<>&]/g,'');
+    const desc=s.fullAddress?s.fullAddress.replace(/[<>&]/g,''):(s.citta||'').replace(/[<>&]/g,'');
+    return `  <Placemark>
+    <name>${i+1}. ${nome}</name>
+    <description>${desc}</description>
+    <Point><coordinates>${s.lng},${s.lat},0</coordinates></Point>
+  </Placemark>`;
+  }).join('\n');
+  // Polyline percorso (geometry GeoJSON da OSRM = [lng,lat])
+  let lineStr='';
+  if(route&&route.geometry&&route.geometry.coordinates){
+    const coords=route.geometry.coordinates.map(c=>c[0]+','+c[1]+',0').join(' ');
+    lineStr=`  <Placemark>
+    <name>Percorso</name>
+    <Style><LineStyle><color>ff8899ff</color><width>4</width></LineStyle></Style>
+    <LineString><tessellate>1</tessellate><coordinates>${coords}</coordinates></LineString>
+  </Placemark>`;
+  }
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>Percorso E.ESEGUO</name>
+${placemarks}
+${lineStr}
+</Document>
+</kml>`;
+}
+
+// Cattura screenshot mappa Leaflet -> JPEG base64
+function catturaMappaJpeg(){
+  return new Promise((resolve,reject)=>{
+    if(typeof leafletImage!=='function'){reject(new Error('leaflet-image non caricato'));return;}
+    if(!dashMap){reject(new Error('Mappa non inizializzata'));return;}
+    leafletImage(dashMap,function(err,canvas){
+      if(err){reject(err);return;}
+      try{
+        // Quality 0.85 -> bilanciamento qualita/peso
+        const dataUrl=canvas.toDataURL('image/jpeg',0.85);
+        // Strip "data:image/jpeg;base64," prefix
+        const b64=dataUrl.split(',')[1];
+        resolve(b64);
+      }catch(e){reject(e);}
+    });
+  });
+}
+
+function utf8ToBase64(str){
+  // Supporta UTF-8 (TextEncoder + btoa)
+  const bytes=new TextEncoder().encode(str);
+  let bin='';
+  for(const b of bytes)bin+=String.fromCharCode(b);
+  return btoa(bin);
+}
+
+async function inviaPercorsoEmail(){
+  const to=(document.getElementById('ip-to').value||'').trim();
+  const subject=(document.getElementById('ip-subject').value||'').trim();
+  const note=(document.getElementById('ip-note').value||'').trim();
+  const status=document.getElementById('ip-status');
+  const btn=document.getElementById('ip-btn-invia');
+
+  if(!to||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)){
+    status.style.display='block';
+    status.style.background='rgba(220,38,38,0.08)';
+    status.style.color='#991b1b';
+    status.textContent='Email destinatario non valida.';
+    return;
+  }
+  if(!subject){
+    status.style.display='block';
+    status.style.background='rgba(220,38,38,0.08)';
+    status.style.color='#991b1b';
+    status.textContent='Inserisci un oggetto.';
+    return;
+  }
+
+  btn.disabled=true;
+  const origText=btn.textContent;
+  btn.textContent='Generazione allegati...';
+  status.style.display='block';
+  status.style.background='rgba(13,148,136,0.08)';
+  status.style.color='var(--accent)';
+  status.textContent='Cattura mappa in corso...';
+
+  try{
+    // 1) JPEG mappa
+    const jpegB64=await catturaMappaJpeg();
+    status.textContent='Generazione KML...';
+    // 2) KML
+    const kmlStr=generaKMLPercorso();
+    const kmlB64=utf8ToBase64(kmlStr);
+    // 3) Body HTML
+    const s=window._lastPercSummary||{};
+    const stops=window._lastPercFullStops||[];
+    const tappeListHtml=stops.map((t,i)=>`<li>${(t.codice||'').replace(/[<>&]/g,'')}${t.fullAddress?' &mdash; '+t.fullAddress.replace(/[<>&]/g,''):''}</li>`).join('');
+    const noteHtml=note?`<div style="background:#FFF7ED;border-left:3px solid #F97316;padding:10px 14px;margin:14px 0;border-radius:4px;color:#7C2D12">${note.replace(/[<>&]/g,'').replace(/\n/g,'<br>')}</div>`:'';
+    const bodyHtml=`<!DOCTYPE html><html><body style="font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:640px;margin:0 auto;padding:20px;color:#1C1917;background:#FAFAFA">
+<div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+  <h2 style="color:#0D9488;margin:0 0 4px;border-bottom:2px solid #0D9488;padding-bottom:10px">Percorso giornaliero</h2>
+  <div style="color:#78756E;font-size:.9em;margin-bottom:16px">Generato da E.ESEGUO &middot; ${new Date().toLocaleString('it-IT')}</div>
+  ${noteHtml}
+  <table style="width:100%;border-collapse:collapse;margin:14px 0">
+    <tr><td style="padding:6px 0;color:#78756E">Tappe</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#0D9488">${s.nTappe||0}</td></tr>
+    <tr><td style="padding:6px 0;color:#78756E">Distanza totale</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#16A34A">${s.km||'?'} km</td></tr>
+    <tr><td style="padding:6px 0;color:#78756E">Tempo stimato</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#F97316">${s.tempo||'?'}</td></tr>
+    <tr><td style="padding:6px 0;color:#78756E">Litri stimati</td><td style="padding:6px 0;text-align:right;font-weight:700">${s.litri||'?'} l</td></tr>
+    <tr><td style="padding:6px 0;color:#78756E">Costo carburante</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#DC2626">&euro; ${s.costo||'?'}</td></tr>
+  </table>
+  <h3 style="color:#1C1917;margin-top:20px;font-size:1em">Sequenza tappe</h3>
+  <ol style="padding-left:18px;line-height:1.7">${tappeListHtml}</ol>
+  <div style="background:#F0FDF4;border-left:4px solid #16A34A;padding:12px 14px;margin-top:16px;border-radius:4px;color:#14532D;font-size:.92em">
+    Allegati: <strong>percorso.jpg</strong> (mappa) e <strong>percorso.kml</strong> (apri in Google Maps).
+  </div>
+  <hr style="border:none;border-top:1px solid #E7E5E0;margin:20px 0 12px">
+  <div style="color:#78756E;font-size:.8em">E.ESEGUO &middot; coordinamento manutenzioni TLC</div>
+</div>
+</body></html>`;
+
+    status.textContent='Invio email in corso...';
+    btn.textContent='Invio...';
+
+    // 4) Chiamata Edge Function
+    const{data:sess}=await sb.auth.getSession();
+    const jwt=sess?.session?.access_token;
+    if(!jwt)throw new Error('Sessione utente non valida');
+    const resp=await fetch(SUPA_URL+'/functions/v1/send-email',{
+      method:'POST',
+      headers:{
+        'Authorization':'Bearer '+jwt,
+        'apikey':SUPA_KEY,
+        'content-type':'application/json'
+      },
+      body:JSON.stringify({
+        to,
+        subject,
+        body_html:bodyHtml,
+        attachments:[
+          {filename:'percorso.jpg',content_base64:jpegB64,content_type:'image/jpeg'},
+          {filename:'percorso.kml',content_base64:kmlB64,content_type:'application/vnd.google-earth.kml+xml'}
+        ]
+      })
+    });
+    const out=await resp.json();
+    if(!resp.ok||!out.ok){
+      throw new Error(out.error||out.detail||('HTTP '+resp.status));
+    }
+    status.style.background='rgba(22,163,74,0.1)';
+    status.style.color='#14532D';
+    status.textContent='Email inviata a '+to+' ✓';
+    btn.textContent=origText;
+    btn.disabled=false;
+    setTimeout(chiudiInvioPercorso,1800);
+  }catch(e){
+    status.style.background='rgba(220,38,38,0.08)';
+    status.style.color='#991b1b';
+    status.textContent='Errore: '+(e.message||e);
+    btn.textContent=origText;
+    btn.disabled=false;
+  }
+}
+</script>
 
 </body>
 </html>
