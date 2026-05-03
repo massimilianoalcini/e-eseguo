@@ -1982,27 +1982,74 @@ function searchPercorsoSito(){
   const box=document.getElementById('percorso-search-results');
   if(q.length<2){box.innerHTML='';return;}
   percorsoSearchTimeout=setTimeout(async()=>{
-    const{data:res}=await sb.rpc('search_siti',{q:q,max_results:6});
-    const arr=Array.isArray(res)?res:[];
-    box.innerHTML=arr.filter(s=>s.latitudine&&s.longitudine).map(s=>`
-      <div class="percorso-sr" onclick="addTappa('${s.codice_sito}','${(s.citta||'').replace(/'/g,"\\'")}','${s.latitudine}','${s.longitudine}')">
-        <span class="sr-code">${s.codice_sito}</span>
-        <span class="sr-info">${s.citta||''} ${s.provincia?'('+s.provincia+')':''} — ${s.indirizzo||''}</span>
-        <span style="margin-left:auto;color:var(--green);font-size:.82em;font-weight:600">+ Aggiungi</span>
-      </div>`).join('')||'<div style="padding:10px;color:var(--dim);font-size:.85em">Nessun sito con coordinate trovato</div>';
-  },250);
+    box.innerHTML='<div style="padding:10px;color:var(--dim);font-size:.85em">Ricerca in corso...</div>';
+    // Ricerca in parallelo: DB siti + Nominatim per localita generiche
+    const [sitiRes, mapsRes] = await Promise.all([
+      sb.rpc('search_siti',{q:q,max_results:6}).then(r=>r.data).catch(()=>[]),
+      fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=it&limit=4&addressdetails=1&q='+encodeURIComponent(q))
+        .then(r=>r.json()).catch(()=>[])
+    ]);
+    const siti=(Array.isArray(sitiRes)?sitiRes:[]).filter(s=>s.latitudine&&s.longitudine);
+    const maps=(Array.isArray(mapsRes)?mapsRes:[]).filter(m=>m.lat&&m.lon);
+
+    let html='';
+    // Sezione 1: Siti del database
+    if(siti.length){
+      html+='<div style="padding:6px 10px;font-size:.7em;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;background:rgba(13,148,136,0.05);border-bottom:1px solid rgba(13,148,136,0.15)">🏢 Siti del Database ('+siti.length+')</div>';
+      html+=siti.map(s=>`
+        <div class="percorso-sr" onclick="addTappa('${s.codice_sito}','${(s.citta||'').replace(/'/g,"\\'")}','${s.latitudine}','${s.longitudine}')">
+          <span class="sr-code">${s.codice_sito}</span>
+          <span class="sr-info">${s.citta||''} ${s.provincia?'('+s.provincia+')':''} — ${s.indirizzo||''}</span>
+          <span style="margin-left:auto;color:var(--green);font-size:.82em;font-weight:600">+ Aggiungi</span>
+        </div>`).join('');
+    }
+    // Sezione 2: Localita da Maps (Nominatim)
+    if(maps.length){
+      html+='<div style="padding:6px 10px;font-size:.7em;font-weight:700;color:#6366F1;text-transform:uppercase;letter-spacing:.5px;background:rgba(99,102,241,0.05);border-bottom:1px solid rgba(99,102,241,0.15)">🌍 Localita da Maps ('+maps.length+')</div>';
+      html+=maps.map(m=>{
+        const name=(m.display_name||'').replace(/'/g,"\\'");
+        const shortName=(m.display_name||'').split(',').slice(0,3).join(', ');
+        return`<div class="percorso-sr" onclick="addTappaMaps('${name}','${m.lat}','${m.lon}')">
+          <span class="sr-code" style="color:#6366F1">📍 MAPS</span>
+          <span class="sr-info">${shortName}</span>
+          <span style="margin-left:auto;color:#6366F1;font-size:.82em;font-weight:600">+ Aggiungi</span>
+        </div>`;
+      }).join('');
+    }
+    if(!html){
+      html='<div style="padding:10px;color:var(--dim);font-size:.85em">Nessun risultato per "'+q+'"</div>';
+    }
+    box.innerHTML=html;
+  },350);
 }
 
 function addTappa(codice,citta,lat,lng){
   if(percorsoTappe.find(t=>t.codice===codice)){return;}
-  percorsoTappe.push({codice,citta,lat:+lat,lng:+lng});
+  percorsoTappe.push({codice,citta,lat:+lat,lng:+lng,tipo:'sito'});
   document.getElementById('percorso-search').value='';
   document.getElementById('percorso-search-results').innerHTML='';
   renderTappe();
-  // Aggiungi marker sulla mappa
+  // Aggiungi marker sulla mappa (arancio per siti DB)
   if(dashMap){
     const marker=L.circleMarker([+lat,+lng],{radius:10,fillColor:'#FF9F0A',color:'#FF9F0A',weight:2,fillOpacity:0.8}).addTo(dashMap);
     marker.bindTooltip('Tappa '+percorsoTappe.length+': '+codice,{permanent:true,direction:'top',className:'leaflet-tooltip-percorso'});
+  }
+}
+
+// Aggiunge una tappa "libera" da Nominatim/Maps
+function addTappaMaps(displayName,lat,lng){
+  // Codice sintetico progressivo per tappe Maps
+  const nMaps=percorsoTappe.filter(t=>t.tipo==='maps').length+1;
+  const codice='MAPS-'+nMaps;
+  const shortName=(displayName||'').split(',').slice(0,3).join(', ');
+  percorsoTappe.push({codice,citta:shortName,fullAddress:displayName,lat:+lat,lng:+lng,tipo:'maps'});
+  document.getElementById('percorso-search').value='';
+  document.getElementById('percorso-search-results').innerHTML='';
+  renderTappe();
+  // Marker viola/indigo per distinguere le tappe Maps dai siti DB
+  if(dashMap){
+    const marker=L.circleMarker([+lat,+lng],{radius:10,fillColor:'#6366F1',color:'#6366F1',weight:2,fillOpacity:0.8}).addTo(dashMap);
+    marker.bindTooltip('Tappa '+percorsoTappe.length+': '+codice+' ('+shortName.split(',')[0]+')',{permanent:true,direction:'top',className:'leaflet-tooltip-percorso'});
   }
 }
 
