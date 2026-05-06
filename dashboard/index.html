@@ -564,7 +564,13 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
 
     <!-- INTERVENTI -->
     <div class="page-section" id="page-interventi">
-      <div class="section-header">Gestione Interventi</div>
+      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Gestione Interventi</span>
+        <button class="btn-action" onclick="openExportProduzione()" style="font-size:.85em;padding:8px 16px;background:linear-gradient(135deg,rgba(13,148,136,0.08),rgba(22,163,74,0.08));border-color:rgba(13,148,136,0.2);color:var(--accent);font-weight:700">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:5px"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          Esporta Produzione Tecnico
+        </button>
+      </div>
       <div class="stato-tabs">
         <button class="stato-tab da-validare active" id="tab-da-validare" onclick="switchStatoTab('inviato')">⏳ Da Validare <span class="stato-count" id="count-da-validare">0</span></button>
         <button class="stato-tab validati" id="tab-validati" onclick="switchStatoTab('validato')">✅ Validati <span class="stato-count" id="count-validati">0</span></button>
@@ -1662,6 +1668,146 @@ async function validaIntervento(){
   closeEditModal();
   renderInterventi();
   renderOverview();
+}
+
+/* === Export Produzione Tecnico Mensile === */
+function openExportProduzione(){
+  const sel=document.getElementById('ep-tecnico');
+  const tecnici=allProfiles.filter(p=>p.role==='tecnico');
+  sel.innerHTML='<option value="">Seleziona...</option>'+
+    tecnici.map(p=>`<option value="${p.id}">${p.full_name||p.email||p.id}</option>`).join('');
+  setProduzionePreset('mese-corrente');
+  document.getElementById('ep-preview').style.display='none';
+  document.getElementById('ep-status').style.display='none';
+  document.getElementById('modal-export-produzione').classList.add('open');
+}
+
+function closeExportProduzione(){
+  document.getElementById('modal-export-produzione').classList.remove('open');
+}
+
+function setProduzionePreset(p){
+  const today=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const fmt=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  let from,to;
+  if(p==='mese-corrente'){
+    from=new Date(today.getFullYear(),today.getMonth(),1);
+    to=new Date(today.getFullYear(),today.getMonth()+1,0);
+  }else if(p==='mese-scorso'){
+    from=new Date(today.getFullYear(),today.getMonth()-1,1);
+    to=new Date(today.getFullYear(),today.getMonth(),0);
+  }else if(p==='anno-corrente'){
+    from=new Date(today.getFullYear(),0,1);
+    to=new Date(today.getFullYear(),11,31);
+  }
+  document.getElementById('ep-da').value=fmt(from);
+  document.getElementById('ep-a').value=fmt(to);
+}
+
+function _produzioneFiltra(){
+  const tecId=document.getElementById('ep-tecnico').value;
+  const da=document.getElementById('ep-da').value;
+  const a=document.getElementById('ep-a').value;
+  const status=document.getElementById('ep-status');
+  status.style.display='none';
+  if(!tecId){status.style.display='block';status.style.background='rgba(220,38,38,0.08)';status.style.color='#991b1b';status.textContent='Seleziona un tecnico';return null;}
+  if(!da||!a){status.style.display='block';status.style.background='rgba(220,38,38,0.08)';status.style.color='#991b1b';status.textContent='Seleziona "Da" e "A"';return null;}
+  if(da>a){status.style.display='block';status.style.background='rgba(220,38,38,0.08)';status.style.color='#991b1b';status.textContent='Date invertite';return null;}
+  // Filtra interventi del tecnico nel range (uso ora_inizio se c'e, altrimenti created_at)
+  const interventi=allInterventi.filter(i=>{
+    if(i.tecnico_id!==tecId)return false;
+    const d=(i.ora_inizio||i.created_at||'').slice(0,10);
+    return d>=da&&d<=a;
+  }).sort((x,y)=>(x.ora_inizio||x.created_at||'').localeCompare(y.ora_inizio||y.created_at||''));
+  const tec=allProfiles.find(p=>p.id===tecId);
+  const totDurata=interventi.reduce((s,i)=>s+(i.durata_minuti||0),0);
+  const totImporto=interventi.reduce((s,i)=>s+(+i.importo||0),0);
+  const totFoto=interventi.reduce((s,i)=>s+(i.n_foto||0),0);
+  const validati=interventi.filter(i=>i.stato==='validato').length;
+  const daValidare=interventi.length-validati;
+  return{tecId,tecNome:tec?.full_name||tec?.email||tecId,da,a,interventi,totDurata,totImporto,totFoto,validati,daValidare};
+}
+
+function anteprimaProduzione(){
+  const ctx=_produzioneFiltra();if(!ctx)return;
+  const ore=Math.floor(ctx.totDurata/60),min=ctx.totDurata%60;
+  document.getElementById('ep-preview').style.display='block';
+  document.getElementById('ep-preview-body').innerHTML=`
+    <div><strong>${ctx.tecNome}</strong> &middot; periodo ${ctx.da} → ${ctx.a}</div>
+    <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px 12px">
+      <div>📋 Interventi totali: <strong>${ctx.interventi.length}</strong></div>
+      <div>✅ Validati: <strong style="color:var(--green)">${ctx.validati}</strong></div>
+      <div>⏳ Da validare: <strong style="color:var(--orange)">${ctx.daValidare}</strong></div>
+      <div>📷 Foto totali: <strong>${ctx.totFoto}</strong></div>
+      <div>⏱️ Durata: <strong>${ore}h ${min}m</strong></div>
+      <div>💶 Importo: <strong style="color:var(--green)">€ ${ctx.totImporto.toFixed(2)}</strong></div>
+    </div>
+  `;
+}
+
+function esportaProduzioneCSV(){
+  const ctx=_produzioneFiltra();if(!ctx)return;
+  if(!ctx.interventi.length){
+    const status=document.getElementById('ep-status');
+    status.style.display='block';
+    status.style.background='rgba(232,118,45,0.08)';
+    status.style.color='#7C2D12';
+    status.textContent='Nessun intervento per questo tecnico nel periodo selezionato.';
+    return;
+  }
+  const esc=(v)=>{const s=String(v??'');return /[;"\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+  const lines=[];
+  // Riga riassuntiva
+  const ore=Math.floor(ctx.totDurata/60),min=ctx.totDurata%60;
+  lines.push(['Tecnico','Da','A','Interventi totali','Validati','Da validare','Foto totali','Durata totale','Importo totale (EUR)'].join(';'));
+  lines.push([
+    esc(ctx.tecNome),
+    esc(ctx.da),
+    esc(ctx.a),
+    ctx.interventi.length,
+    ctx.validati,
+    ctx.daValidare,
+    ctx.totFoto,
+    `${ore}h ${min}m`,
+    ctx.totImporto.toFixed(2)
+  ].join(';'));
+  lines.push('');
+  lines.push('Dettaglio interventi;;;;;;;;');
+  lines.push(['Data','Codice sito','Sito','Cliente','Lavorazione','Stato','Foto','Durata (min)','Importo (EUR)','Note'].join(';'));
+  ctx.interventi.forEach(i=>{
+    const dRaw=i.ora_inizio||i.created_at||'';
+    const d=dRaw?new Date(dRaw):null;
+    const dataIt=d?`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`:'';
+    lines.push([
+      esc(dataIt),
+      esc(i.codice_sito||''),
+      esc(i.nome_sito||''),
+      esc(i.cliente_finale||''),
+      esc(i.lavorazione||''),
+      esc(i.stato||''),
+      i.n_foto||0,
+      i.durata_minuti||0,
+      i.importo!=null?(+i.importo).toFixed(2):'0.00',
+      esc((i.note||'').replace(/[\r\n]+/g,' '))
+    ].join(';'));
+  });
+  // BOM UTF-8 + CRLF
+  const csv='﻿'+lines.join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const safeName=(ctx.tecNome||'tecnico').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  a.href=url;
+  a.download=`produzione_${safeName}_${ctx.da}_${ctx.a}.csv`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+  const status=document.getElementById('ep-status');
+  status.style.display='block';
+  status.style.background='rgba(22,163,74,0.1)';
+  status.style.color='#14532D';
+  status.textContent=`✓ CSV esportato: ${ctx.interventi.length} interventi · € ${ctx.totImporto.toFixed(2)}`;
 }
 
 function renderTecnici(){
@@ -4034,6 +4180,50 @@ function closeStorico(){document.getElementById('modal-storico').classList.remov
 </div>
 
 <!-- ========== MODAL INVIA PERCORSO ========== -->
+<!-- ========== MODAL EXPORT PRODUZIONE TECNICO MENSILE ========== -->
+<div class="modal-bg" id="modal-export-produzione" onclick="if(event.target===this)closeExportProduzione()">
+  <div class="modal" style="width:520px;max-width:95vw">
+    <h3 style="display:flex;align-items:center;gap:8px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--accent)"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      Esporta Produzione Tecnico
+    </h3>
+    <div class="modal-sub" style="margin-bottom:14px">CSV con riepilogo mensile + dettaglio interventi del periodo</div>
+
+    <label>Tecnico *</label>
+    <select id="ep-tecnico"></select>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+      <div>
+        <label>Da</label>
+        <input type="date" id="ep-da">
+      </div>
+      <div>
+        <label>A</label>
+        <input type="date" id="ep-a">
+      </div>
+    </div>
+
+    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn-action" onclick="setProduzionePreset('mese-corrente')" style="font-size:.78em;padding:5px 10px">Mese corrente</button>
+      <button class="btn-action" onclick="setProduzionePreset('mese-scorso')" style="font-size:.78em;padding:5px 10px">Mese scorso</button>
+      <button class="btn-action" onclick="setProduzionePreset('anno-corrente')" style="font-size:.78em;padding:5px 10px">Anno corrente</button>
+    </div>
+
+    <div id="ep-preview" style="margin-top:14px;padding:12px;background:rgba(13,148,136,0.04);border:1px solid rgba(13,148,136,0.12);border-radius:10px;display:none">
+      <div style="font-size:.78em;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Anteprima riepilogo</div>
+      <div id="ep-preview-body" style="font-size:.88em;line-height:1.6"></div>
+    </div>
+
+    <div id="ep-status" style="display:none;font-size:.85em;padding:10px;border-radius:8px;margin-top:10px"></div>
+
+    <div class="modal-buttons" style="margin-top:14px">
+      <button class="btn-cancel" onclick="closeExportProduzione()" style="flex:1;padding:12px;border-radius:10px;font-weight:700;font-size:.92em;cursor:pointer;border:1px solid #E7E5E0;background:#fff;color:var(--text)">Annulla</button>
+      <button class="btn-save" id="ep-btn-anteprima" onclick="anteprimaProduzione()" style="flex:1;padding:12px;border-radius:10px;font-weight:700;font-size:.92em;cursor:pointer;border:none;background:rgba(13,148,136,0.12);color:var(--accent)">👁️ Anteprima</button>
+      <button class="btn-save" id="ep-btn-csv" onclick="esportaProduzioneCSV()" style="flex:1.2;padding:12px;border-radius:10px;font-weight:700;font-size:.92em;cursor:pointer;border:none;background:var(--accent);color:white">📥 Esporta CSV</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-invia-percorso" onclick="if(event.target===this)chiudiInvioPercorso()">
   <div class="modal" style="width:560px;max-width:95vw">
     <div style="font-size:1.1em;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:4px">
