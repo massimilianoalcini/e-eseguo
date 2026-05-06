@@ -1228,14 +1228,65 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
 
 <!-- Modal modifica Report/Segnalazioni -->
 <div class="modal-bg" id="modal-edit" onclick="if(event.target===this)closeEditModal()">
-  <div class="modal" style="width:520px">
+  <div class="modal" style="width:680px;max-width:95vw;max-height:92vh;overflow-y:auto">
     <h3>✏️ Modifica Intervento</h3>
     <div class="modal-sub" id="edit-modal-info"></div>
-    <label>Report</label>
-    <textarea id="edit-report" rows="4" placeholder="Report intervento..."></textarea>
-    <label>Segnalazioni</label>
-    <textarea id="edit-segnalazioni" rows="3" placeholder="Segnalazioni..."></textarea>
-    <div class="modal-buttons" style="flex-direction:column;gap:8px">
+
+    <!-- Codice Sito con autocomplete -->
+    <div style="margin-top:12px">
+      <label>Codice Sito <small style="color:var(--dim);font-weight:500">(scrivi e seleziona dal database)</small></label>
+      <div style="position:relative">
+        <input type="text" id="edit-codice-sito" autocomplete="off" placeholder="Es. I062PG..." oninput="searchSitoEdit()">
+        <div id="edit-sito-results" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--card-border);border-radius:8px;max-height:180px;overflow-y:auto;z-index:1000;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.08)"></div>
+      </div>
+      <input type="text" id="edit-nome-sito" placeholder="Nome sito" style="margin-top:6px;font-size:.9em;color:var(--mid)">
+    </div>
+
+    <!-- Tecnico, Cliente, Lavorazione in 3 colonne -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+      <div>
+        <label>Tecnico</label>
+        <select id="edit-tecnico"></select>
+      </div>
+      <div>
+        <label>Cliente Finale</label>
+        <input list="edit-clienti-list" id="edit-cliente" placeholder="Es. SIRTI">
+        <datalist id="edit-clienti-list"></datalist>
+      </div>
+    </div>
+
+    <div style="margin-top:12px">
+      <label>Lavorazione</label>
+      <input list="edit-lavorazioni-list" id="edit-lavorazione" placeholder="Es. Manutenzioni Outdoor">
+      <datalist id="edit-lavorazioni-list"></datalist>
+    </div>
+
+    <!-- Importo, Ora, Durata -->
+    <div style="display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:10px;margin-top:12px">
+      <div>
+        <label>Importo (€)</label>
+        <input type="number" id="edit-importo" step="0.01" min="0" placeholder="0.00">
+      </div>
+      <div>
+        <label>Ora Inizio</label>
+        <input type="datetime-local" id="edit-ora-inizio">
+      </div>
+      <div>
+        <label>Durata (min)</label>
+        <input type="number" id="edit-durata" min="0" placeholder="60">
+      </div>
+    </div>
+
+    <div style="margin-top:12px">
+      <label>Report</label>
+      <textarea id="edit-report" rows="3" placeholder="Report intervento..."></textarea>
+    </div>
+    <div style="margin-top:8px">
+      <label>Segnalazioni</label>
+      <textarea id="edit-segnalazioni" rows="2" placeholder="Segnalazioni..."></textarea>
+    </div>
+
+    <div class="modal-buttons" style="flex-direction:column;gap:8px;margin-top:14px">
       <div style="display:flex;gap:10px">
         <button class="btn-cancel" style="flex:1;padding:12px;border-radius:10px;font-weight:700;font-size:.92em;cursor:pointer;border:1px solid #E7E5E0;background:#fff;color:var(--text)" onclick="closeEditModal()">Annulla</button>
         <button class="btn-save" style="flex:1;padding:12px;border-radius:10px;font-weight:700;font-size:.92em;cursor:pointer;border:none;background:var(--accent);color:white" onclick="saveEdit()">💾 Salva modifiche</button>
@@ -1474,42 +1525,140 @@ function renderInterventiTable(list){
   }).join('');
 }
 
-/* === Modifica Report/Segnalazioni + Valida === */
+/* === Modifica intervento (edit completo coordinatore) === */
+let _editSitoTimeout=null;
+
 function openEditModal(intId){
   const r=allInterventi.find(i=>i.id===intId);if(!r)return;
   editingIntervento=r;
-  document.getElementById('edit-modal-info').textContent=`${r.codice_sito||''} · ${getTecName(r.tecnico_id)} · ${r.lavorazione||''}`;
+  document.getElementById('edit-modal-info').textContent=`${r.codice_sito||''} · ${getTecName(r.tecnico_id)} · creato ${formatDate(r.created_at)}`;
+
+  // Codice sito + nome
+  document.getElementById('edit-codice-sito').value=r.codice_sito||'';
+  document.getElementById('edit-nome-sito').value=r.nome_sito||'';
+  document.getElementById('edit-sito-results').style.display='none';
+
+  // Tecnico select
+  const selTec=document.getElementById('edit-tecnico');
+  const tecnici=allProfiles.filter(p=>p.role==='tecnico');
+  selTec.innerHTML='<option value="">(non assegnato)</option>'+
+    tecnici.map(p=>`<option value="${p.id}"${p.id===r.tecnico_id?' selected':''}>${p.full_name||p.email||p.id}</option>`).join('');
+
+  // Cliente + Lavorazione (datalist con valori distinct dagli interventi esistenti)
+  const clientiSet=[...new Set(allInterventi.map(i=>i.cliente_finale).filter(Boolean))].sort();
+  document.getElementById('edit-clienti-list').innerHTML=clientiSet.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">`).join('');
+  document.getElementById('edit-cliente').value=r.cliente_finale||'';
+  const lavSet=[...new Set(allInterventi.map(i=>i.lavorazione).filter(Boolean))].sort();
+  document.getElementById('edit-lavorazioni-list').innerHTML=lavSet.map(l=>`<option value="${l.replace(/"/g,'&quot;')}">`).join('');
+  document.getElementById('edit-lavorazione').value=r.lavorazione||'';
+
+  // Importo, Ora, Durata
+  document.getElementById('edit-importo').value=r.importo!=null?r.importo:'';
+  // datetime-local vuole formato YYYY-MM-DDTHH:mm
+  if(r.ora_inizio){
+    const d=new Date(r.ora_inizio);
+    const pad=n=>String(n).padStart(2,'0');
+    document.getElementById('edit-ora-inizio').value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }else{
+    document.getElementById('edit-ora-inizio').value='';
+  }
+  document.getElementById('edit-durata').value=r.durata_minuti||'';
+
+  // Report + Segnalazioni
   document.getElementById('edit-report').value=r.note||'';
   document.getElementById('edit-segnalazioni').value=r.segnalazioni||'';
+
   document.getElementById('modal-edit').classList.add('open');
 }
-function closeEditModal(){document.getElementById('modal-edit').classList.remove('open');editingIntervento=null;}
+
+function closeEditModal(){
+  document.getElementById('modal-edit').classList.remove('open');
+  document.getElementById('edit-sito-results').style.display='none';
+  editingIntervento=null;
+}
+
+// Autocomplete codice sito sui 16.834 siti DB
+function searchSitoEdit(){
+  clearTimeout(_editSitoTimeout);
+  const q=document.getElementById('edit-codice-sito').value.trim();
+  const box=document.getElementById('edit-sito-results');
+  if(q.length<2){box.style.display='none';return;}
+  _editSitoTimeout=setTimeout(async()=>{
+    const{data}=await sb.rpc('search_siti',{q:q,max_results:8});
+    const siti=Array.isArray(data)?data.filter(s=>s.codice_sito):[];
+    if(!siti.length){
+      box.innerHTML='<div style="padding:8px 10px;color:var(--dim);font-size:.85em">Nessun sito trovato per "'+q.replace(/</g,'&lt;')+'"</div>';
+    }else{
+      box.innerHTML=siti.map(s=>`<div onclick="selectSitoEdit('${s.codice_sito}','${(s.nome_sito||'').replace(/'/g,"\\'")}',${s.id})" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f5f5f4;font-size:.88em">
+        <strong style="color:var(--accent)">${s.codice_sito}</strong>
+        <span style="color:var(--mid);margin-left:6px">${s.citta||''} ${s.provincia?'('+s.provincia+')':''}</span>
+        ${s.indirizzo?`<div style="color:var(--dim);font-size:.85em">${s.indirizzo}</div>`:''}
+      </div>`).join('');
+    }
+    box.style.display='block';
+  },280);
+}
+
+function selectSitoEdit(codice,nome,sitoId){
+  document.getElementById('edit-codice-sito').value=codice;
+  document.getElementById('edit-nome-sito').value=nome;
+  document.getElementById('edit-sito-results').style.display='none';
+  editingIntervento._newSitoId=sitoId;
+}
+
+function _readEditPayload(){
+  const codiceSito=document.getElementById('edit-codice-sito').value.trim();
+  const nomeSito=document.getElementById('edit-nome-sito').value.trim();
+  const tecnicoId=document.getElementById('edit-tecnico').value||null;
+  const clienteFinale=document.getElementById('edit-cliente').value.trim();
+  const lavorazione=document.getElementById('edit-lavorazione').value.trim();
+  const importoRaw=document.getElementById('edit-importo').value;
+  const oraInizioRaw=document.getElementById('edit-ora-inizio').value;
+  const durataRaw=document.getElementById('edit-durata').value;
+  const note=document.getElementById('edit-report').value.trim();
+  const segnalazioni=document.getElementById('edit-segnalazioni').value.trim();
+  const payload={
+    codice_sito:codiceSito||null,
+    nome_sito:nomeSito||null,
+    tecnico_id:tecnicoId,
+    cliente_finale:clienteFinale||null,
+    lavorazione:lavorazione||null,
+    note:note||null,
+    segnalazioni:segnalazioni||null,
+    importo:importoRaw===''?null:parseFloat(importoRaw),
+    durata_minuti:durataRaw===''?null:parseInt(durataRaw,10),
+    ora_inizio:oraInizioRaw?new Date(oraInizioRaw).toISOString():null
+  };
+  // Se è cambiato sito_id (selezionato dall'autocomplete), aggiungilo
+  if(editingIntervento._newSitoId&&editingIntervento._newSitoId!==editingIntervento.sito_id){
+    payload.sito_id=editingIntervento._newSitoId;
+  }
+  // Se importo è stato (ri)assegnato, traccia il coordinatore
+  if(payload.importo!=null&&payload.importo!==editingIntervento.importo){
+    payload.importo_inserito_da=currentUser.id;
+    payload.importo_inserito_at=new Date().toISOString();
+  }
+  return payload;
+}
 
 async function saveEdit(){
   if(!editingIntervento)return;
-  const note=document.getElementById('edit-report').value.trim();
-  const segnalazioni=document.getElementById('edit-segnalazioni').value.trim();
-  const{error}=await sb.from('interventi').update({note:note||null,segnalazioni:segnalazioni||null}).eq('id',editingIntervento.id);
+  const payload=_readEditPayload();
+  const{error}=await sb.from('interventi').update(payload).eq('id',editingIntervento.id);
   if(error){alert('Errore: '+error.message);return;}
-  editingIntervento.note=note||null;
-  editingIntervento.segnalazioni=segnalazioni||null;
+  Object.assign(editingIntervento,payload);
   closeEditModal();
   renderInterventi();
+  renderOverview();
 }
 
 async function validaIntervento(){
   if(!editingIntervento)return;
-  const note=document.getElementById('edit-report').value.trim();
-  const segnalazioni=document.getElementById('edit-segnalazioni').value.trim();
-  const{error}=await sb.from('interventi').update({
-    note:note||null,
-    segnalazioni:segnalazioni||null,
-    stato:'validato'
-  }).eq('id',editingIntervento.id);
+  const payload=_readEditPayload();
+  payload.stato='validato';
+  const{error}=await sb.from('interventi').update(payload).eq('id',editingIntervento.id);
   if(error){alert('Errore: '+error.message);return;}
-  editingIntervento.note=note||null;
-  editingIntervento.segnalazioni=segnalazioni||null;
-  editingIntervento.stato='validato';
+  Object.assign(editingIntervento,payload);
   closeEditModal();
   renderInterventi();
   renderOverview();
