@@ -2277,7 +2277,9 @@ async function viewFoto(intId,codice,nFoto){
   window._modalUrls = (urls||[]).map((u,i)=>({
     url: u.signedUrl,
     name: `${codice}_foto_${String(i+1).padStart(3,'0')}.jpg`,
-    selected: false
+    selected: false,
+    fotoId: fotos[i].id,
+    storagePath: fotos[i].storage_path
   }))
   fmRenderGrid()
 }
@@ -2286,13 +2288,54 @@ function closeFotoModal(){document.getElementById('modal-foto').classList.remove
 
 function fmRenderGrid(){
   const grid = document.getElementById('m-fotogrid')
+  // Bottone elimina visibile solo se intervento ancora "inviato" (non validato)
+  const canDelete = fmCurrentInv?.stato !== 'validato'
   grid.innerHTML = (window._modalUrls||[]).map((item,i)=>`
     <div class="foto-item-m ${item.selected?'selected':''}" onclick="fmToggle(${i})">
       <div class="foto-cb"><span class="foto-cb-check">✔</span></div>
       ${item.url?`<img src="${item.url}" alt="foto ${i+1}" loading="lazy">`:`<span style="color:var(--dim);font-size:11px;">Errore</span>`}
-      <button onclick="event.stopPropagation();fmOpenLb(${i})" style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.55);border:none;border-radius:7px;color:white;font-size:15px;padding:5px 8px;cursor:pointer;line-height:1;">👁</button>
+      <button onclick="event.stopPropagation();fmOpenLb(${i})" title="Ingrandisci" style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.55);border:none;border-radius:7px;color:white;font-size:15px;padding:5px 8px;cursor:pointer;line-height:1;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+      ${canDelete?`<button onclick="event.stopPropagation();fmDeleteFoto(${i})" title="Elimina foto" style="position:absolute;top:6px;right:6px;background:rgba(220,38,38,.85);border:none;border-radius:7px;color:white;padding:5px 7px;cursor:pointer;line-height:1;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+      </button>`:''}
     </div>`).join('')
   fmUpdateSel()
+}
+
+async function fmDeleteFoto(idx){
+  const item = window._modalUrls?.[idx]
+  if(!item || !fmCurrentInv) return
+  if(fmCurrentInv.stato === 'validato'){
+    alert('Non è possibile eliminare foto da un intervento già validato.')
+    return
+  }
+  if(!confirm('Eliminare definitivamente questa foto?\n\nL\'azione non è reversibile: il file verrà rimosso dallo storage e dal database.')) return
+  try{
+    // 1. Rimuovi file da Supabase Storage
+    const { error: errStorage } = await sb.storage.from('foto-interventi').remove([item.storagePath])
+    if(errStorage) console.warn('Storage delete warn:', errStorage.message)
+    // 2. Rimuovi record da tabella foto
+    const { error: errDb } = await sb.from('foto').delete().eq('id', item.fotoId)
+    if(errDb) throw errDb
+    // 3. Decrementa n_foto sull'intervento
+    const newCount = Math.max(0, (fmCurrentInv.n_foto || 0) - 1)
+    await sb.from('interventi').update({ n_foto: newCount }).eq('id', fmCurrentInv.id)
+    fmCurrentInv.n_foto = newCount
+    // Aggiorna anche il record in allInterventi se presente
+    const idxInt = allInterventi.findIndex(i => i.id === fmCurrentInv.id)
+    if(idxInt >= 0) allInterventi[idxInt].n_foto = newCount
+    // 4. Rimuovi dalla lista locale e re-render
+    window._modalUrls.splice(idx, 1)
+    document.getElementById('m-nfoto').textContent = window._modalUrls.length
+    fmRenderGrid()
+    // 5. Refresh tabelle interventi e overview (aggiorna badge "5 foto")
+    if(typeof renderInterventi === 'function') renderInterventi()
+    if(typeof renderOverview === 'function') renderOverview()
+  }catch(e){
+    alert('Errore eliminazione foto: ' + (e.message || e))
+  }
 }
 
 function fmToggle(i){if(!window._modalUrls?.[i])return;window._modalUrls[i].selected=!window._modalUrls[i].selected;fmRenderGrid()}
