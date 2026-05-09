@@ -1129,7 +1129,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
             <select id="g-autista">
               <option value="">Carica prima i mezzi nella tab Live...</option>
             </select>
-            <div style="font-size:.7em;color:var(--dim);margin-top:4px;line-height:1.3">
+            <div id="g-mode-disclaimer" style="font-size:.7em;color:var(--dim);margin-top:4px;line-height:1.3">
               ℹ️ Il nome dell'autista è quello attualmente assegnato al mezzo: nel periodo selezionato il mezzo potrebbe essere stato guidato anche da altri.
             </div>
           </div>
@@ -3070,10 +3070,39 @@ function switchFlottaTab(name){
   }
 }
 
-// 'autista' = label "Autista — Mezzo (Targa)" | 'mezzo' = "Targa Mezzo · Autista"
+// 'autista' = lista nomi univoci, query cross-mezzo | 'mezzo' = lista targhe, query single-mezzo
 let gMode='autista';
+let verizonDriversCache=null; // cache lista driver Verizon (popolata on-demand)
 
-function switchGiornataMode(mode){
+function _normName(s){return (s||'').toLowerCase().trim().replace(/\s+/g,' ');}
+
+async function loadVerizonDriversIfNeeded(){
+  if(verizonDriversCache)return verizonDriversCache;
+  try{
+    const data=await verizonProxyCall('/cmd/v1/drivers');
+    const list=Array.isArray(data)?data:[];
+    // Struttura nested: { Driver: {DriverId, FirstName, LastName, EmailAddress, ...}, Links: ... }
+    verizonDriversCache=list
+      .map(x=>x.Driver||x.driver||x)
+      .filter(d=>d&&(d.FirstName||d.LastName))
+      .map(d=>({
+        driverId:d.DriverId,
+        firstName:(d.FirstName||'').trim(),
+        lastName:(d.LastName||'').trim(),
+        email:d.EmailAddress||'',
+        phone:d.PhoneNumber||'',
+        fullName:`${(d.FirstName||'').trim()} ${(d.LastName||'').trim()}`.trim().replace(/\s+/g,' '),
+        normKey:_normName((d.FirstName||'')+'|'+(d.LastName||''))
+      }))
+      .filter(d=>d.fullName);
+    return verizonDriversCache;
+  }catch(e){
+    console.error('loadVerizonDrivers FAIL:',e);
+    return[];
+  }
+}
+
+async function switchGiornataMode(mode){
   if(mode!=='autista'&&mode!=='mezzo')return;
   gMode=mode;
   // Aggiorna stile bottoni toggle
@@ -3085,8 +3114,22 @@ function switchGiornataMode(mode){
     b.style.fontWeight=isActive?'700':'600';
   });
   // Aggiorna label
-  document.getElementById('g-autista-label').textContent=mode==='autista'?'Autista (mezzo)':'Mezzo (autista)';
-  // Ripopola dropdown con nuovo formato
+  document.getElementById('g-autista-label').textContent=mode==='autista'?'Autista':'Mezzo (autista corrente)';
+  // Disclaimer dinamico
+  const disc=document.getElementById('g-mode-disclaimer');
+  if(disc){
+    if(mode==='autista'){
+      disc.innerHTML='👤 <strong>Modalità Autista</strong>: aggrego i tuoi viaggi su <strong>tutti i mezzi</strong> guidati nel periodo (Verizon traccia il driver loggato a ogni punto GPS).';
+      disc.style.color='var(--accent)';
+    }else{
+      disc.innerHTML='ℹ️ Il nome dell\'autista è quello attualmente assegnato al mezzo: nel periodo selezionato il mezzo potrebbe essere stato guidato anche da altri.';
+      disc.style.color='var(--dim)';
+    }
+  }
+  // Carica drivers se modalità autista (idempotente)
+  if(mode==='autista'){
+    await loadVerizonDriversIfNeeded();
+  }
   populateGiornataAutisti();
 }
 
@@ -3096,23 +3139,31 @@ function populateGiornataAutisti(){
     sel.innerHTML='<option value="">⚠️ Carica prima i mezzi nella tab Live</option>';
     return;
   }
-  // Mantieni la selezione corrente durante il refresh
-  const buildOpts=()=>flottaData.map(r=>{
-    const plate=r.v.RegistrationNumber||r.v.VehicleNumber||'?';
-    // Cerca driver name in vari posti: status arricchito, location, fallback a "non assegnato"
-    const driver=(r.statusData?.DriverName||r.loc?.DriverName||'').trim().replace(/\s+/g,' ');
-    const make=(r.v.Make||'').trim();
-    const model=(r.v.Model||'').trim();
-    const veh=[make,model].filter(Boolean).join(' ').replace(/\b\w/g,c=>c.toUpperCase())||(r.v.Name||plate);
-    const driverLabel=driver?driver.replace(/\b\w/g,c=>c.toUpperCase()):'(autista non assegnato)';
-    let label;
-    if(gMode==='mezzo'){
-      label=`${plate} ${veh}${driver?' · '+driverLabel:''}`;
-    }else{
-      label=`${driverLabel} — ${veh} (${plate})`;
+  // Mantieni la selezione corrente durante il refresh (solo se compatibile)
+  const buildOpts=()=>{
+    if(gMode==='autista'){
+      // Lista autisti univoci da Verizon /cmd/v1/drivers (cache)
+      const drivers=verizonDriversCache||[];
+      if(!drivers.length)return '<option value="">⚠️ Carica i driver Verizon...</option>';
+      return drivers
+        .sort((a,b)=>a.fullName.localeCompare(b.fullName))
+        .map(d=>{
+          const cap=d.fullName.replace(/\b\w/g,c=>c.toUpperCase());
+          return `<option value="driver:${d.normKey}" data-display="${cap}">${cap}</option>`;
+        }).join('');
     }
-    return`<option value="${plate}">${label}</option>`;
-  }).join('');
+    // Modalità mezzo
+    return flottaData.map(r=>{
+      const plate=r.v.RegistrationNumber||r.v.VehicleNumber||'?';
+      const driver=(r.statusData?.DriverName||r.loc?.DriverName||'').trim().replace(/\s+/g,' ');
+      const make=(r.v.Make||'').trim();
+      const model=(r.v.Model||'').trim();
+      const veh=[make,model].filter(Boolean).join(' ').replace(/\b\w/g,c=>c.toUpperCase())||(r.v.Name||plate);
+      const driverLabel=driver?driver.replace(/\b\w/g,c=>c.toUpperCase()):'(autista non assegnato)';
+      const label=`${plate} ${veh}${driver?' · '+driverLabel:''}`;
+      return`<option value="${plate}">${label}</option>`;
+    }).join('');
+  };
   const refresh=()=>{
     const cur=sel.value;
     sel.innerHTML='<option value="">Seleziona...</option>'+buildOpts();
@@ -3178,80 +3229,151 @@ function fmtDuration(min){
   return h+'h'+(m?' '+m+'m':'');
 }
 
+// Helper: calcola stats da array di punti GPS già ordinati per timestamp
+function _calcStatsForPoints(points,soglia,FUEL_KM_PER_L,FUEL_PRICE_PER_L){
+  if(!points.length)return{km:0,drivingHours:0,vMax:0,stops:[],litri:0,euro:0};
+  const odoStart=points[0].OdometerInKM,odoEnd=points[points.length-1].OdometerInKM;
+  const km=(odoEnd!=null&&odoStart!=null)?Math.max(0,odoEnd-odoStart):0;
+  let drivingMs=0,prevTs=null,prevSpeed=0,vMax=0;
+  points.forEach(p=>{
+    const t=new Date(p.UpdateUtc+'Z').getTime();
+    if(prevTs&&prevSpeed>0)drivingMs+=(t-prevTs);
+    prevTs=t;prevSpeed=p.Speed||0;
+    if((p.Speed||0)>vMax)vMax=p.Speed;
+  });
+  const drivingHours=drivingMs/3600000;
+  const stops=detectStops(points,soglia);
+  const litri=km>0?km/FUEL_KM_PER_L:0;
+  const euro=litri*FUEL_PRICE_PER_L;
+  return{km,drivingHours,vMax,stops,litri,euro};
+}
+
+// Helper: chiama Verizon /status/history per UN veicolo, ritorna array punti ordinati
+async function _fetchHistory(plate,fromUtc,toUtc){
+  const path=`/rad/v1/vehicles/${encodeURIComponent(plate)}/status/history?startdatetimeutc=${fromUtc}&enddatetimeutc=${toUtc}`;
+  try{
+    const data=await verizonProxyCall(path);
+    const arr=Array.isArray(data)?data:[];
+    arr.sort((a,b)=>(a.UpdateUtc<b.UpdateUtc?-1:1));
+    return arr;
+  }catch(e){
+    console.warn(`[fetchHistory ${plate}] FAIL:`,e.message);
+    return[];
+  }
+}
+
 async function loadGiornata(){
-  const plate=document.getElementById('g-autista').value;
+  const sel=document.getElementById('g-autista');
+  const selValue=sel.value;
   const dataDa=document.getElementById('g-data-da').value;
   const dataA=document.getElementById('g-data-a').value;
   const soglia=parseInt(document.getElementById('g-soglia').value)||5;
   const btn=document.getElementById('btn-g-load');
   gSetErr('');
-  if(!plate){gSetErr('Seleziona un autista');return;}
+  if(!selValue){gSetErr(gMode==='autista'?'Seleziona un autista':'Seleziona un mezzo');return;}
   if(!dataDa||!dataA){gSetErr('Seleziona "Da" e "A"');return;}
   if(dataDa>dataA){gSetErr('La data "Da" deve essere uguale o precedente alla data "A"');return;}
-  // Limite di sicurezza Verizon: max 31 giorni per evitare risposte enormi
   const dDa=new Date(dataDa),dA=new Date(dataA);
   const diffDays=Math.round((dA-dDa)/86400000)+1;
   if(diffDays>31){gSetErr('Periodo massimo 31 giorni (hai selezionato '+diffDays+' giorni). Riduci il range.');return;}
   const isMultiDay=dataDa!==dataA;
+  const isDriverMode=gMode==='autista'&&selValue.startsWith('driver:');
 
   btn.disabled=true;
   const orig=btn.innerHTML;
-  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>Caricamento...';
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>'+(isDriverMode?'Loop su flotta...':'Caricamento...');
 
   try{
-    // Range UTC: 00:00 dataDa -> 23:59:59 dataA, ma clampato a "adesso"
-    // (Verizon /status/history risponde 500 se end > ora corrente UTC)
+    // Range UTC clampato a "adesso" (Verizon rifiuta end > now)
     const from=new Date(dataDa+'T00:00:00');
     const requestedTo=new Date(dataA+'T23:59:59');
     const now=new Date();
-    const to=requestedTo>now?new Date(now.getTime()-60000):requestedTo; // -1 min di margine
+    const to=requestedTo>now?new Date(now.getTime()-60000):requestedTo;
     const fromUtc=from.toISOString().replace(/\.\d{3}Z$/,'Z');
     const toUtc=to.toISOString().replace(/\.\d{3}Z$/,'Z');
-    const path=`/rad/v1/vehicles/${encodeURIComponent(plate)}/status/history?startdatetimeutc=${fromUtc}&enddatetimeutc=${toUtc}`;
-    const data=await verizonProxyCall(path);
-    const points=Array.isArray(data)?data:[];
-    if(!points.length){
-      gSetErr('Nessun dato GPS nel periodo selezionato. Veicolo non in movimento o range fuori storico.');
-      ['g-kpi-row','g-map-wrap','g-timeline-wrap','g-timeline-header','g-daily-wrap','g-daily-header']
-        .forEach(id=>document.getElementById(id).style.display='none');
-      return;
-    }
-
-    points.sort((a,b)=>(a.UpdateUtc<b.UpdateUtc?-1:1));
-
     const FUEL_KM_PER_L=14;
     const FUEL_PRICE_PER_L=1.85;
 
-    // Group per giorno locale (timezone browser, dovrebbe essere IT)
-    const pointsByDay={};
+    // ============ FETCH DATI ============
+    let points=[]; // tutti i punti (in driver mode = solo punti del driver, su tutti i mezzi)
+    let driverInfo=null; // { fullName, normKey } se driver mode
+    let plateContext=null; // { plate, vehName, driverName } se mezzo mode
+    let platesUsed=[]; // mezzi guidati nel periodo (driver mode)
+
+    if(isDriverMode){
+      // === MODE AUTISTA: loop su flotta, filtra punti per nome autista ===
+      const normKey=selValue.slice(7);
+      const driverCached=(verizonDriversCache||[]).find(d=>d.normKey===normKey);
+      driverInfo={fullName:driverCached?.fullName||sel.selectedOptions[0]?.dataset?.display||normKey,normKey};
+      if(!flottaData||!flottaData.length){gSetErr('Carica prima la flotta nella tab Live');btn.innerHTML=orig;btn.disabled=false;return;}
+      const plates=flottaData.map(r=>r.v.RegistrationNumber||r.v.VehicleNumber).filter(Boolean);
+      btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Verizon: '+plates.length+' mezzi...';
+      // Chiamate parallele
+      const allFleetPoints=await Promise.all(plates.map(p=>_fetchHistory(p,fromUtc,toUtc).then(pts=>pts.map(x=>({...x,_plate:p})))));
+      const merged=allFleetPoints.flat();
+      // Filtra per FirstName+LastName che matchino il driver scelto
+      const targetFn=(driverCached?.firstName||'').toLowerCase().trim();
+      const targetLn=(driverCached?.lastName||'').toLowerCase().trim();
+      points=merged.filter(p=>{
+        const fn=(p.FirstName||'').toLowerCase().trim();
+        const ln=(p.LastName||'').toLowerCase().trim();
+        return fn===targetFn&&ln===targetLn;
+      });
+      points.sort((a,b)=>(a.UpdateUtc<b.UpdateUtc?-1:1));
+      platesUsed=[...new Set(points.map(p=>p._plate))].filter(Boolean);
+    }else{
+      // === MODE MEZZO: 1 chiamata sul mezzo selezionato (comportamento storico) ===
+      const plate=selValue;
+      points=await _fetchHistory(plate,fromUtc,toUtc);
+      points.forEach(p=>p._plate=plate);
+      const rec=(flottaData||[]).find(r=>(r.v.RegistrationNumber||r.v.VehicleNumber)===plate);
+      const drv=(rec?.statusData?.DriverName||rec?.loc?.DriverName||'').trim().replace(/\s+/g,' ');
+      const driverName=drv?drv.replace(/\b\w/g,c=>c.toUpperCase()):'(non assegnato)';
+      const make=(rec?.v.Make||'').trim();const model=(rec?.v.Model||'').trim();
+      const vehName=[make,model].filter(Boolean).join(' ').replace(/\b\w/g,c=>c.toUpperCase())||(rec?.v.Name||'—');
+      plateContext={plate,driverName,vehName};
+      platesUsed=[plate];
+    }
+
+    if(!points.length){
+      gSetErr(isDriverMode?'Nessun punto GPS trovato per questo autista nel periodo (potrebbe non aver guidato nessun mezzo della flotta).':'Nessun dato GPS nel periodo selezionato.');
+      ['g-kpi-row','g-map-wrap','g-timeline-wrap','g-timeline-header','g-daily-wrap','g-daily-header','g-spese-wrap','g-spese-header']
+        .forEach(id=>document.getElementById(id).style.display='none');
+      btn.innerHTML=orig;btn.disabled=false;
+      return;
+    }
+
+    // ============ STATS PER GIORNO ============
+    // In driver mode, raggruppo per (giorno, plate) — l'odometer è per mezzo
+    // In mezzo mode, raggruppo solo per giorno
+    const segByKey={}; // key = "ymd|plate"
     for(const p of points){
       const local=new Date(p.UpdateUtc+'Z');
       const ymd=local.getFullYear()+'-'+String(local.getMonth()+1).padStart(2,'0')+'-'+String(local.getDate()).padStart(2,'0');
-      if(!pointsByDay[ymd])pointsByDay[ymd]=[];
-      pointsByDay[ymd].push(p);
+      const k=`${ymd}|${p._plate||'?'}`;
+      if(!segByKey[k])segByKey[k]={ymd,plate:p._plate||'?',points:[]};
+      segByKey[k].points.push(p);
     }
-    const sortedDays=Object.keys(pointsByDay).sort();
-
-    // Statistiche per giorno
-    const dailyStats=sortedDays.map(ymd=>{
-      const dp=pointsByDay[ymd];
-      const odoStart=dp[0].OdometerInKM,odoEnd=dp[dp.length-1].OdometerInKM;
-      const km=(odoEnd!=null&&odoStart!=null)?Math.max(0,odoEnd-odoStart):0;
-      let drivingMs=0,prevTs=null,prevSpeed=0,vMax=0;
-      dp.forEach(p=>{
-        const t=new Date(p.UpdateUtc+'Z').getTime();
-        if(prevTs&&prevSpeed>0)drivingMs+=(t-prevTs);
-        prevTs=t;prevSpeed=p.Speed||0;
-        if((p.Speed||0)>vMax)vMax=p.Speed;
-      });
-      const drivingHours=drivingMs/3600000;
-      const stops=detectStops(dp,soglia);
-      const litri=km>0?km/FUEL_KM_PER_L:0;
-      const euro=litri*FUEL_PRICE_PER_L;
-      return{ymd,km,drivingHours,vMax,stops,litri,euro};
+    const segments=Object.values(segByKey);
+    segments.forEach(s=>{
+      const st=_calcStatsForPoints(s.points,soglia,FUEL_KM_PER_L,FUEL_PRICE_PER_L);
+      Object.assign(s,st);
     });
+    // Aggrego per giorno (in driver mode possono esserci più segmenti per giorno)
+    const dailyMap={};
+    segments.forEach(s=>{
+      if(!dailyMap[s.ymd])dailyMap[s.ymd]={ymd:s.ymd,km:0,drivingHours:0,vMax:0,stops:[],litri:0,euro:0,plates:new Set(),segs:[]};
+      const d=dailyMap[s.ymd];
+      d.km+=s.km;d.drivingHours+=s.drivingHours;d.litri+=s.litri;d.euro+=s.euro;
+      d.vMax=Math.max(d.vMax,s.vMax);
+      d.stops=d.stops.concat(s.stops);
+      d.plates.add(s.plate);
+      d.segs.push(s);
+    });
+    const dailyStats=Object.values(dailyMap).sort((a,b)=>a.ymd.localeCompare(b.ymd));
+    dailyStats.forEach(d=>{d.platesArr=Array.from(d.plates).sort();});
 
-    // KPI cumulativi sul periodo
+    // KPI cumulativi
     const totKm=dailyStats.reduce((a,d)=>a+d.km,0);
     const totHours=dailyStats.reduce((a,d)=>a+d.drivingHours,0);
     const totStops=dailyStats.reduce((a,d)=>a+d.stops.length,0);
@@ -3267,35 +3389,65 @@ async function loadGiornata(){
     document.getElementById('g-kpi-fuel-l').textContent=totLitri>0?totLitri.toFixed(1)+' l':'—';
     document.getElementById('g-kpi-fuel-eur').textContent=totEuro>0?'€ '+totEuro.toFixed(2):'—';
 
-    // Spese imputabili (per ora solo carburante stimato)
+    // Spese imputabili
     document.getElementById('g-spese-header').style.display='';
     document.getElementById('g-spese-wrap').style.display='';
     document.getElementById('g-spese-carb').textContent=totEuro>0?'€ '+totEuro.toFixed(2):'€ 0.00';
     document.getElementById('g-spese-tot').textContent=totEuro>0?'€ '+totEuro.toFixed(2):'€ 0.00';
-    // Salvo metadati per export CSV (recupero nome autista/mezzo da flottaData)
-    const rec=(flottaData||[]).find(r=>(r.v.RegistrationNumber||r.v.VehicleNumber)===plate);
-    const drv=(rec?.statusData?.DriverName||rec?.loc?.DriverName||'').trim().replace(/\s+/g,' ');
-    const driverName=drv?drv.replace(/\b\w/g,c=>c.toUpperCase()):'(non assegnato)';
-    const make=(rec?.v.Make||'').trim();
-    const model=(rec?.v.Model||'').trim();
-    const vehName=[make,model].filter(Boolean).join(' ').replace(/\b\w/g,c=>c.toUpperCase())||(rec?.v.Name||'—');
-    window._gSpeseCtx={
-      plate,driverName,vehName,
-      dataDa,dataA,
-      totKm,totHours,totStops,totVmax,totLitri,totEuro,
-      dailyStats
-    };
 
-    // Tabella riassunto giornaliero (solo se multi-day)
+    // Salvo metadati per export CSV/PDF
+    if(isDriverMode){
+      window._gSpeseCtx={
+        mode:'autista',
+        driverName:driverInfo.fullName.replace(/\b\w/g,c=>c.toUpperCase()),
+        vehName:platesUsed.length===1?'(1 mezzo)':`${platesUsed.length} mezzi guidati`,
+        plate:platesUsed.join(','),platesUsed,
+        dataDa,dataA,
+        totKm,totHours,totStops,totVmax,totLitri,totEuro,
+        dailyStats
+      };
+    }else{
+      window._gSpeseCtx={
+        mode:'mezzo',
+        plate:plateContext.plate,driverName:plateContext.driverName,vehName:plateContext.vehName,
+        dataDa,dataA,
+        totKm,totHours,totStops,totVmax,totLitri,totEuro,
+        dailyStats
+      };
+    }
+
+    // Tabella riassunto giornaliero (multi-day OPPURE driver mode con più mezzi)
     const dailyHeader=document.getElementById('g-daily-header');
     const dailyWrap=document.getElementById('g-daily-wrap');
     const dailyTbody=document.getElementById('g-daily-tbody');
-    if(isMultiDay){
+    const showDaily=isMultiDay||(isDriverMode&&platesUsed.length>1);
+    // Aggiorno header tabella se driver mode (aggiungo colonna Mezzi guidati)
+    const dailyTheadTr=document.querySelector('#g-daily-wrap thead tr');
+    if(dailyTheadTr){
+      if(isDriverMode){
+        dailyTheadTr.innerHTML='<th style="width:110px">Data</th><th>Mezzi guidati</th><th style="text-align:right">Km</th><th style="text-align:right">Ore guida</th><th style="text-align:right">N. soste</th><th style="text-align:right">Litri (stim.)</th><th style="text-align:right">Costo (stim.)</th>';
+      }else{
+        dailyTheadTr.innerHTML='<th style="width:120px">Data</th><th style="text-align:right">Km</th><th style="text-align:right">Ore guida</th><th style="text-align:right">N. soste</th><th style="text-align:right">Litri (stim.)</th><th style="text-align:right">Costo (stim.)</th><th style="text-align:right">V. max</th>';
+      }
+    }
+    if(showDaily){
       dailyHeader.style.display='';
       dailyWrap.style.display='';
+      dailyHeader.textContent=isDriverMode?`Dettaglio giornaliero — ${driverInfo.fullName.replace(/\b\w/g,c=>c.toUpperCase())} su ${platesUsed.length} mezz${platesUsed.length===1?'o':'i'}`:'Riassunto giornaliero';
       dailyTbody.innerHTML=dailyStats.map(d=>{
         const dt=d.ymd.split('-');
         const dataIt=`${dt[2]}/${dt[1]}/${dt[0]}`;
+        if(isDriverMode){
+          return `<tr>
+            <td><strong>${dataIt}</strong></td>
+            <td style="font-size:.85em">${d.platesArr.join(' · ')}</td>
+            <td style="text-align:right">${d.km.toFixed(1)} km</td>
+            <td style="text-align:right">${d.drivingHours.toFixed(1)} h</td>
+            <td style="text-align:right">${d.stops.length}</td>
+            <td style="text-align:right">${d.litri>0?d.litri.toFixed(1)+' l':'—'}</td>
+            <td style="text-align:right">${d.euro>0?'€ '+d.euro.toFixed(2):'—'}</td>
+          </tr>`;
+        }
         return `<tr>
           <td><strong>${dataIt}</strong></td>
           <td style="text-align:right">${d.km.toFixed(1)} km</td>
@@ -3311,24 +3463,36 @@ async function loadGiornata(){
       dailyWrap.style.display='none';
     }
 
-    // Mappa
+    // ============ MAPPA ============
     document.getElementById('g-map-wrap').style.display='';
     setTimeout(()=>initGiornataMap(),50);
     setTimeout(()=>{
       gMap.invalidateSize();
       if(gPolyline){gMap.removeLayer(gPolyline);gPolyline=null;}
+      if(window._gExtraPolylines){window._gExtraPolylines.forEach(l=>gMap.removeLayer(l));}
+      window._gExtraPolylines=[];
       gStopMarkers.clearLayers();
-      const latlngs=points.filter(p=>p.Latitude!=null&&p.Longitude!=null).map(p=>[p.Latitude,p.Longitude]);
-      if(isMultiDay){
-        // Polyline grigia smart-light: visione d'insieme periodo
-        if(latlngs.length){
-          gPolyline=L.polyline(latlngs,{color:'#78716C',weight:3,opacity:0.55,dashArray:'1,3'}).addTo(gMap);
+      const allLatLngs=points.filter(p=>p.Latitude!=null&&p.Longitude!=null).map(p=>[p.Latitude,p.Longitude]);
+      if(isDriverMode&&platesUsed.length>1){
+        // Una polyline per mezzo, colori distinti
+        const palette=['#0D9488','#16A34A','#E8762D','#6366F1','#DC2626','#A855F7','#0891B2','#EAB308'];
+        platesUsed.forEach((pl,i)=>{
+          const ll=points.filter(p=>p._plate===pl&&p.Latitude!=null&&p.Longitude!=null).map(p=>[p.Latitude,p.Longitude]);
+          if(ll.length){
+            const line=L.polyline(ll,{color:palette[i%palette.length],weight:3.5,opacity:0.75}).addTo(gMap);
+            line.bindTooltip(`Mezzo ${pl}: ${ll.length} punti`,{sticky:true});
+            window._gExtraPolylines.push(line);
+          }
+        });
+      }else if(isMultiDay||isDriverMode){
+        if(allLatLngs.length){
+          gPolyline=L.polyline(allLatLngs,{color:isDriverMode?'#6366F1':'#78716C',weight:3,opacity:0.6,dashArray:isDriverMode?null:'1,3'}).addTo(gMap);
         }
       }else{
-        // Comportamento originale: polyline accent + marker stop dettagliati
-        const stops=dailyStats[0].stops;
-        if(latlngs.length){
-          gPolyline=L.polyline(latlngs,{color:'#0D9488',weight:4,opacity:0.75}).addTo(gMap);
+        // Mezzo + single-day: polyline accent + marker stop dettagliati
+        const stops=dailyStats[0]?.stops||[];
+        if(allLatLngs.length){
+          gPolyline=L.polyline(allLatLngs,{color:'#0D9488',weight:4,opacity:0.75}).addTo(gMap);
         }
         stops.forEach((s,i)=>{
           const num=i+1;
@@ -3344,20 +3508,21 @@ async function loadGiornata(){
           ).addTo(gStopMarkers);
         });
       }
-      if(latlngs.length){
-        gMap.fitBounds(latlngs,{padding:[40,40],maxZoom:isMultiDay?12:14});
+      if(allLatLngs.length){
+        gMap.fitBounds(allLatLngs,{padding:[40,40],maxZoom:(isMultiDay||isDriverMode)?12:14});
       }
     },150);
 
-    // Timeline soste (solo se single-day)
+    // ============ TIMELINE SOSTE ============
+    // Visibile solo in modalità mezzo + single-day (in driver mode il "viaggio" cross-mezzo è meglio nella tabella daily)
     const timelineHeader=document.getElementById('g-timeline-header');
     const timelineWrap=document.getElementById('g-timeline-wrap');
-    if(isMultiDay){
+    if(isMultiDay||isDriverMode){
       timelineHeader.style.display='none';
       timelineWrap.style.display='none';
       gData={points};
     }else{
-      const stops=dailyStats[0].stops;
+      const stops=dailyStats[0]?.stops||[];
       timelineHeader.style.display='';
       timelineWrap.style.display='';
       const tb=document.getElementById('g-timeline');
@@ -3421,21 +3586,40 @@ function exportSpeseCSV(){
   ].join(';'));
   // Sezione dettaglio giornaliero
   lines.push('');
-  lines.push('Dettaglio giornaliero;;;;;;;;;;');
-  lines.push(['Data','','','','','Km','Ore guida','N. soste','V. max (km/h)','Litri stim.','Costo carburante stim. (EUR)'].join(';'));
-  ctx.dailyStats.forEach(d=>{
-    const dt=d.ymd.split('-');
-    const dataIt=`${dt[2]}/${dt[1]}/${dt[0]}`;
-    lines.push([
-      dataIt,'','','','',
-      d.km.toFixed(1),
-      d.drivingHours.toFixed(2),
-      d.stops.length,
-      d.vMax.toFixed(0),
-      d.litri.toFixed(2),
-      d.euro.toFixed(2)
-    ].join(';'));
-  });
+  if(ctx.mode==='autista'){
+    lines.push('Dettaglio giornaliero (driver multi-mezzo);;;;;;;;');
+    lines.push(['Data','Mezzi guidati','Km','Ore guida','N. soste','Litri stim.','Costo carburante (EUR)','V. max (km/h)'].join(';'));
+    ctx.dailyStats.forEach(d=>{
+      const dt=d.ymd.split('-');
+      const dataIt=`${dt[2]}/${dt[1]}/${dt[0]}`;
+      lines.push([
+        dataIt,
+        esc((d.platesArr||[]).join(' / ')),
+        d.km.toFixed(1),
+        d.drivingHours.toFixed(2),
+        d.stops.length,
+        d.litri.toFixed(2),
+        d.euro.toFixed(2),
+        d.vMax.toFixed(0)
+      ].join(';'));
+    });
+  }else{
+    lines.push('Dettaglio giornaliero;;;;;;;;;;');
+    lines.push(['Data','','','','','Km','Ore guida','N. soste','V. max (km/h)','Litri stim.','Costo carburante stim. (EUR)'].join(';'));
+    ctx.dailyStats.forEach(d=>{
+      const dt=d.ymd.split('-');
+      const dataIt=`${dt[2]}/${dt[1]}/${dt[0]}`;
+      lines.push([
+        dataIt,'','','','',
+        d.km.toFixed(1),
+        d.drivingHours.toFixed(2),
+        d.stops.length,
+        d.vMax.toFixed(0),
+        d.litri.toFixed(2),
+        d.euro.toFixed(2)
+      ].join(';'));
+    });
+  }
   // BOM per Excel italiano + lineRet CRLF
   const csv='﻿'+lines.join('\r\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
@@ -3476,9 +3660,14 @@ function exportSpesePDF(){
   doc.setFont('helvetica','normal');
   doc.text(ctx.driverName||'-',45,32);
   doc.setFont('helvetica','bold');
-  doc.text('Mezzo',12,38);
+  doc.text(ctx.mode==='autista'?'Mezzi':'Mezzo',12,38);
   doc.setFont('helvetica','normal');
-  doc.text(`${ctx.vehName||'-'} (${ctx.plate})`,45,38);
+  if(ctx.mode==='autista'){
+    const platesList=(ctx.platesUsed||[]).join(' · ');
+    doc.text(`${ctx.platesUsed?.length||0} mezz${(ctx.platesUsed?.length||0)===1?'o':'i'}: ${platesList}`,45,38);
+  }else{
+    doc.text(`${ctx.vehName||'-'} (${ctx.plate})`,45,38);
+  }
   doc.setFont('helvetica','bold');
   doc.text('Periodo',12,44);
   doc.setFont('helvetica','normal');
@@ -3520,9 +3709,23 @@ function exportSpesePDF(){
   doc.text(`€ ${ctx.totEuro.toFixed(2)}`,210-16,boxY+39,{align:'right'});
 
   // === Tabella dettaglio giornaliero ===
-  const head=[['Data','Km','Ore','Soste','Litri','Costo €','V.max']];
+  const isDriver=ctx.mode==='autista';
+  const head=isDriver
+    ? [['Data','Mezzi','Km','Ore','Soste','Litri','Costo €']]
+    : [['Data','Km','Ore','Soste','Litri','Costo €','V.max']];
   const body=ctx.dailyStats.map(d=>{
     const dt=d.ymd.split('-');
+    if(isDriver){
+      return [
+        `${dt[2]}/${dt[1]}/${dt[0]}`,
+        (d.platesArr||[]).join(' / '),
+        d.km.toFixed(1),
+        `${Math.floor(d.drivingHours)}h ${Math.round((d.drivingHours-Math.floor(d.drivingHours))*60)}m`,
+        String(d.stops.length),
+        d.litri.toFixed(2),
+        `€ ${d.euro.toFixed(2)}`
+      ];
+    }
     return [
       `${dt[2]}/${dt[1]}/${dt[0]}`,
       d.km.toFixed(1),
@@ -3534,29 +3737,43 @@ function exportSpesePDF(){
     ];
   });
   // Riga totale
-  body.push([
-    {content:'TOTALE',styles:{fontStyle:'bold',fillColor:[240,253,244]}},
-    {content:ctx.totKm.toFixed(1),styles:{fontStyle:'bold',fillColor:[240,253,244]}},
-    {content:`${ore}h ${min}m`,styles:{fontStyle:'bold',fillColor:[240,253,244]}},
-    {content:String(ctx.totStops),styles:{fontStyle:'bold',fillColor:[240,253,244]}},
-    {content:ctx.totLitri.toFixed(2),styles:{fontStyle:'bold',fillColor:[240,253,244]}},
-    {content:`€ ${ctx.totEuro.toFixed(2)}`,styles:{fontStyle:'bold',fillColor:[240,253,244],textColor:[220,38,38]}},
-    {content:ctx.totVmax.toFixed(0),styles:{fontStyle:'bold',fillColor:[240,253,244]}}
-  ]);
+  const totRowStyle={fontStyle:'bold',fillColor:[240,253,244]};
+  if(isDriver){
+    body.push([
+      {content:'TOTALE',styles:totRowStyle},
+      {content:`${(ctx.platesUsed||[]).length} mezz${(ctx.platesUsed||[]).length===1?'o':'i'}`,styles:totRowStyle},
+      {content:ctx.totKm.toFixed(1),styles:totRowStyle},
+      {content:`${ore}h ${min}m`,styles:totRowStyle},
+      {content:String(ctx.totStops),styles:totRowStyle},
+      {content:ctx.totLitri.toFixed(2),styles:totRowStyle},
+      {content:`€ ${ctx.totEuro.toFixed(2)}`,styles:{...totRowStyle,textColor:[220,38,38]}}
+    ]);
+  }else{
+    body.push([
+      {content:'TOTALE',styles:totRowStyle},
+      {content:ctx.totKm.toFixed(1),styles:totRowStyle},
+      {content:`${ore}h ${min}m`,styles:totRowStyle},
+      {content:String(ctx.totStops),styles:totRowStyle},
+      {content:ctx.totLitri.toFixed(2),styles:totRowStyle},
+      {content:`€ ${ctx.totEuro.toFixed(2)}`,styles:{...totRowStyle,textColor:[220,38,38]}},
+      {content:ctx.totVmax.toFixed(0),styles:totRowStyle}
+    ]);
+  }
   doc.autoTable({
     startY:boxY+50,
     head,body,
     theme:'striped',
     headStyles:{fillColor:[13,148,136],textColor:[255,255,255],fontSize:9},
     bodyStyles:{fontSize:8.5,cellPadding:2},
-    columnStyles:{
+    columnStyles:isDriver?{
+      0:{cellWidth:24},
+      1:{cellWidth:38,fontSize:7.5},
+      2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},
+      5:{halign:'right'},6:{halign:'right',fontStyle:'bold'}
+    }:{
       0:{cellWidth:30},
-      1:{halign:'right'},
-      2:{halign:'right'},
-      3:{halign:'right'},
-      4:{halign:'right'},
-      5:{halign:'right',fontStyle:'bold'},
-      6:{halign:'right'}
+      1:{halign:'right'},2:{halign:'right'},3:{halign:'right'},
+      4:{halign:'right'},5:{halign:'right',fontStyle:'bold'},6:{halign:'right'}
     },
     margin:{left:12,right:12}
   });
