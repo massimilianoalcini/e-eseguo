@@ -548,7 +548,30 @@ async function apriDocumentoApp(id,path){
     }
     const{data,error}=await sb.storage.from('documenti-condivisi').createSignedUrl(path,600);
     if(error)throw error;
-    window.open(data.signedUrl,'_blank');
+    const url=data.signedUrl;
+    // Filename suggerito (utile per WebView Android: trigger download/open con viewer di sistema)
+    const doc=docsAppAll.find(d=>d.id===id);
+    const ext=(path.split('.').pop()||'pdf').toLowerCase();
+    const safeName=((doc?.titolo||'documento').replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'')||'documento')+'.'+ext;
+    // Pattern <a> click programmatico — funziona meglio del window.open in WebView Android
+    const a=document.createElement('a');
+    a.href=url;
+    a.target='_blank';
+    a.rel='noopener noreferrer';
+    a.setAttribute('download',safeName);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Fallback: se dopo 700ms il documento non è visibilmente aperto (es. WebView Android blocca _blank
+    // e download), navigo allo stesso URL così il sistema operativo lo gestisce con il PDF viewer
+    const t0=Date.now();
+    setTimeout(()=>{
+      // Se la pagina è ancora visibile (non è andata in background = browser non ha aperto nulla)
+      if(!document.hidden && Date.now()-t0<2000){
+        // Apertura forzata stesso WebView: Android passerà al PDF viewer di sistema o al browser
+        try{location.href=url;}catch(_){}
+      }
+    },700);
     // Re-render per togliere il badge "NUOVO" sul documento aperto
     if(currentDocAppFolder){aprireCartellaApp(currentDocAppFolder);}
   }catch(e){
