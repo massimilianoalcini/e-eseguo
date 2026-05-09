@@ -1859,6 +1859,158 @@ function esportaProduzioneCSV(){
   status.textContent=`✓ CSV esportato: ${ctx.interventi.length} interventi · € ${ctx.totImporto.toFixed(2)}`;
 }
 
+// Export PDF Produzione Tecnico (jsPDF + autoTable)
+function esportaProduzionePDF(){
+  const ctx=_produzioneFiltra();if(!ctx)return;
+  if(!ctx.interventi.length){
+    const status=document.getElementById('ep-status');
+    status.style.display='block';
+    status.style.background='rgba(232,118,45,0.08)';
+    status.style.color='#7C2D12';
+    status.textContent='Nessun intervento per questo tecnico nel periodo selezionato.';
+    return;
+  }
+  const jsPDFConstr=window.jspdf?.jsPDF;
+  if(!jsPDFConstr){alert('Libreria PDF non caricata. Ricarica la pagina (Ctrl+Shift+R).');return;}
+  const doc=new jsPDFConstr({orientation:'portrait',unit:'mm',format:'a4'});
+
+  const fmtDate=ymd=>{const[y,m,d]=ymd.split('-');return `${d}/${m}/${y}`;};
+  const ore=Math.floor(ctx.totDurata/60),min=ctx.totDurata%60;
+
+  // === Header brand ===
+  doc.setFillColor(13,148,136);
+  doc.rect(0,0,210,22,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(15);doc.setFont('helvetica','bold');
+  doc.text('E.ESEGUO',12,10);
+  doc.setFontSize(10);doc.setFont('helvetica','normal');
+  doc.text('Produzione tecnico — riepilogo periodo',12,17);
+  doc.setFontSize(8);
+  doc.text(`Generato ${new Date().toLocaleString('it-IT')}`,210-12,17,{align:'right'});
+
+  // === Box info principale ===
+  doc.setTextColor(28,25,23);
+  doc.setFontSize(11);doc.setFont('helvetica','bold');
+  doc.text('Tecnico',12,32);
+  doc.setFont('helvetica','normal');
+  doc.text(ctx.tecNome||'-',45,32);
+  doc.setFont('helvetica','bold');
+  doc.text('Periodo',12,38);
+  doc.setFont('helvetica','normal');
+  doc.text(`${fmtDate(ctx.da)} -> ${fmtDate(ctx.a)}`,45,38);
+
+  // === Box KPI (4 caselle prima riga + 2 highlight seconda) ===
+  const boxY=44;
+  const boxes=[
+    {l:'Totali',v:String(ctx.interventi.length),c:[13,148,136]},
+    {l:'Validati',v:String(ctx.validati),c:[22,163,74]},
+    {l:'Da validare',v:String(ctx.daValidare),c:[232,118,45]},
+    {l:'Foto',v:String(ctx.totFoto),c:[99,102,241]}
+  ];
+  const bw=44,bh=22;
+  boxes.forEach((b,i)=>{
+    const x=12+i*(bw+3);
+    doc.setFillColor(b.c[0],b.c[1],b.c[2]);
+    doc.setDrawColor(b.c[0],b.c[1],b.c[2]);
+    doc.roundedRect(x,boxY,bw,bh,2,2,'FD');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(7);doc.setFont('helvetica','bold');
+    doc.text(b.l.toUpperCase(),x+3,boxY+5);
+    doc.setFontSize(13);
+    doc.text(b.v,x+3,boxY+15);
+  });
+
+  // === Box highlight Importo + Durata ===
+  doc.setTextColor(28,25,23);
+  doc.setFillColor(240,253,244);
+  doc.setDrawColor(22,163,74);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(12,boxY+27,90,18,2,2,'FD');
+  doc.setFontSize(9);doc.setFont('helvetica','bold');
+  doc.setTextColor(22,163,74);
+  doc.text('IMPORTO TOTALE',16,boxY+33);
+  doc.setFontSize(15);doc.setTextColor(22,163,74);
+  doc.text(`€ ${ctx.totImporto.toFixed(2)}`,16,boxY+42);
+
+  doc.setFillColor(238,242,255);
+  doc.setDrawColor(99,102,241);
+  doc.roundedRect(108,boxY+27,90,18,2,2,'FD');
+  doc.setFontSize(9);doc.setFont('helvetica','bold');
+  doc.setTextColor(99,102,241);
+  doc.text('DURATA TOTALE',112,boxY+33);
+  doc.setFontSize(15);doc.setTextColor(99,102,241);
+  doc.text(`${ore}h ${min}m`,112,boxY+42);
+
+  // === Tabella dettaglio interventi ===
+  const head=[['Data','Codice sito','Sito','Cliente','Lavoraz.','Stato','Foto','Min','€']];
+  const body=ctx.interventi.map(i=>{
+    const dRaw=i.ora_inizio||i.created_at||'';
+    const d=dRaw?new Date(dRaw):null;
+    const dataIt=d?`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getFullYear()).slice(2)}`:'';
+    return [
+      dataIt,
+      i.codice_sito||'',
+      (i.nome_sito||'').substring(0,28),
+      (i.cliente_finale||'').substring(0,12),
+      (i.lavorazione||'').substring(0,18),
+      i.stato==='validato'?'✓':'…',
+      String(i.n_foto||0),
+      String(i.durata_minuti||0),
+      i.importo!=null?(+i.importo).toFixed(2):'-'
+    ];
+  });
+  // Riga totale
+  const totRowStyle={fontStyle:'bold',fillColor:[240,253,244]};
+  body.push([
+    {content:'TOTALE',styles:totRowStyle},
+    {content:'',styles:totRowStyle},
+    {content:'',styles:totRowStyle},
+    {content:'',styles:totRowStyle},
+    {content:`${ctx.interventi.length} int.`,styles:totRowStyle},
+    {content:`${ctx.validati}/${ctx.interventi.length}`,styles:totRowStyle},
+    {content:String(ctx.totFoto),styles:totRowStyle},
+    {content:String(ctx.totDurata),styles:totRowStyle},
+    {content:ctx.totImporto.toFixed(2),styles:{...totRowStyle,textColor:[22,163,74]}}
+  ]);
+  doc.autoTable({
+    startY:boxY+50,
+    head,body,
+    theme:'striped',
+    headStyles:{fillColor:[13,148,136],textColor:[255,255,255],fontSize:8.5},
+    bodyStyles:{fontSize:7.5,cellPadding:1.5},
+    columnStyles:{
+      0:{cellWidth:14},
+      1:{cellWidth:18,fontStyle:'bold'},
+      2:{cellWidth:38},
+      3:{cellWidth:20},
+      4:{cellWidth:30},
+      5:{cellWidth:11,halign:'center'},
+      6:{cellWidth:11,halign:'right'},
+      7:{cellWidth:11,halign:'right'},
+      8:{cellWidth:18,halign:'right',fontStyle:'bold'}
+    },
+    margin:{left:12,right:12}
+  });
+
+  // === Footer ===
+  const pageCount=doc.internal.getNumberOfPages();
+  for(let i=1;i<=pageCount;i++){
+    doc.setPage(i);
+    doc.setFontSize(7);doc.setTextColor(150,150,150);
+    doc.text(`E.ESEGUO  ·  marchio reg. N° 302024000141960  ·  pag. ${i}/${pageCount}`,105,290,{align:'center'});
+    doc.text(`Stato: ✓ = validato, … = da validare. Importi IVA esclusa.`,105,294,{align:'center'});
+  }
+
+  const safeName=(ctx.tecNome||'tecnico').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  doc.save(`produzione_${safeName}_${ctx.da}_${ctx.a}.pdf`);
+
+  const status=document.getElementById('ep-status');
+  status.style.display='block';
+  status.style.background='rgba(22,163,74,0.1)';
+  status.style.color='#14532D';
+  status.textContent=`✓ PDF esportato: ${ctx.interventi.length} interventi · € ${ctx.totImporto.toFixed(2)}`;
+}
+
 function renderTecnici(){
   const isAdmin=userProfile&&userProfile.role==='amministratore';
   /* Coordinatori (solo per admin) */
@@ -4646,9 +4798,13 @@ function closeStorico(){document.getElementById('modal-storico').classList.remov
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
         Anteprima
       </button>
-      <button class="btn-save" id="ep-btn-csv" onclick="esportaProduzioneCSV()" style="flex:1.2;padding:12px;border-radius:10px;font-weight:700;font-size:.92em;cursor:pointer;border:none;background:var(--accent);color:white;display:inline-flex;align-items:center;justify-content:center;gap:6px">
+      <button class="btn-save" id="ep-btn-csv" onclick="esportaProduzioneCSV()" style="flex:1;padding:12px;border-radius:10px;font-weight:700;font-size:.92em;cursor:pointer;border:none;background:var(--accent);color:white;display:inline-flex;align-items:center;justify-content:center;gap:6px">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-        Esporta CSV
+        CSV
+      </button>
+      <button class="btn-save" id="ep-btn-pdf" onclick="esportaProduzionePDF()" style="flex:1;padding:12px;border-radius:10px;font-weight:700;font-size:.92em;cursor:pointer;border:none;background:linear-gradient(135deg,#DC2626,#F97316);color:white;display:inline-flex;align-items:center;justify-content:center;gap:6px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+        PDF
       </button>
     </div>
   </div>
