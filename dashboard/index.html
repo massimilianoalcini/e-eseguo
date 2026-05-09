@@ -3060,8 +3060,13 @@ function switchFlottaTab(name){
   document.querySelectorAll('.flotta-tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
   document.querySelectorAll('.flotta-tab-content').forEach(c=>c.classList.toggle('active',c.id==='flotta-tab-'+name));
   if(name==='giornate'){
-    populateGiornataAutisti();
-    // default range: oggi -> oggi
+    // Se modalità autista, switchGiornataMode si occupa anche di caricare la cache drivers Verizon.
+    // Altrimenti popola direttamente le opzioni (mezzo).
+    if(gMode==='autista'){
+      switchGiornataMode('autista');
+    }else{
+      populateGiornataAutisti();
+    }
     const today=new Date().toISOString().slice(0,10);
     const inpDa=document.getElementById('g-data-da');
     const inpA=document.getElementById('g-data-a');
@@ -3144,7 +3149,11 @@ function populateGiornataAutisti(){
     if(gMode==='autista'){
       // Lista autisti univoci da Verizon /cmd/v1/drivers (cache)
       const drivers=verizonDriversCache||[];
-      if(!drivers.length)return '<option value="">⚠️ Carica i driver Verizon...</option>';
+      if(!drivers.length){
+        // Fallback: tento il caricamento async se manca (in modalità autista)
+        loadVerizonDriversIfNeeded().then(d=>{if(d&&d.length)populateGiornataAutisti();});
+        return '<option value="">⏳ Caricamento autisti da Verizon...</option>';
+      }
       return drivers
         .sort((a,b)=>a.fullName.localeCompare(b.fullName))
         .map(d=>{
