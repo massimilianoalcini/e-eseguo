@@ -1129,9 +1129,6 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
             <select id="g-autista">
               <option value="">Carica prima i mezzi nella tab Live...</option>
             </select>
-            <div id="g-mode-disclaimer" style="font-size:.7em;color:var(--dim);margin-top:4px;line-height:1.3">
-              ℹ️ Il nome dell'autista è quello attualmente assegnato al mezzo: nel periodo selezionato il mezzo potrebbe essere stato guidato anche da altri.
-            </div>
           </div>
           <div class="field" style="max-width:160px">
             <label>Da</label>
@@ -3120,17 +3117,6 @@ async function switchGiornataMode(mode){
   });
   // Aggiorna label
   document.getElementById('g-autista-label').textContent=mode==='autista'?'Autista':'Mezzo (autista corrente)';
-  // Disclaimer dinamico
-  const disc=document.getElementById('g-mode-disclaimer');
-  if(disc){
-    if(mode==='autista'){
-      disc.innerHTML='👤 <strong>Modalità Autista</strong>: aggrego i tuoi viaggi su <strong>tutti i mezzi</strong> guidati nel periodo (Verizon traccia il driver loggato a ogni punto GPS).';
-      disc.style.color='var(--accent)';
-    }else{
-      disc.innerHTML='ℹ️ Il nome dell\'autista è quello attualmente assegnato al mezzo: nel periodo selezionato il mezzo potrebbe essere stato guidato anche da altri.';
-      disc.style.color='var(--dim)';
-    }
-  }
   // Carica drivers se modalità autista (idempotente)
   if(mode==='autista'){
     await loadVerizonDriversIfNeeded();
