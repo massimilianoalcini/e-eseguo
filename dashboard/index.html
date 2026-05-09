@@ -1120,8 +1120,14 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <div class="field" style="max-width:230px;flex-grow:0">
             <label>Visualizza per</label>
             <div id="g-mode-toggle" style="display:inline-flex;border:1px solid var(--card-border);border-radius:10px;overflow:hidden;background:#fff">
-              <button type="button" class="g-mode-btn active" data-mode="autista" onclick="switchGiornataMode('autista')" style="border:none;background:rgba(13,148,136,0.12);color:var(--accent);font-weight:700;padding:8px 14px;cursor:pointer;font-size:.85em">👤 Autista</button>
-              <button type="button" class="g-mode-btn" data-mode="mezzo" onclick="switchGiornataMode('mezzo')" style="border:none;background:#fff;color:var(--mid);font-weight:600;padding:8px 14px;cursor:pointer;font-size:.85em;border-left:1px solid var(--card-border)">🚐 Mezzo</button>
+              <button type="button" class="g-mode-btn active" data-mode="autista" onclick="switchGiornataMode('autista')" style="border:none;background:rgba(13,148,136,0.12);color:var(--accent);font-weight:700;padding:8px 14px;cursor:pointer;font-size:.85em;display:inline-flex;align-items:center;gap:6px">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+                Autista
+              </button>
+              <button type="button" class="g-mode-btn" data-mode="mezzo" onclick="switchGiornataMode('mezzo')" style="border:none;background:#fff;color:var(--mid);font-weight:600;padding:8px 14px;cursor:pointer;font-size:.85em;border-left:1px solid var(--card-border);display:inline-flex;align-items:center;gap:6px">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+                Mezzo
+              </button>
             </div>
           </div>
           <div class="field">
