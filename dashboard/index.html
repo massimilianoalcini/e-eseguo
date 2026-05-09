@@ -774,8 +774,25 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         </tr></tfoot>
       </table></div>
 
+      <!-- ★ IMPORTA REPORT ARUBA (XLS riassuntivo fatture passive) -->
+      <div style="background:linear-gradient(135deg,#fef3c7,#fffbeb);border:1.5px solid #fcd34d;border-radius:14px;padding:18px;margin-top:24px">
+        <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#92400e;font-size:.95em;margin-bottom:4px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>
+          Importa report fatture Aruba — XLS riassuntivo
+        </div>
+        <div style="font-size:.8em;color:#78716C;margin-bottom:14px">Scarica da Aruba Fatturazione il file <code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid #fcd34d">FattureRicevute.xls</code> (riepilogo fatture passive) e caricalo qui. Niente AI, parser deterministico, dedup automatico.</div>
+        <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+          <label style="flex:1;min-width:240px;display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fff;border:1.5px dashed #fcd34d;border-radius:10px;cursor:pointer;font-size:.85em;color:#78716C">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#92400e"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            <span id="lbl-aruba-xls">Seleziona FattureRicevute.xls...</span>
+            <input type="file" id="input-aruba-xls" accept=".xls,.xlsx" style="display:none" onchange="onArubaXLSSelected(this)">
+          </label>
+        </div>
+        <div id="aruba-status" style="margin-top:10px;font-size:.82em;color:#78716C"></div>
+      </div>
+
       <!-- ★ AI UPLOAD FATTURE + BANCA -->
-      <div style="background:linear-gradient(135deg,#f5f3ff,#eff6ff);border:1.5px solid #ddd6fe;border-radius:14px;padding:18px;margin-top:24px">
+      <div style="background:linear-gradient(135deg,#f5f3ff,#eff6ff);border:1.5px solid #ddd6fe;border-radius:14px;padding:18px;margin-top:14px">
         <div style="font-weight:700;color:#4c1d95;font-size:.95em;margin-bottom:4px">🤖 AI Controllo Costi — Carica documenti del mese</div>
         <div style="font-size:.8em;color:#6b7280;margin-bottom:14px">Carica la cartella delle fatture passive + l'estratto bancario. L'AI estrae e abbina tutto automaticamente.</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -838,6 +855,47 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         <div class="modal-buttons">
           <button class="btn-cancel" onclick="closeCostoModal()">Annulla</button>
           <button class="btn-save" onclick="saveCosto()">Salva</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Anteprima Import Aruba XLS -->
+    <div class="modal-bg" id="modal-aruba-preview" onclick="if(event.target===this)closeArubaPreview()">
+      <div class="modal" style="width:920px;max-width:96vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;padding:0">
+        <div style="background:linear-gradient(135deg,#92400e,#d97706);padding:16px 22px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="color:#fff;font-weight:800;font-size:1.05em;display:flex;align-items:center;gap:8px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>
+              Anteprima Import Aruba
+            </div>
+            <div id="aruba-preview-sub" style="color:rgba(255,255,255,.85);font-size:.82em;margin-top:2px"></div>
+          </div>
+          <button onclick="closeArubaPreview()" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1em">✕</button>
+        </div>
+        <div style="padding:18px 22px;overflow-y:auto;flex:1">
+          <div id="aruba-preview-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px"></div>
+          <div id="aruba-preview-msg" style="font-size:.82em;color:var(--mid);margin-bottom:10px"></div>
+          <div class="table-wrap" style="max-height:340px;overflow-y:auto">
+            <table style="font-size:.82em;width:100%">
+              <thead style="position:sticky;top:0;background:#fff;z-index:1"><tr>
+                <th style="width:30px"></th>
+                <th>Data</th>
+                <th>Fornitore</th>
+                <th>Numero</th>
+                <th style="text-align:right">Imponibile</th>
+                <th style="text-align:right">Tot. doc.</th>
+                <th>Stato</th>
+              </tr></thead>
+              <tbody id="aruba-preview-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div style="padding:14px 22px;border-top:1px solid rgba(0,0,0,0.06);display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn-cancel" onclick="closeArubaPreview()" style="padding:11px 20px;border-radius:10px;font-weight:700;font-size:.9em;cursor:pointer;border:1px solid #E7E5E0;background:#fff;color:var(--text)">Annulla</button>
+          <button class="btn-save" id="aruba-btn-import" onclick="confermaImportAruba()" style="padding:11px 22px;border-radius:10px;font-weight:700;font-size:.9em;cursor:pointer;border:none;background:linear-gradient(135deg,#92400e,#d97706);color:#fff;display:inline-flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span id="aruba-btn-import-txt">Importa selezionati</span>
+          </button>
         </div>
       </div>
     </div>
@@ -1386,6 +1444,7 @@ function slidePanel(){document.getElementById('tealPanel').classList.toggle('mov
 <script src="https://unpkg.com/leaflet-image@0.4.0/leaflet-image.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const SUPA_URL='https://gohtmuxaidwzijzrgzfh.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvaHRtdXhhaWR3emlqenJnemZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwODQzNzQsImV4cCI6MjA4OTY2MDM3NH0.TOVZgCuRiCk9B50zTd_BpOKZGpIaHEXFwA2L7TKFJVQ';
@@ -2550,6 +2609,182 @@ async function deleteCosto(id){
   if(!confirm('Eliminare questa voce di costo?'))return;
   await sb.from('costi_mensili').delete().eq('id',id);
   loadEconomia();
+}
+
+/* === IMPORTA REPORT ARUBA XLS (FattureRicevute) === */
+window._arubaParsedRows=null;
+
+async function onArubaXLSSelected(input){
+  const file=input.files?.[0];if(!file)return;
+  document.getElementById('lbl-aruba-xls').textContent=file.name;
+  const status=document.getElementById('aruba-status');
+  status.style.color='#78716C';
+  status.textContent='Lettura file in corso...';
+  if(typeof XLSX==='undefined'){status.style.color='#991b1b';status.textContent='Libreria XLSX non caricata. Ricarica la pagina (Ctrl+Shift+R).';return;}
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array',cellDates:true});
+    const sheetName=wb.SheetNames.includes('FattureRicevute')?'FattureRicevute':wb.SheetNames[0];
+    const sheet=wb.Sheets[sheetName];
+    const rows=XLSX.utils.sheet_to_json(sheet,{defval:'',raw:false});
+    if(!rows.length){status.style.color='#991b1b';status.textContent='File vuoto o formato non riconosciuto.';return;}
+    // Mappa righe
+    const parsed=rows.map(r=>{
+      const dataDoc=_arubaParseDate(r['Data documento']||r['Data Documento']||r['Datadocumento']);
+      return{
+        numero:String(r['Numero']||r['N.']||'').trim(),
+        fornitore:String(r['Fornitore']||r['Ragione Sociale']||'').trim(),
+        piva:String(r['P.IVA']||r['Partita IVA']||'').trim(),
+        dataDocStr:dataDoc?dataDoc.iso:null,
+        dataDocVisible:dataDoc?dataDoc.it:'',
+        mese:dataDoc?dataDoc.mese:null,
+        imponibile:_arubaParseNum(r['Totale imponibile']||r['Imponibile']),
+        totDoc:_arubaParseNum(r['Totale documento']||r['Totale']),
+        stato:String(r['Stato']||'').trim(),
+        statoPag:String(r['Pagamenti']||r['Stato pagamento']||'').trim()||(String(r['Stato']||'').toLowerCase().includes('pagat')?'Pagata':'Non pagata'),
+        tipo:String(r['Tipo documento']||'').trim()
+      };
+    }).filter(x=>x.fornitore&&x.imponibile>0);
+    if(!parsed.length){status.style.color='#991b1b';status.textContent='Nessuna fattura valida trovata nel file.';return;}
+    window._arubaParsedRows=parsed;
+    status.style.color='#92400e';
+    status.innerHTML=`✓ <strong>${parsed.length}</strong> fatture lette dal file. <a href="#" onclick="event.preventDefault();aprirArubaPreview()" style="color:#92400e;font-weight:700;text-decoration:underline">Apri anteprima e importa →</a>`;
+    aprirArubaPreview();
+  }catch(e){
+    status.style.color='#991b1b';
+    status.textContent='Errore lettura file: '+(e.message||e);
+  }
+}
+
+function _arubaParseDate(v){
+  if(!v)return null;
+  if(v instanceof Date){
+    const y=v.getFullYear(),m=String(v.getMonth()+1).padStart(2,'0'),d=String(v.getDate()).padStart(2,'0');
+    return{iso:`${y}-${m}-${d}`,it:`${d}/${m}/${y}`,mese:`${y}-${m}`};
+  }
+  if(typeof v==='number'){
+    // Excel serial date
+    const dt=new Date(Date.UTC(1899,11,30)+v*86400000);
+    const y=dt.getUTCFullYear(),m=String(dt.getUTCMonth()+1).padStart(2,'0'),d=String(dt.getUTCDate()).padStart(2,'0');
+    return{iso:`${y}-${m}-${d}`,it:`${d}/${m}/${y}`,mese:`${y}-${m}`};
+  }
+  // String dd/mm/yyyy o yyyy-mm-dd
+  const s=String(v).trim();
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m)return{iso:`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`,it:`${m[1].padStart(2,'0')}/${m[2].padStart(2,'0')}/${m[3]}`,mese:`${m[3]}-${m[2].padStart(2,'0')}`};
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m)return{iso:`${m[1]}-${m[2]}-${m[3]}`,it:`${m[3]}/${m[2]}/${m[1]}`,mese:`${m[1]}-${m[2]}`};
+  return null;
+}
+function _arubaParseNum(v){
+  if(v==null||v==='')return 0;
+  if(typeof v==='number')return v;
+  // Italian "1.234,56" o "1234,56"
+  const cleaned=String(v).replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,'');
+  const n=parseFloat(cleaned);
+  return isNaN(n)?0:n;
+}
+
+async function aprirArubaPreview(){
+  const parsed=window._arubaParsedRows;if(!parsed||!parsed.length)return;
+  const meseSel=document.getElementById('eco-mese').value; // YYYY-MM del mese aperto in Economia
+  // Carica costi gia presenti per dedup
+  const{data:existing}=await sb.from('costi_mensili').select('num_fattura,fornitore,data_fattura').not('num_fattura','is',null);
+  const existSet=new Set((existing||[]).map(c=>`${(c.fornitore||'').toLowerCase().trim()}|${(c.num_fattura||'').trim()}|${c.data_fattura||''}`));
+
+  // Annoto se appartengono al mese e se sono duplicati
+  const enriched=parsed.map(r=>{
+    const inMese=meseSel?(r.mese===meseSel):true;
+    const dupKey=`${r.fornitore.toLowerCase()}|${r.numero}|${r.dataDocStr||''}`;
+    const isDup=existSet.has(dupKey);
+    return{...r,inMese,isDup,sel:inMese&&!isDup};
+  });
+  window._arubaEnriched=enriched;
+  // Stats
+  const tot=enriched.length;
+  const inMeseN=enriched.filter(x=>x.inMese).length;
+  const dupN=enriched.filter(x=>x.isDup).length;
+  const selN=enriched.filter(x=>x.sel).length;
+  const totEur=enriched.filter(x=>x.sel).reduce((s,x)=>s+x.imponibile,0);
+  document.getElementById('aruba-preview-sub').textContent=`${tot} fatture totali nel file · mese aperto Economia: ${meseSel||'(tutti)'}`;
+  document.getElementById('aruba-preview-stats').innerHTML=`
+    <div style="background:#fef3c7;border-radius:10px;padding:10px"><div style="font-size:.7em;font-weight:700;color:#92400e;text-transform:uppercase">Totali nel file</div><div style="font-size:1.4em;font-weight:800;color:#92400e">${tot}</div></div>
+    <div style="background:rgba(13,148,136,0.1);border-radius:10px;padding:10px"><div style="font-size:.7em;font-weight:700;color:var(--accent);text-transform:uppercase">Mese corrente</div><div style="font-size:1.4em;font-weight:800;color:var(--accent)">${inMeseN}</div></div>
+    <div style="background:rgba(220,38,38,0.08);border-radius:10px;padding:10px"><div style="font-size:.7em;font-weight:700;color:#991b1b;text-transform:uppercase">Già presenti (dedup)</div><div style="font-size:1.4em;font-weight:800;color:#991b1b">${dupN}</div></div>
+    <div style="background:rgba(22,163,74,0.1);border-radius:10px;padding:10px"><div style="font-size:.7em;font-weight:700;color:var(--green);text-transform:uppercase">Da importare</div><div style="font-size:1.4em;font-weight:800;color:var(--green)">${selN} <small style="font-weight:600;font-size:.55em">€ ${totEur.toFixed(2)}</small></div></div>
+  `;
+  document.getElementById('aruba-preview-msg').innerHTML=`Sono spuntate solo le fatture del <strong>mese corrente Economia</strong> non ancora importate. Puoi modificare la selezione manualmente.`;
+  _arubaRenderTable();
+  document.getElementById('modal-aruba-preview').classList.add('open');
+}
+
+function _arubaRenderTable(){
+  const enriched=window._arubaEnriched||[];
+  const tb=document.getElementById('aruba-preview-tbody');
+  tb.innerHTML=enriched.map((r,i)=>{
+    const rowStyle=r.isDup?'opacity:0.5':r.inMese?'':'opacity:0.7';
+    const statoBg=r.isDup?'background:rgba(220,38,38,0.06)':(r.inMese?'':'background:rgba(0,0,0,0.02)');
+    const tagDup=r.isDup?'<span style="font-size:.7em;color:#991b1b;background:rgba(220,38,38,0.1);padding:2px 6px;border-radius:4px;margin-left:6px">già importata</span>':'';
+    const tagOff=(!r.inMese&&!r.isDup)?'<span style="font-size:.7em;color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;margin-left:6px">altro mese</span>':'';
+    return `<tr style="${rowStyle};${statoBg}">
+      <td><input type="checkbox" ${r.sel?'checked':''} ${r.isDup?'disabled':''} onchange="window._arubaEnriched[${i}].sel=this.checked;_arubaUpdateStats()"></td>
+      <td>${r.dataDocVisible}</td>
+      <td>${(r.fornitore||'').substring(0,38)}${tagDup}${tagOff}</td>
+      <td style="font-family:monospace;font-size:.85em">${r.numero||'-'}</td>
+      <td style="text-align:right">€ ${r.imponibile.toFixed(2)}</td>
+      <td style="text-align:right;color:var(--dim)">€ ${r.totDoc.toFixed(2)}</td>
+      <td><span style="font-size:.78em;color:${/pagat/i.test(r.statoPag)?'var(--green)':'var(--orange)'}">${r.statoPag}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function _arubaUpdateStats(){
+  const enriched=window._arubaEnriched||[];
+  const selN=enriched.filter(x=>x.sel).length;
+  const totEur=enriched.filter(x=>x.sel).reduce((s,x)=>s+x.imponibile,0);
+  // Aggiorno la 4a card statistiche (Da importare)
+  const cards=document.querySelectorAll('#aruba-preview-stats > div');
+  if(cards[3])cards[3].innerHTML=`<div style="font-size:.7em;font-weight:700;color:var(--green);text-transform:uppercase">Da importare</div><div style="font-size:1.4em;font-weight:800;color:var(--green)">${selN} <small style="font-weight:600;font-size:.55em">€ ${totEur.toFixed(2)}</small></div>`;
+  document.getElementById('aruba-btn-import-txt').textContent=`Importa ${selN} selezionate`;
+}
+
+function closeArubaPreview(){
+  document.getElementById('modal-aruba-preview').classList.remove('open');
+}
+
+async function confermaImportAruba(){
+  const enriched=window._arubaEnriched||[];
+  const toImport=enriched.filter(x=>x.sel);
+  if(!toImport.length){alert('Nessuna fattura selezionata');return;}
+  const btn=document.getElementById('aruba-btn-import');
+  btn.disabled=true;
+  document.getElementById('aruba-btn-import-txt').textContent='Importazione...';
+  try{
+    // Mappa a costi_mensili
+    const rows=toImport.map(r=>({
+      mese:r.mese?r.mese+'-01':null,
+      voce:`${r.fornitore} — ${r.numero||'(senza numero)'}`,
+      importo:r.imponibile,
+      note:r.tipo?`Importato da Aruba — ${r.tipo}`:'Importato da Aruba',
+      categoria:'Fattura passiva',
+      fornitore:r.fornitore,
+      num_fattura:r.numero||null,
+      data_fattura:r.dataDocStr,
+      fonte:'ai',
+      inserito_da:currentUser.id,
+      match_banca:false
+    })).filter(r=>r.mese&&r.importo>0);
+    if(!rows.length){alert('Nessuna fattura valida da importare (manca data o importo).');btn.disabled=false;document.getElementById('aruba-btn-import-txt').textContent='Importa selezionati';return;}
+    const{error}=await sb.from('costi_mensili').insert(rows);
+    if(error)throw error;
+    closeArubaPreview();
+    document.getElementById('aruba-status').innerHTML=`✓ Importate <strong>${rows.length}</strong> fatture per <strong>€ ${rows.reduce((s,r)=>s+r.importo,0).toFixed(2)}</strong> totali (IVA esclusa).`;
+    loadEconomia();
+  }catch(e){
+    alert('Errore importazione: '+(e.message||e));
+  }finally{
+    btn.disabled=false;
+  }
 }
 
 /* === CALCOLA PERCORSO === */
