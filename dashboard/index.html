@@ -1242,13 +1242,28 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <label style="margin-top:10px">Descrizione (opzionale)</label>
           <textarea id="up-doc-desc" rows="2" placeholder="Note aggiuntive..." style="width:100%;font-family:inherit;resize:vertical"></textarea>
           <label style="margin-top:10px">Categoria *</label>
-          <select id="up-doc-categoria" style="width:100%">
+          <select id="up-doc-categoria" style="width:100%" onchange="onChangeCategoriaUpload()">
             <option value="sicurezza">🛡️ Sicurezza (POS, DUVRI, formazione)</option>
             <option value="manuali">📘 Manuali (apparati, schede tecniche)</option>
             <option value="comunicazioni">📨 Comunicazioni</option>
             <option value="modulistica">📝 Modulistica</option>
             <option value="altro" selected>📂 Altro</option>
           </select>
+          <div id="up-doc-sotto-row" style="display:none;margin-top:10px">
+            <label>Sotto-categoria *</label>
+            <select id="up-doc-sotto" style="width:100%" onchange="onChangeSottoUpload()">
+              <option value="azienda" selected>🏢 Documentazione Azienda (visibile a tutti)</option>
+              <option value="tecnici">👤 Documentazione Tecnici (un tecnico/più tecnici)</option>
+            </select>
+          </div>
+          <div id="up-doc-tecnici-row" style="display:none;margin-top:10px">
+            <label>Tecnici destinatari * <span style="font-weight:400;color:var(--dim);font-size:.85em">(selezione multipla)</span></label>
+            <div id="up-doc-tecnici-list" style="max-height:180px;overflow-y:auto;border:1px solid var(--card-border);border-radius:8px;padding:8px;background:#fafaf9"></div>
+            <div style="display:flex;gap:8px;margin-top:6px">
+              <button type="button" onclick="toggleTutuTecnici(true)" style="font-size:.78em;padding:4px 10px;border-radius:6px;border:1px solid var(--card-border);background:#fff;cursor:pointer">Seleziona tutti</button>
+              <button type="button" onclick="toggleTutuTecnici(false)" style="font-size:.78em;padding:4px 10px;border-radius:6px;border:1px solid var(--card-border);background:#fff;cursor:pointer">Deseleziona tutti</button>
+            </div>
+          </div>
           <label style="margin-top:10px">File *</label>
           <input type="file" id="up-doc-file" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.heic,.txt,.zip" style="width:100%">
           <div id="up-doc-status" style="display:none;font-size:.85em;padding:10px;border-radius:8px;margin-top:10px"></div>
@@ -3684,17 +3699,31 @@ const DOC_CATEGORIE = [
    svg:'<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>'}
 ];
 let docsAll = [];
-let currentDocFolder = null; // null = vista root cartelle, altrimenti chiave categoria
+let docTecniciList = []; // [{id, full_name}, ...] — popolato in loadDocumenti
+let currentDocFolder = null;     // null = root | 'sicurezza' | 'manuali' | ...
+let currentDocSubFolder = null;  // 'azienda' | 'tecnici' | null (solo per sicurezza)
+let currentDocTecnicoId = null;  // uuid tecnico selezionato dentro 'tecnici'
 
 async function loadDocumenti(){
-  const{data,error}=await sb.from('documenti').select('*').order('created_at',{ascending:false});
-  if(error){console.error('loadDocumenti:',error);docsAll=[];return;}
-  docsAll = data || [];
+  const[{data:docs,error:errDocs},{data:tec,error:errTec}]=await Promise.all([
+    sb.from('documenti').select('*').order('created_at',{ascending:false}),
+    sb.from('profiles').select('id,full_name').eq('role','tecnico').order('full_name')
+  ]);
+  if(errDocs){console.error('loadDocumenti:',errDocs);docsAll=[];return;}
+  if(errTec){console.error('loadTecnici:',errTec);docTecniciList=[];}else{docTecniciList=tec||[];}
+  docsAll = docs || [];
   renderDocFolders();
 }
 
+function _docBreadcrumbHome(){
+  return `<a href="#" onclick="event.preventDefault();renderDocFolders()" style="color:var(--accent);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 2l9 7.5"/><path d="M5 9v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/></svg>Documenti</a>`;
+}
+function _docBreadcrumbSep(){return '<span style="color:var(--dim)">/</span>';}
+
 function renderDocFolders(){
   currentDocFolder = null;
+  currentDocSubFolder = null;
+  currentDocTecnicoId = null;
   document.getElementById('doc-folders-view').style.display='grid';
   document.getElementById('doc-files-view').style.display='none';
   document.getElementById('doc-breadcrumb').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 2l9 7.5"/><path d="M5 9v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/></svg> <strong style="color:var(--text)">Documenti</strong> <span style="color:var(--dim)">(${docsAll.length} file)</span>`;
@@ -3712,16 +3741,88 @@ function renderDocFolders(){
 
 function aprireCartella(key){
   currentDocFolder = key;
+  currentDocSubFolder = null;
+  currentDocTecnicoId = null;
+  const cat = DOC_CATEGORIE.find(c=>c.key===key);
+  // Sicurezza ha 2 sotto-cartelle, le altre vanno direttamente ai file
+  if(key==='sicurezza'){
+    document.getElementById('doc-folders-view').style.display='grid';
+    document.getElementById('doc-files-view').style.display='none';
+    document.getElementById('doc-breadcrumb').innerHTML = `${_docBreadcrumbHome()} ${_docBreadcrumbSep()} <strong style="color:${cat.color}">${cat.label}</strong>`;
+    const aziendaCount = docsAll.filter(d=>d.categoria==='sicurezza' && d.sotto_categoria==='azienda').length;
+    const tecniciCount = docsAll.filter(d=>d.categoria==='sicurezza' && d.sotto_categoria==='tecnici').length;
+    document.getElementById('doc-folders-view').innerHTML = `
+      <div onclick="aprireSottoCartella('azienda')" style="background:#fff;border:1px solid var(--card-border);border-radius:14px;padding:18px;cursor:pointer;transition:.18s;box-shadow:var(--card-shadow);display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,.08)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--card-shadow)'">
+        <div style="color:${cat.color}"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg></div>
+        <div style="font-weight:800;font-size:1.02em;color:var(--text)">Documentazione Azienda</div>
+        <div style="font-size:.78em;color:var(--dim)">Visibile a tutti i tecnici</div>
+        <div style="margin-top:4px;font-size:.82em;font-weight:700;color:${cat.color};background:${cat.color}15;padding:3px 10px;border-radius:20px">${aziendaCount} file</div>
+      </div>
+      <div onclick="aprireSottoCartella('tecnici')" style="background:#fff;border:1px solid var(--card-border);border-radius:14px;padding:18px;cursor:pointer;transition:.18s;box-shadow:var(--card-shadow);display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,.08)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--card-shadow)'">
+        <div style="color:${cat.color}"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div style="font-weight:800;font-size:1.02em;color:var(--text)">Documentazione Tecnici</div>
+        <div style="font-size:.78em;color:var(--dim)">Una cartella per tecnico</div>
+        <div style="margin-top:4px;font-size:.82em;font-weight:700;color:${cat.color};background:${cat.color}15;padding:3px 10px;border-radius:20px">${tecniciCount} file</div>
+      </div>
+    `;
+    return;
+  }
+  // Default: lista file flat
   document.getElementById('doc-folders-view').style.display='none';
   document.getElementById('doc-files-view').style.display='block';
-  const cat = DOC_CATEGORIE.find(c=>c.key===key);
-  document.getElementById('doc-breadcrumb').innerHTML = `<a href="#" onclick="event.preventDefault();renderDocFolders()" style="color:var(--accent);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 2l9 7.5"/><path d="M5 9v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/></svg>Documenti</a> <span style="color:var(--dim)">/</span> <strong style="color:${cat.color}">${cat.label}</strong>`;
+  document.getElementById('doc-breadcrumb').innerHTML = `${_docBreadcrumbHome()} ${_docBreadcrumbSep()} <strong style="color:${cat.color}">${cat.label}</strong>`;
+  renderDocFiles();
+}
+
+function aprireSottoCartella(sub){
+  currentDocSubFolder = sub;
+  currentDocTecnicoId = null;
+  const cat = DOC_CATEGORIE.find(c=>c.key==='sicurezza');
+  const subLabel = sub==='azienda' ? 'Documentazione Azienda' : 'Documentazione Tecnici';
+  const subCrumb = `${_docBreadcrumbHome()} ${_docBreadcrumbSep()} <a href="#" onclick="event.preventDefault();aprireCartella('sicurezza')" style="color:${cat.color};text-decoration:none;font-weight:600">${cat.label}</a> ${_docBreadcrumbSep()} <strong style="color:${cat.color}">${subLabel}</strong>`;
+  document.getElementById('doc-breadcrumb').innerHTML = subCrumb;
+  if(sub==='azienda'){
+    document.getElementById('doc-folders-view').style.display='none';
+    document.getElementById('doc-files-view').style.display='block';
+    renderDocFiles();
+    return;
+  }
+  // sub === 'tecnici' → mostra cartelle per ogni tecnico
+  document.getElementById('doc-folders-view').style.display='grid';
+  document.getElementById('doc-files-view').style.display='none';
+  const fv = document.getElementById('doc-folders-view');
+  if(!docTecniciList.length){
+    fv.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--dim);font-size:.9em">Nessun tecnico registrato. Crea i profili dei tecnici nella sezione <strong>Utenti</strong>.</div>';
+    return;
+  }
+  fv.innerHTML = docTecniciList.map(t=>{
+    const count = docsAll.filter(d=>d.categoria==='sicurezza' && d.sotto_categoria==='tecnici' && d.tecnico_id===t.id).length;
+    const initials = (t.full_name||'?').split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
+    return `<div onclick="aprireCartellaTecnico('${t.id}','${(t.full_name||'').replace(/'/g,"\\'")}')" style="background:#fff;border:1px solid var(--card-border);border-radius:14px;padding:18px;cursor:pointer;transition:.18s;box-shadow:var(--card-shadow);display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,.08)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--card-shadow)'">
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,${cat.color},${cat.color}cc);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1em">${initials}</div>
+      <div style="font-weight:800;font-size:1em;color:var(--text)">${t.full_name||'(senza nome)'}</div>
+      <div style="margin-top:2px;font-size:.82em;font-weight:700;color:${cat.color};background:${cat.color}15;padding:3px 10px;border-radius:20px">${count} file</div>
+    </div>`;
+  }).join('');
+}
+
+function aprireCartellaTecnico(tecnicoId, tecnicoName){
+  currentDocTecnicoId = tecnicoId;
+  const cat = DOC_CATEGORIE.find(c=>c.key==='sicurezza');
+  document.getElementById('doc-breadcrumb').innerHTML = `${_docBreadcrumbHome()} ${_docBreadcrumbSep()} <a href="#" onclick="event.preventDefault();aprireCartella('sicurezza')" style="color:${cat.color};text-decoration:none;font-weight:600">${cat.label}</a> ${_docBreadcrumbSep()} <a href="#" onclick="event.preventDefault();aprireSottoCartella('tecnici')" style="color:${cat.color};text-decoration:none;font-weight:600">Documentazione Tecnici</a> ${_docBreadcrumbSep()} <strong style="color:${cat.color}">${tecnicoName}</strong>`;
+  document.getElementById('doc-folders-view').style.display='none';
+  document.getElementById('doc-files-view').style.display='block';
   renderDocFiles();
 }
 
 function renderDocFiles(){
   const q = (document.getElementById('doc-search').value||'').toLowerCase().trim();
   let files = docsAll.filter(d=>d.categoria===currentDocFolder);
+  if(currentDocFolder==='sicurezza'){
+    if(currentDocSubFolder==='azienda') files = files.filter(d=>d.sotto_categoria==='azienda');
+    else if(currentDocSubFolder==='tecnici' && currentDocTecnicoId) files = files.filter(d=>d.sotto_categoria==='tecnici' && d.tecnico_id===currentDocTecnicoId);
+    else files = files.filter(d=>d.sotto_categoria===null || d.sotto_categoria===undefined); // legacy senza sotto-categoria
+  }
   if(q) files = files.filter(d=>(d.titolo||'').toLowerCase().includes(q) || (d.descrizione||'').toLowerCase().includes(q));
   const tb = document.getElementById('doc-files-tbody');
   const empty = document.getElementById('doc-files-empty');
@@ -3761,7 +3862,10 @@ function renderDocFiles(){
 }
 
 function filtraDocumenti(){
-  if(currentDocFolder===null) return; // niente filtro nella vista root
+  if(currentDocFolder===null) return;
+  // Filtra solo quando siamo nella vista file (non nei livelli intermedi a cartelle)
+  if(currentDocFolder==='sicurezza' && !currentDocSubFolder) return;
+  if(currentDocFolder==='sicurezza' && currentDocSubFolder==='tecnici' && !currentDocTecnicoId) return;
   renderDocFiles();
 }
 
@@ -3778,12 +3882,21 @@ async function downloadDocumento(id, path, titolo){
 async function eliminaDocumento(id, path){
   if(!confirm('Eliminare definitivamente questo documento?\n\nVerrà rimosso anche dall\'app dei tecnici.'))return;
   try{
-    const{error:errStore}=await sb.storage.from('documenti-condivisi').remove([path]);
-    if(errStore)console.warn('Storage warn:',errStore.message);
+    // Elimina prima il record DB
     const{error}=await sb.from('documenti').delete().eq('id',id);
     if(error)throw error;
+    // Se nessun altro record punta allo stesso file_path, cancella anche dallo storage
+    const{count}=await sb.from('documenti').select('id',{count:'exact',head:true}).eq('file_path',path);
+    if(!count){
+      const{error:errStore}=await sb.storage.from('documenti-condivisi').remove([path]);
+      if(errStore)console.warn('Storage warn:',errStore.message);
+    }
     docsAll = docsAll.filter(d=>d.id!==id);
-    if(currentDocFolder===null) renderDocFolders(); else renderDocFiles();
+    // Refresh vista corrente
+    if(currentDocFolder===null) renderDocFolders();
+    else if(currentDocFolder==='sicurezza' && !currentDocSubFolder) aprireCartella('sicurezza');
+    else if(currentDocFolder==='sicurezza' && currentDocSubFolder==='tecnici' && !currentDocTecnicoId) aprireSottoCartella('tecnici');
+    else renderDocFiles();
   }catch(e){
     alert('Errore eliminazione: '+(e.message||e));
   }
@@ -3792,25 +3905,76 @@ async function eliminaDocumento(id, path){
 function openUploadDocumento(){
   document.getElementById('up-doc-titolo').value='';
   document.getElementById('up-doc-desc').value='';
-  document.getElementById('up-doc-categoria').value=currentDocFolder||'altro';
+  // pre-imposta categoria in base al contesto
+  const catSel = document.getElementById('up-doc-categoria');
+  catSel.value = currentDocFolder || 'altro';
   document.getElementById('up-doc-file').value='';
   document.getElementById('up-doc-status').style.display='none';
+  // pre-imposta sotto-categoria + tecnico se siamo già in un livello specifico
+  const sottoSel = document.getElementById('up-doc-sotto');
+  if(currentDocFolder==='sicurezza' && currentDocSubFolder){
+    sottoSel.value = currentDocSubFolder;
+  }else{
+    sottoSel.value = 'azienda';
+  }
+  renderTecniciCheckboxList();
+  // pre-tick tecnico se siamo dentro la sua cartella
+  if(currentDocFolder==='sicurezza' && currentDocSubFolder==='tecnici' && currentDocTecnicoId){
+    setTimeout(()=>{
+      const cb = document.querySelector(`#up-doc-tecnici-list input[value="${currentDocTecnicoId}"]`);
+      if(cb) cb.checked = true;
+    },0);
+  }
+  onChangeCategoriaUpload();
   document.getElementById('modal-upload-doc').classList.add('open');
 }
 function closeUploadDocumento(){document.getElementById('modal-upload-doc').classList.remove('open');}
+
+function onChangeCategoriaUpload(){
+  const cat = document.getElementById('up-doc-categoria').value;
+  document.getElementById('up-doc-sotto-row').style.display = (cat==='sicurezza') ? 'block' : 'none';
+  onChangeSottoUpload();
+}
+function onChangeSottoUpload(){
+  const cat = document.getElementById('up-doc-categoria').value;
+  const sotto = document.getElementById('up-doc-sotto').value;
+  document.getElementById('up-doc-tecnici-row').style.display = (cat==='sicurezza' && sotto==='tecnici') ? 'block' : 'none';
+}
+function renderTecniciCheckboxList(){
+  const box = document.getElementById('up-doc-tecnici-list');
+  if(!docTecniciList.length){
+    box.innerHTML = '<div style="padding:10px;color:var(--dim);font-size:.85em;text-align:center">Nessun tecnico registrato.</div>';
+    return;
+  }
+  box.innerHTML = docTecniciList.map(t=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;cursor:pointer;border-radius:6px" onmouseover="this.style.background='rgba(0,0,0,0.03)'" onmouseout="this.style.background=''">
+    <input type="checkbox" value="${t.id}" style="margin:0;cursor:pointer">
+    <span style="font-size:.92em">${t.full_name||'(senza nome)'}</span>
+  </label>`).join('');
+}
+function toggleTutuTecnici(checked){
+  document.querySelectorAll('#up-doc-tecnici-list input[type="checkbox"]').forEach(cb=>cb.checked=checked);
+}
 
 async function confermaUploadDocumento(){
   const titolo = document.getElementById('up-doc-titolo').value.trim();
   const desc = document.getElementById('up-doc-desc').value.trim();
   const categoria = document.getElementById('up-doc-categoria').value;
+  const sotto = (categoria==='sicurezza') ? document.getElementById('up-doc-sotto').value : null;
   const fileInput = document.getElementById('up-doc-file');
   const file = fileInput.files?.[0];
   const status = document.getElementById('up-doc-status');
   const btn = document.getElementById('up-doc-btn');
+  const showErr = msg=>{status.style.display='block';status.style.background='rgba(220,38,38,0.08)';status.style.color='#991b1b';status.textContent=msg;};
   status.style.display='none';
-  if(!titolo){status.style.display='block';status.style.background='rgba(220,38,38,0.08)';status.style.color='#991b1b';status.textContent='Inserisci un titolo';return;}
-  if(!file){status.style.display='block';status.style.background='rgba(220,38,38,0.08)';status.style.color='#991b1b';status.textContent='Seleziona un file';return;}
-  if(file.size > 50*1024*1024){status.style.display='block';status.style.background='rgba(220,38,38,0.08)';status.style.color='#991b1b';status.textContent='File troppo grande (max 50 MB)';return;}
+  if(!titolo){showErr('Inserisci un titolo');return;}
+  if(!file){showErr('Seleziona un file');return;}
+  if(file.size > 50*1024*1024){showErr('File troppo grande (max 50 MB)');return;}
+  // Multi-select tecnici (solo per sicurezza/tecnici)
+  let tecniciIds = [];
+  if(categoria==='sicurezza' && sotto==='tecnici'){
+    tecniciIds = Array.from(document.querySelectorAll('#up-doc-tecnici-list input[type="checkbox"]:checked')).map(cb=>cb.value);
+    if(!tecniciIds.length){showErr('Seleziona almeno un tecnico destinatario');return;}
+  }
   btn.disabled=true;
   const origTxt=btn.textContent;
   btn.textContent='Caricamento...';
@@ -3819,37 +3983,45 @@ async function confermaUploadDocumento(){
   status.style.color='var(--accent)';
   status.textContent='Upload in corso...';
   try{
-    // Path: <categoria>/<timestamp>_<safeTitolo>.<ext>
     const ext = (file.name.split('.').pop()||'bin').toLowerCase();
     const safeTitle = titolo.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'').substring(0,40);
-    const path = `${categoria}/${Date.now()}_${safeTitle}.${ext}`;
+    // Path tenta di mantenere coerenza gerarchica
+    const subPath = sotto ? `${sotto}/` : '';
+    const tecPath = (sotto==='tecnici' && tecniciIds.length===1) ? `${tecniciIds[0]}/` : '';
+    const path = `${categoria}/${subPath}${tecPath}${Date.now()}_${safeTitle}.${ext}`;
     const{error:errUp}=await sb.storage.from('documenti-condivisi').upload(path, file, {contentType:file.type, upsert:false});
     if(errUp)throw errUp;
-    const{error:errIns}=await sb.from('documenti').insert({
+    // Costruisci righe da inserire
+    const baseRow = {
       titolo,
       descrizione: desc||null,
       file_path: path,
       file_size: file.size,
       tipo_mime: file.type||'application/octet-stream',
       categoria,
+      sotto_categoria: sotto,
       uploaded_by: currentUser.id
-    });
+    };
+    let rows;
+    if(categoria==='sicurezza' && sotto==='tecnici'){
+      rows = tecniciIds.map(tid=>({...baseRow, tecnico_id: tid}));
+    }else{
+      rows = [baseRow];
+    }
+    const{error:errIns}=await sb.from('documenti').insert(rows);
     if(errIns){
-      // rollback storage
       await sb.storage.from('documenti-condivisi').remove([path]);
       throw errIns;
     }
     status.style.background='rgba(22,163,74,0.1)';
     status.style.color='#14532D';
-    status.textContent='✓ Documento caricato';
+    status.textContent = rows.length>1 ? `✓ Caricato per ${rows.length} tecnici` : '✓ Documento caricato';
     btn.textContent=origTxt;btn.disabled=false;
     await loadDocumenti();
-    setTimeout(closeUploadDocumento, 800);
+    setTimeout(closeUploadDocumento, 900);
   }catch(e){
     btn.textContent=origTxt;btn.disabled=false;
-    status.style.background='rgba(220,38,38,0.08)';
-    status.style.color='#991b1b';
-    status.textContent='Errore: '+(e.message||e);
+    showErr('Errore: '+(e.message||e));
   }
 }
 
