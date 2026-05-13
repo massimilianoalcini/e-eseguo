@@ -493,6 +493,7 @@ async function caricaDocumentiApp(){
 function renderCartelleApp(){
   currentDocAppFolder=null;
   currentDocAppSubFolder=null;
+  _updateDocAppBackBtn();
   document.getElementById('doc-app-folders').style.display='grid';
   document.getElementById('doc-app-files').style.display='none';
   document.getElementById('doc-app-breadcrumb').innerHTML=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>Documenti`;
@@ -533,6 +534,7 @@ function docAppGoBack(){
 function aprireCartellaApp(key){
   currentDocAppFolder=key;
   currentDocAppSubFolder=null;
+  _updateDocAppBackBtn();
   const cat=DOC_CAT.find(c=>c.key===key);
   // Sicurezza: mostra 2 sotto-cartelle (Azienda + Tecnici)
   if(key==='sicurezza'){
@@ -569,6 +571,7 @@ function aprireCartellaApp(key){
 
 function aprireSottoCartellaApp(sub){
   currentDocAppSubFolder=sub;
+  _updateDocAppBackBtn();
   const cat=DOC_CAT.find(c=>c.key==='sicurezza');
   const subLabel = sub==='azienda' ? 'Documentazione Azienda' : 'I miei documenti';
   document.getElementById('doc-app-folders').style.display='none';
