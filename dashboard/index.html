@@ -1207,7 +1207,13 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
 
       <!-- Breadcrumb + ricerca -->
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 14px;flex-wrap:wrap">
-        <div id="doc-breadcrumb" style="font-size:.95em;color:var(--mid);display:flex;align-items:center;gap:6px"></div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <button id="doc-back-btn" onclick="docGoBack()" style="display:none;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;border:1px solid var(--card-border);background:#fff;color:var(--text);font-weight:600;font-size:.85em;cursor:pointer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Indietro
+          </button>
+          <div id="doc-breadcrumb" style="font-size:.95em;color:var(--mid);display:flex;align-items:center;gap:6px"></div>
+        </div>
         <div style="position:relative;flex:1;max-width:340px">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--dim)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <input id="doc-search" placeholder="Cerca..." class="filter-input" style="width:100%;padding:8px 10px 8px 32px" oninput="filtraDocumenti()">
@@ -3720,10 +3726,33 @@ function _docBreadcrumbHome(){
 }
 function _docBreadcrumbSep(){return '<span style="color:var(--dim)">/</span>';}
 
+function _updateDocBackBtn(){
+  const btn = document.getElementById('doc-back-btn');
+  if(!btn) return;
+  // visibile su tutti i livelli tranne la root
+  btn.style.display = (currentDocFolder === null) ? 'none' : 'inline-flex';
+}
+
+function docGoBack(){
+  // Tecnico-cartella -> torna a Documentazione Tecnici
+  if(currentDocFolder==='sicurezza' && currentDocSubFolder==='tecnici' && currentDocTecnicoId){
+    aprireSottoCartella('tecnici');
+    return;
+  }
+  // Sotto-cartella Sicurezza (azienda o tecnici) -> torna a Sicurezza
+  if(currentDocFolder==='sicurezza' && currentDocSubFolder){
+    aprireCartella('sicurezza');
+    return;
+  }
+  // Categoria -> torna alla root Documenti
+  renderDocFolders();
+}
+
 function renderDocFolders(){
   currentDocFolder = null;
   currentDocSubFolder = null;
   currentDocTecnicoId = null;
+  _updateDocBackBtn();
   document.getElementById('doc-folders-view').style.display='grid';
   document.getElementById('doc-files-view').style.display='none';
   document.getElementById('doc-breadcrumb').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 2l9 7.5"/><path d="M5 9v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/></svg> <strong style="color:var(--text)">Documenti</strong> <span style="color:var(--dim)">(${docsAll.length} file)</span>`;
@@ -3743,6 +3772,7 @@ function aprireCartella(key){
   currentDocFolder = key;
   currentDocSubFolder = null;
   currentDocTecnicoId = null;
+  _updateDocBackBtn();
   const cat = DOC_CATEGORIE.find(c=>c.key===key);
   // Sicurezza ha 2 sotto-cartelle, le altre vanno direttamente ai file
   if(key==='sicurezza'){
@@ -3777,6 +3807,7 @@ function aprireCartella(key){
 function aprireSottoCartella(sub){
   currentDocSubFolder = sub;
   currentDocTecnicoId = null;
+  _updateDocBackBtn();
   const cat = DOC_CATEGORIE.find(c=>c.key==='sicurezza');
   const subLabel = sub==='azienda' ? 'Documentazione Azienda' : 'Documentazione Tecnici';
   const subCrumb = `${_docBreadcrumbHome()} ${_docBreadcrumbSep()} <a href="#" onclick="event.preventDefault();aprireCartella('sicurezza')" style="color:${cat.color};text-decoration:none;font-weight:600">${cat.label}</a> ${_docBreadcrumbSep()} <strong style="color:${cat.color}">${subLabel}</strong>`;
@@ -3808,6 +3839,7 @@ function aprireSottoCartella(sub){
 
 function aprireCartellaTecnico(tecnicoId, tecnicoName){
   currentDocTecnicoId = tecnicoId;
+  _updateDocBackBtn();
   const cat = DOC_CATEGORIE.find(c=>c.key==='sicurezza');
   document.getElementById('doc-breadcrumb').innerHTML = `${_docBreadcrumbHome()} ${_docBreadcrumbSep()} <a href="#" onclick="event.preventDefault();aprireCartella('sicurezza')" style="color:${cat.color};text-decoration:none;font-weight:600">${cat.label}</a> ${_docBreadcrumbSep()} <a href="#" onclick="event.preventDefault();aprireSottoCartella('tecnici')" style="color:${cat.color};text-decoration:none;font-weight:600">Documentazione Tecnici</a> ${_docBreadcrumbSep()} <strong style="color:${cat.color}">${tecnicoName}</strong>`;
   document.getElementById('doc-folders-view').style.display='none';
