@@ -3776,7 +3776,7 @@ async function onArubaAttiveXLSSelected(input){
         numSdi:String(r['ID SdI']||'').trim(),
         tipo:String(r['Tipo documento']||'').trim()
       };
-    }).filter(x=>x.cliente&&(x.totale>0||x.imponibile>0));
+    }).filter(x=>x.cliente&&(x.totale!==0||x.imponibile!==0));
     if(!parsed.length){status.style.color='#991b1b';status.textContent='Nessuna fattura valida trovata nel file.';return;}
     window._arubaAttiveParsedRows=parsed;
     status.style.color='#3F6612';
@@ -3881,7 +3881,7 @@ async function confermaImportArubaAttive(){
       fonte:'aruba',
       num_sdi:r.numSdi||null,
       inserito_da:currentUser.id
-    })).filter(r=>r.data_emissione&&r.totale>0);
+    })).filter(r=>r.data_emissione&&r.totale!==0);
     if(!rows.length){alert('Nessuna fattura valida da importare (manca data o importo).');btn.disabled=false;document.getElementById('aruba-attive-btn-import-txt').textContent='Importa selezionate';return;}
     const{error}=await sb.from('fatture_attive').insert(rows);
     if(error)throw error;
