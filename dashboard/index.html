@@ -3572,7 +3572,8 @@ async function onArubaXLSSelected(input){
     const sheet=wb.Sheets[sheetName];
     const rows=XLSX.utils.sheet_to_json(sheet,{defval:'',raw:false});
     if(!rows.length){status.style.color='#991b1b';status.textContent='File vuoto o formato non riconosciuto.';return;}
-    // Mappa righe
+    // Mappa righe. Imponibile = SOLO colonna M (Totale imponibile) come Excel di Cristiano.
+    // Le righe con regime speciale (N1-N7) avranno imponibile=0 ma vengono comunque mostrate.
     const parsed=rows.map(r=>{
       const dataDoc=_arubaParseDate(r['Data documento']||r['Data Documento']||r['Datadocumento']);
       return{
@@ -3588,7 +3589,7 @@ async function onArubaXLSSelected(input){
         statoPag:String(r['Pagamenti']||r['Stato pagamento']||'').trim()||(String(r['Stato']||'').toLowerCase().includes('pagat')?'Pagata':'Non pagata'),
         tipo:String(r['Tipo documento']||'').trim()
       };
-    }).filter(x=>x.fornitore&&x.imponibile>0);
+    }).filter(x=>x.fornitore&&x.totDoc!==0);
     if(!parsed.length){status.style.color='#991b1b';status.textContent='Nessuna fattura valida trovata nel file.';return;}
     window._arubaParsedRows=parsed;
     status.style.color='#92400e';
