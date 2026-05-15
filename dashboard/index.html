@@ -844,10 +844,10 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
 
       <!-- Cruscotto 4 KPI: Entrate / Fatturazione / Produzione / Passive -->
       <div class="stats-row" id="eco-stats">
-        <div class="stat-card" title="Soldi effettivamente incassati nel mese (fatture attive con data pagamento)"><div class="label">Totale Entrate</div><div class="value" id="eco-tot-entrate" style="color:var(--green)">€ 0.00</div></div>
-        <div class="stat-card" title="Fatture attive emesse nel mese (a prescindere dal pagamento)"><div class="label">Totale Fatturazione</div><div class="value" id="eco-tot-fatturazione" style="color:#6366F1">€ 0.00</div></div>
+        <div class="stat-card" title="Imponibile fatture attive con data pagamento nel mese (ricavo cassa, IVA esclusa)"><div class="label">Totale Entrate <small style="font-weight:400;font-size:.65em;color:var(--dim)">(IVA escl.)</small></div><div class="value" id="eco-tot-entrate" style="color:var(--green)">€ 0.00</div></div>
+        <div class="stat-card" title="Imponibile fatture attive emesse nel mese (ricavo competenza, IVA esclusa)"><div class="label">Totale Fatturazione <small style="font-weight:400;font-size:.65em;color:var(--dim)">(IVA escl.)</small></div><div class="value" id="eco-tot-fatturazione" style="color:#6366F1">€ 0.00</div></div>
         <div class="stat-card" title="Interventi validati con importo nel mese (produzione tecnici)"><div class="label">Totale Produzione</div><div class="value" id="eco-tot-produzione" style="color:var(--accent)">€ 0.00</div></div>
-        <div class="stat-card" title="Fatture passive ricevute dai fornitori nel mese"><div class="label">Totale Fatture Passive</div><div class="value" id="eco-tot-passive" style="color:var(--red)">€ 0.00</div></div>
+        <div class="stat-card" title="Imponibile fatture passive ricevute (IVA esclusa)"><div class="label">Totale Fatture Passive <small style="font-weight:400;font-size:.65em;color:var(--dim)">(IVA escl.)</small></div><div class="value" id="eco-tot-passive" style="color:var(--red)">€ 0.00</div></div>
       </div>
 
       <!-- ★★ BOX 1: IMPORTA FATTURE ATTIVE ARUBA (FattureInviate) -->
@@ -2859,11 +2859,11 @@ async function loadEconomia(){
   const fattureAttivePagate=attivePagateRes.data||[];
   const allCosti=costiRes.data||[];
 
-  // === KPI 4 nuovi ===
-  // 1) ENTRATE = totale fatture attive con data_pagamento nel mese
-  const totEntrate=fattureAttivePagate.reduce((s,f)=>s+(+f.totale||0),0);
-  // 2) FATTURAZIONE = totale fatture attive emesse nel mese
-  const totFatturazione=fattureAttiveMese.reduce((s,f)=>s+(+f.totale||0),0);
+  // === KPI 4 nuovi (tutti in IMPONIBILE = IVA esclusa, per coerenza con Produzione e Passive) ===
+  // 1) ENTRATE = imponibile fatture attive con data_pagamento nel mese (ricavo cassa, IVA esclusa)
+  const totEntrate=fattureAttivePagate.reduce((s,f)=>s+(+f.imponibile||0),0);
+  // 2) FATTURAZIONE = imponibile fatture attive emesse nel mese (ricavo competenza, IVA esclusa)
+  const totFatturazione=fattureAttiveMese.reduce((s,f)=>s+(+f.imponibile||0),0);
   // 3) PRODUZIONE = interventi validati con importo nel mese (regola P3.4)
   const meseInt=allInterventi.filter(i=>i.created_at?.startsWith(mese));
   const meseValidati=meseInt.filter(i=>i.stato==='validato'&&i.importo!=null&&+i.importo>0);
@@ -2957,17 +2957,17 @@ async function renderEcoCharts(meseCorrente){
 
   // Carico in parallelo: tutte le fatture attive del range + tutti i costi + intervalli interventi
   const[attRes,costiRes]=await Promise.all([
-    sb.from('fatture_attive').select('data_emissione,data_pagamento,totale,cliente').or(`data_emissione.gte.${periodoStart},data_pagamento.gte.${periodoStart}`).lte('data_emissione',periodoEnd),
+    sb.from('fatture_attive').select('data_emissione,data_pagamento,imponibile,cliente').or(`data_emissione.gte.${periodoStart},data_pagamento.gte.${periodoStart}`).lte('data_emissione',periodoEnd),
     sb.from('costi_mensili').select('mese,importo,fonte').gte('mese',periodoStart).lte('mese',periodoEnd)
   ]);
   const attTutte=attRes.data||[];
   const costiTutti=costiRes.data||[];
 
-  // Calcolo per ogni mese: Entrate / Fatturazione / Produzione / Passive
+  // Calcolo per ogni mese: Entrate / Fatturazione / Produzione / Passive (tutti in IMPONIBILE IVA esclusa)
   const datasets={ent:[],fat:[],prod:[],pas:[]};
   months.forEach(({ym,start,end})=>{
-    const ent=attTutte.filter(f=>f.data_pagamento&&f.data_pagamento>=start&&f.data_pagamento<=end).reduce((s,f)=>s+(+f.totale||0),0);
-    const fat=attTutte.filter(f=>f.data_emissione>=start&&f.data_emissione<=end).reduce((s,f)=>s+(+f.totale||0),0);
+    const ent=attTutte.filter(f=>f.data_pagamento&&f.data_pagamento>=start&&f.data_pagamento<=end).reduce((s,f)=>s+(+f.imponibile||0),0);
+    const fat=attTutte.filter(f=>f.data_emissione>=start&&f.data_emissione<=end).reduce((s,f)=>s+(+f.imponibile||0),0);
     const prod=allInterventi.filter(i=>i.stato==='validato'&&i.importo!=null&&+i.importo>0&&(i.created_at||'').startsWith(ym)).reduce((s,i)=>s+(+i.importo),0);
     const pas=costiTutti.filter(c=>(c.fonte==='aruba'||c.fonte==='ai')&&(c.mese||'').startsWith(ym)).reduce((s,c)=>s+(+c.importo||0),0);
     datasets.ent.push(ent);
@@ -3011,7 +3011,7 @@ async function renderEcoCharts(meseCorrente){
   const perCliente={};
   attiveMese.forEach(f=>{
     const c=(f.cliente||'(non specificato)').trim();
-    perCliente[c]=(perCliente[c]||0)+(+f.totale||0);
+    perCliente[c]=(perCliente[c]||0)+(+f.imponibile||0);
   });
   const sortedClienti=Object.entries(perCliente).sort((a,b)=>b[1]-a[1]);
   const ctxC=document.getElementById('eco-chart-clienti');
