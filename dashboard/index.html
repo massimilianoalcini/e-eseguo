@@ -3752,12 +3752,10 @@ async function onArubaAttiveXLSSelected(input){
     const parsed=rows.map(r=>{
       const dataDoc=_arubaParseDate(r['Data documento']||r['Data Documento']||r['Datadocumento']);
       const dataInc=_arubaParseDate(r['Data incasso']||r['DataIncasso']);
-      const imponibileBase=_arubaParseNum(r['Totale imponibile']||r['Imponibile']);
-      // Per casi inversione contabile / esente / non soggetto IVA, il campo "Totale imponibile" può essere 0
-      // ma esistono N1..N7 con i valori reali. Sommo tutti per avere il vero imponibile economico.
-      const totN=['Totale escluso IVA (N1)','Totale non soggetto IVA (N2)','Totale non imponibile IVA (N3)','Totale esente IVA (N4)','Totale regime del margine/IVA non esposta (N5)','Totale inversione contabile (N6)','Totale importo assoggettato ad IVA assolta in altro stato UE (N7)']
-        .reduce((s,k)=>s+_arubaParseNum(r[k]),0);
-      const imponibile=imponibileBase+totN;
+      // Uso SOLO la colonna "Totale imponibile" come fa Cristiano in Excel.
+      // Le vendite in regime speciale (N1-N7: esente, reverse charge, ecc.) hanno imponibile=0
+      // ma il totale documento è valorizzato e resta visibile nella tabella.
+      const imponibile=_arubaParseNum(r['Totale imponibile']||r['Imponibile']);
       const iva=_arubaParseNum(r['Totale IVA']);
       const totale=_arubaParseNum(r['Totale documento']||r['Totale']);
       return{
