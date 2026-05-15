@@ -850,25 +850,25 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         <div class="stat-card" title="Fatture passive ricevute dai fornitori nel mese"><div class="label">Totale Fatture Passive</div><div class="value" id="eco-tot-passive" style="color:var(--red)">€ 0.00</div></div>
       </div>
 
-      <!-- ★★ BOX 1: IMPORTA FATTURE ATTIVE ARUBA (placeholder, in attesa file Cristiano) -->
+      <!-- ★★ BOX 1: IMPORTA FATTURE ATTIVE ARUBA (FattureInviate) -->
       <div style="background:linear-gradient(135deg,rgba(118,184,42,0.06),rgba(118,184,42,0.02));border:1.5px solid rgba(118,184,42,0.3);border-radius:14px;padding:18px;margin-top:24px;position:relative">
         <div style="display:flex;align-items:center;gap:10px;font-weight:700;color:#3F6612;font-size:.95em;margin-bottom:4px">
           <img src="aruba-logo.png" alt="Aruba.it" title="Aruba Fatturazione" style="height:22px;width:auto;display:inline-block;vertical-align:middle">
-          Importa fatture <strong>attive</strong> (emesse ai clienti)
-          <span style="background:#fef3c7;color:#92400e;font-size:.65em;font-weight:800;padding:2px 8px;border-radius:6px;letter-spacing:.4px">IN ATTESA FORMATO</span>
+          Importa report fatture <strong>attive</strong>
         </div>
-        <div style="font-size:.8em;color:#6b7280;margin-bottom:14px"><strong>Per ora puoi aggiungere fatture singolarmente</strong> con il bottone qui sotto.</div>
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-          <label style="flex:1;min-width:240px;display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f5f5f4;border:1.5px dashed #d6d3d1;border-radius:10px;cursor:not-allowed;font-size:.85em;color:#a8a29e;opacity:.6">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-            File XLS/CSV in attesa...
-            <input type="file" id="input-aruba-attive-xls" accept=".xls,.xlsx,.csv" style="display:none" disabled>
+        <div style="font-size:.8em;color:#3F6612;margin-bottom:14px">Scarica da Aruba Fatturazione il file <code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid rgba(118,184,42,0.3)">FattureInviate.xls</code> (riepilogo fatture emesse) e caricalo qui. Niente AI, parser deterministico, dedup automatico per cliente+numero+data.</div>
+        <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+          <label style="flex:1;min-width:240px;display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fff;border:1.5px dashed rgba(118,184,42,0.5);border-radius:10px;cursor:pointer;font-size:.85em;color:#3F6612">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#76B82A"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            <span id="lbl-aruba-attive-xls">Seleziona FattureInviate.xls...</span>
+            <input type="file" id="input-aruba-attive-xls" accept=".xls,.xlsx" style="display:none" onchange="onArubaAttiveXLSSelected(this)">
           </label>
           <button class="btn-action primary" onclick="openAddFatturaAttiva()" style="padding:10px 18px;font-size:.85em;background:#3F6612;border-color:#3F6612;color:#fff;display:inline-flex;align-items:center;gap:6px">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-            Aggiungi fattura attiva
+            Aggiungi manuale
           </button>
         </div>
+        <div id="aruba-attive-status" style="margin-top:10px;font-size:.82em;color:#3F6612"></div>
       </div>
 
       <!-- ★ BOX 2: IMPORTA REPORT ARUBA FATTURE PASSIVE (invariato) -->
@@ -1103,6 +1103,47 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <button class="btn-save" id="aruba-btn-import" onclick="confermaImportAruba()" style="padding:11px 22px;border-radius:10px;font-weight:700;font-size:.9em;cursor:pointer;border:none;background:linear-gradient(135deg,#92400e,#d97706);color:#fff;display:inline-flex;align-items:center;gap:6px">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             <span id="aruba-btn-import-txt">Importa selezionati</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Anteprima Import Aruba XLS ATTIVE -->
+    <div class="modal-bg" id="modal-aruba-attive-preview" onclick="if(event.target===this)closeArubaAttivePreview()">
+      <div class="modal" style="width:980px;max-width:96vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;padding:0">
+        <div style="background:linear-gradient(135deg,#3F6612,#76B82A);padding:16px 22px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="color:#fff;font-weight:800;font-size:1.05em;display:flex;align-items:center;gap:10px">
+              <img src="aruba-logo.png" alt="Aruba.it" style="height:20px;width:auto;display:inline-block;vertical-align:middle;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.2))">
+              Anteprima Import — Fatture Attive
+            </div>
+            <div id="aruba-attive-preview-sub" style="color:rgba(255,255,255,.85);font-size:.82em;margin-top:2px"></div>
+          </div>
+          <button onclick="closeArubaAttivePreview()" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1em">✕</button>
+        </div>
+        <div style="padding:18px 22px;overflow-y:auto;flex:1">
+          <div id="aruba-attive-preview-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px"></div>
+          <div id="aruba-attive-preview-msg" style="font-size:.82em;color:var(--mid);margin-bottom:10px"></div>
+          <div style="overflow-x:auto;border:1px solid rgba(0,0,0,0.06);border-radius:10px">
+            <table style="width:100%;border-collapse:collapse;font-size:.82em">
+              <thead><tr style="background:rgba(118,184,42,0.08)">
+                <th style="padding:9px;text-align:left;width:38px"><input type="checkbox" id="aruba-attive-check-all" onchange="_arubaAttiveToggleAll(this.checked)"></th>
+                <th style="padding:9px;text-align:left">Data</th>
+                <th style="padding:9px;text-align:left">Cliente</th>
+                <th style="padding:9px;text-align:left">Numero</th>
+                <th style="padding:9px;text-align:right">Imponibile</th>
+                <th style="padding:9px;text-align:right">Totale</th>
+                <th style="padding:9px;text-align:left">Stato</th>
+              </tr></thead>
+              <tbody id="aruba-attive-preview-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div style="padding:14px 22px;border-top:1px solid rgba(0,0,0,0.06);display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn-cancel" onclick="closeArubaAttivePreview()" style="padding:11px 20px;border-radius:10px;font-weight:700;font-size:.9em;cursor:pointer;border:1px solid #E7E5E0;background:#fff;color:var(--text)">Annulla</button>
+          <button class="btn-save" id="aruba-attive-btn-import" onclick="confermaImportArubaAttive()" style="padding:11px 22px;border-radius:10px;font-weight:700;font-size:.9em;cursor:pointer;border:none;background:linear-gradient(135deg,#3F6612,#76B82A);color:#fff;display:inline-flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span id="aruba-attive-btn-import-txt">Importa selezionate</span>
           </button>
         </div>
       </div>
@@ -3683,6 +3724,170 @@ async function confermaImportAruba(){
     if(error)throw error;
     closeArubaPreview();
     document.getElementById('aruba-status').innerHTML=`✓ Importate <strong>${rows.length}</strong> fatture per <strong>€ ${rows.reduce((s,r)=>s+r.importo,0).toFixed(2)}</strong> totali (IVA esclusa).`;
+    loadEconomia();
+  }catch(e){
+    alert('Errore importazione: '+(e.message||e));
+  }finally{
+    btn.disabled=false;
+  }
+}
+
+/* === IMPORTA REPORT ARUBA XLS — FATTURE ATTIVE (FattureInviate) === */
+window._arubaAttiveParsedRows=null;
+window._arubaAttiveEnriched=null;
+
+async function onArubaAttiveXLSSelected(input){
+  const file=input.files?.[0];if(!file)return;
+  document.getElementById('lbl-aruba-attive-xls').textContent=file.name;
+  const status=document.getElementById('aruba-attive-status');
+  status.style.color='#3F6612';
+  status.textContent='Lettura file in corso...';
+  if(typeof XLSX==='undefined'){status.style.color='#991b1b';status.textContent='Libreria XLSX non caricata. Ricarica la pagina (Ctrl+Shift+R).';return;}
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array',cellDates:true});
+    const sheetName=wb.SheetNames.includes('FattureInviate')?'FattureInviate':wb.SheetNames[0];
+    const sheet=wb.Sheets[sheetName];
+    const rows=XLSX.utils.sheet_to_json(sheet,{defval:'',raw:false});
+    if(!rows.length){status.style.color='#991b1b';status.textContent='File vuoto o formato non riconosciuto.';return;}
+    const parsed=rows.map(r=>{
+      const dataDoc=_arubaParseDate(r['Data documento']||r['Data Documento']||r['Datadocumento']);
+      const dataInc=_arubaParseDate(r['Data incasso']||r['DataIncasso']);
+      const imponibileBase=_arubaParseNum(r['Totale imponibile']||r['Imponibile']);
+      // Per casi inversione contabile / esente / non soggetto IVA, il campo "Totale imponibile" può essere 0
+      // ma esistono N1..N7 con i valori reali. Sommo tutti per avere il vero imponibile economico.
+      const totN=['Totale escluso IVA (N1)','Totale non soggetto IVA (N2)','Totale non imponibile IVA (N3)','Totale esente IVA (N4)','Totale regime del margine/IVA non esposta (N5)','Totale inversione contabile (N6)','Totale importo assoggettato ad IVA assolta in altro stato UE (N7)']
+        .reduce((s,k)=>s+_arubaParseNum(r[k]),0);
+      const imponibile=imponibileBase+totN;
+      const iva=_arubaParseNum(r['Totale IVA']);
+      const totale=_arubaParseNum(r['Totale documento']||r['Totale']);
+      return{
+        numero:String(r['Numero']||'').trim(),
+        cliente:String(r['Cliente']||r['Ragione Sociale']||'').trim(),
+        piva:String(r['P.IVA']||r['Partita IVA']||'').trim(),
+        dataDocStr:dataDoc?dataDoc.iso:null,
+        dataDocVisible:dataDoc?dataDoc.it:'',
+        dataIncStr:dataInc?dataInc.iso:null,
+        mese:dataDoc?dataDoc.mese:null,
+        imponibile,
+        iva,
+        totale,
+        stato:dataInc?'pagata':'emessa',
+        statoLabel:dataInc?'Incassata':'Emessa',
+        numSdi:String(r['ID SdI']||'').trim(),
+        tipo:String(r['Tipo documento']||'').trim()
+      };
+    }).filter(x=>x.cliente&&(x.totale>0||x.imponibile>0));
+    if(!parsed.length){status.style.color='#991b1b';status.textContent='Nessuna fattura valida trovata nel file.';return;}
+    window._arubaAttiveParsedRows=parsed;
+    status.style.color='#3F6612';
+    status.innerHTML=`✓ <strong>${parsed.length}</strong> fatture lette dal file. <a href="#" onclick="event.preventDefault();aprirArubaAttivePreview()" style="color:#3F6612;font-weight:700;text-decoration:underline">Apri anteprima e importa →</a>`;
+    aprirArubaAttivePreview();
+  }catch(e){
+    status.style.color='#991b1b';
+    status.textContent='Errore lettura file: '+(e.message||e);
+  }
+}
+
+async function aprirArubaAttivePreview(){
+  const parsed=window._arubaAttiveParsedRows;if(!parsed||!parsed.length)return;
+  const meseSel=document.getElementById('eco-mese').value;
+  // Dedup contro fatture_attive esistenti
+  const{data:existing}=await sb.from('fatture_attive').select('numero,cliente,data_emissione');
+  const existSet=new Set((existing||[]).map(c=>`${(c.cliente||'').toLowerCase().trim()}|${(c.numero||'').trim()}|${c.data_emissione||''}`));
+  const enriched=parsed.map(r=>{
+    const inMese=meseSel?(r.mese===meseSel):true;
+    const dupKey=`${r.cliente.toLowerCase()}|${r.numero}|${r.dataDocStr||''}`;
+    const isDup=existSet.has(dupKey);
+    return{...r,inMese,isDup,sel:inMese&&!isDup};
+  });
+  window._arubaAttiveEnriched=enriched;
+  const tot=enriched.length;
+  const inMeseN=enriched.filter(x=>x.inMese).length;
+  const dupN=enriched.filter(x=>x.isDup).length;
+  const selN=enriched.filter(x=>x.sel).length;
+  const totEur=enriched.filter(x=>x.sel).reduce((s,x)=>s+x.totale,0);
+  document.getElementById('aruba-attive-preview-sub').textContent=`${tot} fatture totali nel file · mese aperto Economia: ${meseSel||'(tutti)'}`;
+  document.getElementById('aruba-attive-preview-stats').innerHTML=`
+    <div style="background:rgba(118,184,42,0.12);border-radius:10px;padding:10px"><div style="font-size:.7em;font-weight:700;color:#3F6612;text-transform:uppercase">Totali nel file</div><div style="font-size:1.4em;font-weight:800;color:#3F6612">${tot}</div></div>
+    <div style="background:rgba(13,148,136,0.1);border-radius:10px;padding:10px"><div style="font-size:.7em;font-weight:700;color:var(--accent);text-transform:uppercase">Mese corrente</div><div style="font-size:1.4em;font-weight:800;color:var(--accent)">${inMeseN}</div></div>
+    <div style="background:rgba(220,38,38,0.08);border-radius:10px;padding:10px"><div style="font-size:.7em;font-weight:700;color:#991b1b;text-transform:uppercase">Già presenti (dedup)</div><div style="font-size:1.4em;font-weight:800;color:#991b1b">${dupN}</div></div>
+    <div style="background:rgba(22,163,74,0.1);border-radius:10px;padding:10px"><div style="font-size:.7em;font-weight:700;color:var(--green);text-transform:uppercase">Da importare</div><div style="font-size:1.4em;font-weight:800;color:var(--green)">${selN} <small style="font-weight:600;font-size:.55em">€ ${totEur.toFixed(2)}</small></div></div>
+  `;
+  document.getElementById('aruba-attive-preview-msg').innerHTML=`Sono spuntate solo le fatture del <strong>mese corrente Economia</strong> non ancora importate. Stato 'pagata' viene dedotto dalla presenza della Data incasso.`;
+  _arubaAttiveRenderTable();
+  document.getElementById('modal-aruba-attive-preview').classList.add('open');
+}
+
+function _arubaAttiveRenderTable(){
+  const enriched=window._arubaAttiveEnriched||[];
+  const tb=document.getElementById('aruba-attive-preview-tbody');
+  tb.innerHTML=enriched.map((r,i)=>{
+    const rowStyle=r.isDup?'opacity:0.5':r.inMese?'':'opacity:0.7';
+    const statoBg=r.isDup?'background:rgba(220,38,38,0.06)':(r.inMese?'':'background:rgba(0,0,0,0.02)');
+    const tagDup=r.isDup?'<span style="font-size:.7em;color:#991b1b;background:rgba(220,38,38,0.1);padding:2px 6px;border-radius:4px;margin-left:6px">già importata</span>':'';
+    const tagOff=(!r.inMese&&!r.isDup)?'<span style="font-size:.7em;color:#92400e;background:#fef3c7;padding:2px 6px;border-radius:4px;margin-left:6px">altro mese</span>':'';
+    const statoColor=r.stato==='pagata'?'var(--green)':'#92400e';
+    return `<tr style="${rowStyle};${statoBg}">
+      <td style="padding:7px 9px"><input type="checkbox" ${r.sel?'checked':''} ${r.isDup?'disabled':''} onchange="window._arubaAttiveEnriched[${i}].sel=this.checked;_arubaAttiveUpdateStats()"></td>
+      <td style="padding:7px 9px">${r.dataDocVisible}</td>
+      <td style="padding:7px 9px">${(r.cliente||'').substring(0,38)}${tagDup}${tagOff}</td>
+      <td style="padding:7px 9px;font-family:monospace;font-size:.9em">${r.numero||'-'}</td>
+      <td style="padding:7px 9px;text-align:right">€ ${r.imponibile.toFixed(2)}</td>
+      <td style="padding:7px 9px;text-align:right;color:var(--dim)">€ ${r.totale.toFixed(2)}</td>
+      <td style="padding:7px 9px"><span style="font-size:.78em;color:${statoColor};font-weight:600">${r.statoLabel}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function _arubaAttiveToggleAll(checked){
+  const enriched=window._arubaAttiveEnriched||[];
+  enriched.forEach(r=>{if(!r.isDup) r.sel=checked;});
+  _arubaAttiveRenderTable();
+  _arubaAttiveUpdateStats();
+}
+
+function _arubaAttiveUpdateStats(){
+  const enriched=window._arubaAttiveEnriched||[];
+  const selN=enriched.filter(x=>x.sel).length;
+  const totEur=enriched.filter(x=>x.sel).reduce((s,x)=>s+x.totale,0);
+  const cards=document.querySelectorAll('#aruba-attive-preview-stats > div');
+  if(cards[3])cards[3].innerHTML=`<div style="font-size:.7em;font-weight:700;color:var(--green);text-transform:uppercase">Da importare</div><div style="font-size:1.4em;font-weight:800;color:var(--green)">${selN} <small style="font-weight:600;font-size:.55em">€ ${totEur.toFixed(2)}</small></div>`;
+  document.getElementById('aruba-attive-btn-import-txt').textContent=`Importa ${selN} selezionate`;
+}
+
+function closeArubaAttivePreview(){
+  document.getElementById('modal-aruba-attive-preview').classList.remove('open');
+}
+
+async function confermaImportArubaAttive(){
+  const enriched=window._arubaAttiveEnriched||[];
+  const toImport=enriched.filter(x=>x.sel);
+  if(!toImport.length){alert('Nessuna fattura selezionata');return;}
+  const btn=document.getElementById('aruba-attive-btn-import');
+  btn.disabled=true;
+  document.getElementById('aruba-attive-btn-import-txt').textContent='Importazione...';
+  try{
+    const rows=toImport.map(r=>({
+      numero:r.numero||'(senza numero)',
+      data_emissione:r.dataDocStr,
+      data_pagamento:r.dataIncStr,
+      cliente:r.cliente,
+      descrizione:r.tipo||null,
+      imponibile:r.imponibile,
+      iva:r.iva,
+      totale:r.totale,
+      stato:r.stato,
+      note:'Importato da Aruba',
+      fonte:'aruba',
+      num_sdi:r.numSdi||null,
+      inserito_da:currentUser.id
+    })).filter(r=>r.data_emissione&&r.totale>0);
+    if(!rows.length){alert('Nessuna fattura valida da importare (manca data o importo).');btn.disabled=false;document.getElementById('aruba-attive-btn-import-txt').textContent='Importa selezionate';return;}
+    const{error}=await sb.from('fatture_attive').insert(rows);
+    if(error)throw error;
+    closeArubaAttivePreview();
+    document.getElementById('aruba-attive-status').innerHTML=`✓ Importate <strong>${rows.length}</strong> fatture attive per <strong>€ ${rows.reduce((s,r)=>s+r.totale,0).toFixed(2)}</strong> totali (IVA inclusa).`;
     loadEconomia();
   }catch(e){
     alert('Errore importazione: '+(e.message||e));
