@@ -757,9 +757,9 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
 
       <!-- Cruscotto identico Economia -->
       <div class="filters" style="align-items:center">
-        <button class="btn-action" onclick="shiftMeseProd(-1)" style="padding:8px 12px;font-size:1.1em;line-height:1">◀</button>
+        <button class="btn-action" onclick="shiftMeseProd(1)" style="padding:8px 12px;font-size:1.1em;line-height:1">◀</button>
         <select class="filter-select" id="prod-mese" onchange="loadProduzione()" style="min-width:160px;text-align:center;font-weight:700;font-size:.95em"></select>
-        <button class="btn-action" onclick="shiftMeseProd(1)" style="padding:8px 12px;font-size:1.1em;line-height:1">▶</button>
+        <button class="btn-action" onclick="shiftMeseProd(-1)" style="padding:8px 12px;font-size:1.1em;line-height:1">▶</button>
       </div>
 
       <div class="stats-row" id="prod-stats">
@@ -836,9 +836,9 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         Contabilità
       </div>
       <div class="filters" style="align-items:center">
-        <button class="btn-action" onclick="shiftMese(-1)" style="padding:8px 12px;font-size:1.1em;line-height:1">◀</button>
+        <button class="btn-action" onclick="shiftMese(1)" style="padding:8px 12px;font-size:1.1em;line-height:1">◀</button>
         <select class="filter-select" id="eco-mese" onchange="loadEconomia()" style="min-width:160px;text-align:center;font-weight:700;font-size:.95em"></select>
-        <button class="btn-action" onclick="shiftMese(1)" style="padding:8px 12px;font-size:1.1em;line-height:1">▶</button>
+        <button class="btn-action" onclick="shiftMese(-1)" style="padding:8px 12px;font-size:1.1em;line-height:1">▶</button>
       </div>
 
       <!-- Cruscotto 4 KPI: Entrate / Fatturazione / Produzione / Passive -->
