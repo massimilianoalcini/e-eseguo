@@ -763,10 +763,9 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
       </div>
 
       <div class="stats-row" id="prod-stats">
-        <div class="stat-card"><div class="label">Totale Interventi</div><div class="value green" id="prod-tot-int">0</div></div>
-        <div class="stat-card"><div class="label">Totale Entrate</div><div class="value green" id="prod-tot-entrate">€ 0.00</div></div>
-        <div class="stat-card"><div class="label">Totale Uscite</div><div class="value" id="prod-tot-uscite" style="color:var(--red)">€ 0.00</div></div>
-        <div class="stat-card"><div class="label">Margine</div><div class="value" id="prod-margine" style="color:var(--accent)">€ 0.00</div></div>
+        <div class="stat-card" title="Interventi validati nel mese (con importo confermato dal coordinatore)"><div class="label">Interventi Validati</div><div class="value" id="prod-tot-int" style="color:var(--green)">0</div></div>
+        <div class="stat-card" title="Importo totale interventi validati"><div class="label">Totale Entrate</div><div class="value" id="prod-tot-entrate" style="color:#6366F1">€ 0.00</div></div>
+        <div class="stat-card" title="Interventi inviati dai tecnici in attesa di validazione coordinatore"><div class="label">Interventi Da Validare</div><div class="value" id="prod-tot-da-validare" style="color:#E8762D">0</div></div>
       </div>
 
       <!-- BOX ESPORTAZIONE PRODUZIONE -->
@@ -3240,17 +3239,9 @@ async function loadProduzione(){
   const meseDaValidare=meseInt.filter(i=>i.stato!=='validato');
   const meseValidatiSenza=meseInt.filter(i=>i.stato==='validato'&&(!i.importo||+i.importo<=0));
 
-  // Carica costi mese (per Uscite e Margine — coerente con Economia)
-  const{data:costi}=await sb.from('costi_mensili').select('importo').gte('mese',mese+'-01').lte('mese',mese+'-31');
-  const totUscite=(costi||[]).reduce((s,c)=>s+(+c.importo||0),0);
-  const margine=totEntrate-totUscite;
-
-  document.getElementById('prod-tot-int').textContent=meseValidati.length+(meseInt.length>meseValidati.length?` / ${meseInt.length}`:'');
+  document.getElementById('prod-tot-int').textContent=meseValidati.length;
   document.getElementById('prod-tot-entrate').textContent='€ '+totEntrate.toFixed(2);
-  document.getElementById('prod-tot-uscite').textContent='€ '+totUscite.toFixed(2);
-  const me=document.getElementById('prod-margine');
-  me.textContent='€ '+margine.toFixed(2);
-  me.style.color=margine>=0?'var(--green)':'var(--red)';
+  document.getElementById('prod-tot-da-validare').textContent=meseDaValidare.length;
 
   // Banner pending
   const banner=document.getElementById('prod-banner-mese');
