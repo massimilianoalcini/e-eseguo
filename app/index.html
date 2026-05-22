@@ -269,6 +269,11 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
         <button class="action-btn primary" onclick="switchTab('intervento')"><svg viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Nuovo Intervento</button>
         <button class="action-btn secondary" onclick="switchTab('interventi')"><svg viewBox="0 0 24 24" fill="#A8A29E"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>Interventi Inviati</button>
         <button class="action-btn navigate" onclick="switchTab('naviga')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/></svg>Naviga verso un Sito</button>
+        <button class="action-btn" onclick="switchTab('manuali')" style="background:linear-gradient(135deg,#0D9488,#14B8A6);color:white;border:none;box-shadow:0 4px 16px rgba(13,148,136,0.3);position:relative">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Manuali
+          <span id="man-home-badge" style="display:none;position:absolute;top:8px;right:14px;background:#DC2626;color:#fff;font-weight:800;font-size:.7em;padding:3px 8px;border-radius:20px;box-shadow:0 2px 6px rgba(220,38,38,0.4);min-width:22px;text-align:center"></span>
+        </button>
         <button class="action-btn" onclick="switchTab('documenti')" style="background:linear-gradient(135deg,#4F46E5,#6366F1);color:white;border:none;box-shadow:0 4px 16px rgba(99,102,241,0.3);position:relative">
           <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
           Documenti
@@ -320,6 +325,15 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
       <div id="doc-app-breadcrumb" style="display:flex;align-items:center;gap:8px;font-size:1.05em;font-weight:800;margin-bottom:14px;color:var(--text)"></div>
       <div id="doc-app-folders" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px"></div>
       <div id="doc-app-files" style="display:none"></div>
+    </div></div>
+    <div class="tab-page" id="tab-manuali"><div class="interventi-scroll">
+      <button id="man-app-back-btn" onclick="manAppGoBack()" style="display:none;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;border:1px solid rgba(0,0,0,0.1);background:#fff;color:var(--text);font-weight:700;font-size:.92em;margin-bottom:10px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        Indietro
+      </button>
+      <div id="man-app-breadcrumb" style="display:flex;align-items:center;gap:8px;font-size:1.05em;font-weight:800;margin-bottom:14px;color:var(--text)"></div>
+      <div id="man-app-folders" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px"></div>
+      <div id="man-app-files" style="display:none"></div>
     </div></div>
   </div>
   <div class="bottom-nav">
@@ -443,7 +457,7 @@ async function initApp(){
   const{data:p}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();userProfile=p;updateUserCard();
   try{allSiti=await loadSitiFromDB();}catch(e){allSiti=[];}
   await updateSyncBadge();if(allSiti.length===0)await startSync();
-  loadStats();loadRecent();startGPS();loadDropdowns();aggiornaBadgeDocumentiHome();
+  loadStats();loadRecent();startGPS();loadDropdowns();aggiornaBadgeDocumentiHome();aggiornaBadgeManualiHome();
   document.getElementById('search-input').addEventListener('input',function(){document.getElementById('clear-btn').style.display=this.value?'block':'none';clearTimeout(searchTimeout);searchTimeout=setTimeout(doSearch,200);});
 }
 function updateUserCard(){if(!userProfile)return;const n=userProfile.full_name||currentUser.email;document.getElementById('user-avatar').textContent=n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);document.getElementById('user-name').textContent=n;document.getElementById('user-role-area').textContent=(userProfile.role||'tecnico').charAt(0).toUpperCase()+(userProfile.role||'tecnico').slice(1)+(userProfile.area?' · '+userProfile.area:'');}
@@ -654,6 +668,137 @@ async function apriDocumentoApp(id,path){
     alert('Errore apertura: '+(e.message||e));
   }
 }
+
+/* === MANUALI APPARATI (app tecnico) === */
+let manAppCartelle=[], manAppFiles=[], manAppLettiSet=new Set(), currentManAppCartellaId=null;
+
+async function aggiornaBadgeManualiHome(){
+  if(!currentUser)return;
+  try{
+    const[mRes,lRes]=await Promise.all([
+      sb.from('manuali_apparati').select('id'),
+      sb.from('manuali_apparati_letti').select('manuale_id').eq('user_id',currentUser.id)
+    ]);
+    const lettiIds=new Set((lRes.data||[]).map(x=>x.manuale_id));
+    const nuovi=(mRes.data||[]).filter(d=>!lettiIds.has(d.id)).length;
+    const badge=document.getElementById('man-home-badge');
+    if(nuovi>0){badge.style.display='inline-block';badge.textContent=nuovi+' '+(nuovi===1?'nuovo':'nuovi');}
+    else{badge.style.display='none';}
+  }catch(e){console.warn('badge man:',e);}
+}
+
+async function caricaManualiApp(){
+  if(!currentUser)return;
+  try{
+    const[cRes,fRes,lRes]=await Promise.all([
+      sb.from('manuali_apparati_cartelle').select('*').order('nome'),
+      sb.from('manuali_apparati').select('*').order('created_at',{ascending:false}),
+      sb.from('manuali_apparati_letti').select('manuale_id').eq('user_id',currentUser.id)
+    ]);
+    manAppCartelle=cRes.data||[];
+    manAppFiles=fRes.data||[];
+    manAppLettiSet=new Set((lRes.data||[]).map(x=>x.manuale_id));
+    renderManCartelleApp();
+  }catch(e){
+    document.getElementById('man-app-folders').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-dim,#A8A29E)">Errore caricamento: '+(e.message||e)+'</div>';
+  }
+}
+
+function _manAppBreadcrumbHome(){
+  return `<a href="#" onclick="event.preventDefault();renderManCartelleApp()" style="color:#0D9488;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:5px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>Manuali</a>`;
+}
+function _updateManAppBackBtn(){
+  const btn=document.getElementById('man-app-back-btn');
+  if(btn) btn.style.display=(currentManAppCartellaId===null)?'none':'inline-flex';
+}
+function manAppGoBack(){renderManCartelleApp();}
+
+function renderManCartelleApp(){
+  currentManAppCartellaId=null;
+  _updateManAppBackBtn();
+  document.getElementById('man-app-folders').style.display='grid';
+  document.getElementById('man-app-files').style.display='none';
+  document.getElementById('man-app-breadcrumb').innerHTML=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Manuali`;
+  const grid=document.getElementById('man-app-folders');
+  if(!manAppCartelle.length){
+    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-dim,#A8A29E);font-size:.9em">Nessun manuale ancora caricato dal coordinatore.</div>';
+    return;
+  }
+  grid.innerHTML=manAppCartelle.map(c=>{
+    const docsCat=manAppFiles.filter(d=>d.cartella_id===c.id);
+    const tot=docsCat.length;
+    const nuovi=docsCat.filter(d=>!manAppLettiSet.has(d.id)).length;
+    return `<div onclick="aprireCartellaManApp(${c.id})" style="background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:14px;padding:14px 12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;position:relative;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+      ${nuovi>0?`<div style="position:absolute;top:8px;right:8px;background:#DC2626;color:#fff;font-weight:800;font-size:.65em;padding:2px 7px;border-radius:20px;min-width:20px;text-align:center">${nuovi}</div>`:''}
+      <div style="color:#0D9488"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <div style="font-weight:800;font-size:.92em;color:var(--text,#1C1917)">${c.nome}</div>
+      <div style="font-size:.72em;font-weight:700;color:#0D9488;background:rgba(13,148,136,0.12);padding:2px 8px;border-radius:20px">${tot} ${tot===1?'file':'file'}</div>
+    </div>`;
+  }).join('');
+}
+
+function aprireCartellaManApp(id){
+  currentManAppCartellaId=id;
+  _updateManAppBackBtn();
+  const cart=manAppCartelle.find(c=>c.id===id);
+  document.getElementById('man-app-folders').style.display='none';
+  document.getElementById('man-app-files').style.display='block';
+  document.getElementById('man-app-breadcrumb').innerHTML=`${_manAppBreadcrumbHome()}<span style="color:#A8A29E">/</span><span style="color:#0D9488">${cart?cart.nome:'?'}</span>`;
+  const files=manAppFiles.filter(d=>d.cartella_id===id);
+  _renderManAppFiles(files);
+}
+
+function _renderManAppFiles(files){
+  const wrap=document.getElementById('man-app-files');
+  if(!files.length){
+    wrap.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--text-dim,#A8A29E);font-size:.92em">Nessun manuale in questa cartella.</div>';
+    return;
+  }
+  wrap.innerHTML=files.map(d=>{
+    const dt=new Date(d.created_at);
+    const dataIt=`${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
+    const sizeKb=d.file_size?(d.file_size>1048576?(d.file_size/1048576).toFixed(1)+' MB':Math.round(d.file_size/1024)+' KB'):'';
+    const isNuovo=!manAppLettiSet.has(d.id);
+    return `<div onclick="apriManualeApp('${d.id}','${d.file_path.replace(/'/g,"\\'")}')" style="background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+      <div style="width:42px;height:42px;border-radius:10px;background:rgba(13,148,136,.1);color:#0D9488;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:.95em;color:var(--text,#1C1917);display:flex;align-items:center;gap:6px">
+          <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.titolo}</span>
+          ${isNuovo?'<span style="background:#DC2626;color:#fff;font-size:.6em;font-weight:800;padding:2px 6px;border-radius:8px;flex-shrink:0">NUOVO</span>':''}
+        </div>
+        ${d.descrizione?`<div style="font-size:.78em;color:#78756E;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.descrizione}</div>`:''}
+        <div style="font-size:.72em;color:#A8A29E;margin-top:3px">${dataIt}${sizeKb?' · '+sizeKb:''}</div>
+      </div>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A8A29E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+    </div>`;
+  }).join('');
+}
+
+async function apriManualeApp(id,path){
+  try{
+    if(!manAppLettiSet.has(id)){
+      manAppLettiSet.add(id);
+      sb.from('manuali_apparati_letti').upsert({user_id:currentUser.id,manuale_id:id,letto_at:new Date().toISOString()}).then(()=>{aggiornaBadgeManualiHome();});
+    }
+    const{data,error}=await sb.storage.from('manuali-apparati').createSignedUrl(path,600);
+    if(error)throw error;
+    const url=data.signedUrl;
+    const doc=manAppFiles.find(d=>d.id===id);
+    const titolo=doc?.titolo||'manuale';
+    const mime=doc?.tipo_mime||'application/pdf';
+    if(window.AndroidBridge && typeof window.AndroidBridge.openDocument==='function'){
+      try{window.AndroidBridge.openDocument(url,titolo,mime);if(currentManAppCartellaId) aprireCartellaManApp(currentManAppCartellaId);return;}catch(_){}
+    }
+    const ext=(path.split('.').pop()||'pdf').toLowerCase();
+    const safeName=((titolo).replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'')||'manuale')+'.'+ext;
+    const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.setAttribute('download',safeName);
+    document.body.appendChild(a);a.click();a.remove();
+    if(currentManAppCartellaId) aprireCartellaManApp(currentManAppCartellaId);
+  }catch(e){alert('Errore apertura: '+(e.message||e));}
+}
+
 async function loadRecent(){
   // Solo interventi di OGGI
   const oggi=new Date();oggi.setHours(0,0,0,0);
@@ -673,7 +818,7 @@ async function loadRecent(){
   }).join('');
 }
 
-function switchTab(t){currentTab=t;document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+t)?.classList.add('active');document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.tab===t));if(t==='mappa')setTimeout(()=>{initMap();map?.invalidateSize();renderMapMarkers();},100);if(t==='interventi')loadInterventi();if(t==='intervento'){updateGPSBadge();prefillOraInizio();}if(t==='documenti'){caricaDocumentiApp();}}
+function switchTab(t){currentTab=t;document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+t)?.classList.add('active');document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.tab===t));if(t==='mappa')setTimeout(()=>{initMap();map?.invalidateSize();renderMapMarkers();},100);if(t==='interventi')loadInterventi();if(t==='intervento'){updateGPSBadge();prefillOraInizio();}if(t==='documenti'){caricaDocumentiApp();}if(t==='manuali'){caricaManualiApp();}}
 function prefillOraInizio(){const el=document.getElementById('int-ora-inizio');if(!el)return;const now=new Date();const hh=String(now.getHours()).padStart(2,'0');const mm=String(now.getMinutes()).padStart(2,'0');el.value=hh+':'+mm;}
 
 async function startSync(){const o=document.getElementById('sync-overlay'),b=document.getElementById('sync-bar'),s=document.getElementById('sync-status');o.classList.add('show');b.style.width='30%';s.textContent='Connessione al database...';try{const{data:cnt}=await sb.rpc('get_siti_count');window._sitiTotal=cnt||0;b.style.width='100%';s.textContent=`${window._sitiTotal} siti disponibili!`;const tm=await openDB();const t=tm.transaction(STORE_META,'readwrite');t.objectStore(STORE_META).put({key:'lastSync',value:new Date().toISOString()});await new Promise(r=>{t.oncomplete=r});tm.close();await updateSyncBadge();setTimeout(()=>o.classList.remove('show'),800);}catch(err){s.textContent='Errore: '+err.message;setTimeout(()=>o.classList.remove('show'),2000);}}

@@ -503,7 +503,8 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
     <button class="nav-btn" data-page="tecnici" onclick="showPage('tecnici')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/></svg>Utenti</button>
     <button class="nav-btn" data-page="produzione" onclick="showPage('produzione')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>Produzione</button>
     <button class="nav-btn" data-page="economia" onclick="showPage('economia')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>Economia</button>
-    <button class="nav-btn" data-page="manuali" onclick="showPage('manuali')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>Manuali AI</button>
+    <button class="nav-btn" data-page="manuali" onclick="showPage('manuali')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>Assistente AI</button>
+    <button class="nav-btn" data-page="manuali-apparati" onclick="showPage('manuali-apparati')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Manuali</button>
     <button class="nav-btn" data-page="documenti" onclick="showPage('documenti')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>Documenti</button>
     <div class="nav-section">Territorio</div>
     <button class="nav-btn" data-page="siti" onclick="showPage('siti')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>Siti & Mappa</button>
@@ -686,7 +687,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
     <!-- MANUALI AI -->
     <div class="page-section" id="page-manuali">
       <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
-        <span style="display:inline-flex;align-items:center;gap:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#7c3aed"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>Manuali Tecnici — E.ESEGUO AI</span>
+        <span style="display:inline-flex;align-items:center;gap:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#7c3aed"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>Assistente AI</span>
         <button class="btn-action" onclick="openAddManuale()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;padding:8px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.88em">+ Aggiungi Manuale</button>
       </div>
       <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:14px;margin-bottom:16px;font-size:.88em;color:#4c1d95;line-height:1.6">
@@ -1232,6 +1233,89 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
       </div>
     </div>
 
+    <!-- MANUALI (apparati) -->
+    <div class="page-section" id="page-manuali-apparati">
+      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+        <span style="display:inline-flex;align-items:center;gap:8px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Manuali</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn-action" onclick="openNuovaCartellaMan()" style="padding:9px 14px;font-size:.85em;display:inline-flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="M12 10v6"/><path d="M9 13h6"/></svg>
+            Nuova cartella
+          </button>
+          <button class="btn-action primary" onclick="openUploadManuale()" style="padding:9px 18px;font-size:.88em;display:inline-flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            Carica manuale
+          </button>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <button id="man-back-btn" onclick="manGoBack()" style="display:none;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;border:1px solid var(--card-border);background:#fff;color:var(--text);font-weight:600;font-size:.85em;cursor:pointer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Indietro
+          </button>
+          <div id="man-breadcrumb" style="font-size:.95em;color:var(--mid);display:flex;align-items:center;gap:6px"></div>
+        </div>
+        <div style="position:relative;flex:1;max-width:340px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--dim)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="man-search" placeholder="Cerca..." class="filter-input" style="width:100%;padding:8px 10px 8px 32px" oninput="filtraManuali()">
+        </div>
+      </div>
+
+      <div id="man-folders-view" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px"></div>
+
+      <div id="man-files-view" style="display:none">
+        <div class="table-wrap"><table>
+          <thead><tr>
+            <th>Manuale</th>
+            <th style="width:90px">Tipo</th>
+            <th style="width:110px">Dimensione</th>
+            <th style="width:160px">Caricato il</th>
+            <th style="width:140px;text-align:right">Azioni</th>
+          </tr></thead>
+          <tbody id="man-files-tbody"></tbody>
+        </table></div>
+        <div id="man-files-empty" style="display:none;text-align:center;padding:40px;color:var(--dim);font-size:.9em">Nessun manuale in questa cartella.</div>
+      </div>
+
+      <!-- Modal Nuova Cartella -->
+      <div class="modal-bg" id="modal-nuova-cartella-man" onclick="if(event.target===this)closeNuovaCartellaMan()">
+        <div class="modal" style="width:420px;max-width:95vw">
+          <h3 style="display:flex;align-items:center;gap:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#0D9488"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>Nuova cartella manuali</h3>
+          <div class="modal-sub" style="margin-bottom:14px">Crea una cartella per organizzare i manuali (es. Router, PLC, Climatizzatori, Stazioni Energia, ecc.)</div>
+          <label>Nome cartella *</label>
+          <input id="nc-man-nome" placeholder="Es. Router Huawei" style="width:100%" maxlength="60">
+          <div id="nc-man-status" style="display:none;font-size:.85em;padding:10px;border-radius:8px;margin-top:10px"></div>
+          <div class="modal-buttons" style="margin-top:14px">
+            <button class="btn-cancel" onclick="closeNuovaCartellaMan()" style="flex:1;padding:11px;border-radius:10px;font-weight:700;font-size:.9em;cursor:pointer;border:1px solid #E7E5E0;background:#fff;color:var(--text)">Annulla</button>
+            <button class="btn-save" id="nc-man-btn" onclick="confermaNuovaCartellaMan()" style="flex:1.3;padding:11px;border-radius:10px;font-weight:700;font-size:.9em;cursor:pointer;border:none;background:#0D9488;color:white">Crea</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Upload Manuale -->
+      <div class="modal-bg" id="modal-upload-manuale" onclick="if(event.target===this)closeUploadManuale()">
+        <div class="modal" style="width:520px;max-width:95vw">
+          <h3 style="display:flex;align-items:center;gap:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#0D9488"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>Carica manuale</h3>
+          <div class="modal-sub" style="margin-bottom:14px">Il manuale sarà visibile a tutti i tecnici nell'app.</div>
+          <label>Titolo *</label>
+          <input id="up-man-titolo" placeholder="Es. Router Huawei AR651 — Manuale tecnico" style="width:100%">
+          <label style="margin-top:10px">Descrizione (opzionale)</label>
+          <textarea id="up-man-desc" rows="2" placeholder="Note aggiuntive..." style="width:100%;font-family:inherit;resize:vertical"></textarea>
+          <label style="margin-top:10px">Cartella *</label>
+          <select id="up-man-cartella" style="width:100%"></select>
+          <label style="margin-top:10px">File *</label>
+          <input type="file" id="up-man-file" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.heic,.txt,.zip" style="width:100%">
+          <div id="up-man-status" style="display:none;font-size:.85em;padding:10px;border-radius:8px;margin-top:10px"></div>
+          <div class="modal-buttons" style="margin-top:14px">
+            <button class="btn-cancel" onclick="closeUploadManuale()" style="flex:1;padding:11px;border-radius:10px;font-weight:700;font-size:.9em;cursor:pointer;border:1px solid #E7E5E0;background:#fff;color:var(--text)">Annulla</button>
+            <button class="btn-save" id="up-man-btn" onclick="confermaUploadManuale()" style="flex:1.3;padding:11px;border-radius:10px;font-weight:700;font-size:.9em;cursor:pointer;border:none;background:#0D9488;color:white">Carica</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- DOCUMENTI -->
     <div class="page-section" id="page-documenti">
       <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
@@ -1287,7 +1371,6 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <label style="margin-top:10px">Categoria *</label>
           <select id="up-doc-categoria" style="width:100%" onchange="onChangeCategoriaUpload()">
             <option value="sicurezza">🛡️ Sicurezza (POS, DUVRI, formazione)</option>
-            <option value="manuali">📘 Manuali (apparati, schede tecniche)</option>
             <option value="comunicazioni">📨 Comunicazioni</option>
             <option value="modulistica">📝 Modulistica</option>
             <option value="altro" selected>📂 Altro</option>
@@ -3889,8 +3972,6 @@ async function confermaImportArubaAttive(){
 const DOC_CATEGORIE = [
   {key:'sicurezza',     label:'Sicurezza',     desc:'POS, DUVRI, formazione', color:'#16A34A',
    svg:'<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>'},
-  {key:'manuali',       label:'Manuali',       desc:'Apparati, schede tecniche', color:'#0D9488',
-   svg:'<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>'},
   {key:'comunicazioni', label:'Comunicazioni', desc:'Lettere, ordini servizio',  color:'#6366F1',
    svg:'<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>'},
   {key:'modulistica',   label:'Modulistica',   desc:'Template, checklist',       color:'#E8762D',
@@ -4102,6 +4183,214 @@ async function downloadDocumento(id, path, titolo){
     window.open(data.signedUrl, '_blank');
   }catch(e){
     alert('Errore apertura: '+(e.message||e));
+  }
+}
+
+/* === MANUALI APPARATI (cartelle dinamiche) === */
+let manCartelle = [];
+let manFiles = [];
+let currentManCartellaId = null; // null = root | id cartella
+
+async function loadManualiApparati(){
+  const[cartRes, fileRes] = await Promise.all([
+    sb.from('manuali_apparati_cartelle').select('*').order('nome'),
+    sb.from('manuali_apparati').select('*').order('created_at',{ascending:false})
+  ]);
+  if(cartRes.error){console.error(cartRes.error); manCartelle=[];}else{manCartelle=cartRes.data||[];}
+  if(fileRes.error){console.error(fileRes.error); manFiles=[];}else{manFiles=fileRes.data||[];}
+  renderManCartelle();
+}
+
+function _manBreadcrumbHome(){
+  return `<a href="#" onclick="event.preventDefault();renderManCartelle()" style="color:#0D9488;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Manuali</a>`;
+}
+function _manUpdateBackBtn(){
+  const btn=document.getElementById('man-back-btn');
+  if(btn) btn.style.display = currentManCartellaId===null ? 'none' : 'inline-flex';
+}
+function manGoBack(){renderManCartelle();}
+
+function renderManCartelle(){
+  currentManCartellaId = null;
+  _manUpdateBackBtn();
+  document.getElementById('man-folders-view').style.display='grid';
+  document.getElementById('man-files-view').style.display='none';
+  document.getElementById('man-breadcrumb').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> <strong style="color:var(--text)">Manuali</strong> <span style="color:var(--dim)">(${manCartelle.length} cartelle · ${manFiles.length} file)</span>`;
+  const fv = document.getElementById('man-folders-view');
+  if(!manCartelle.length){
+    fv.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--dim);font-size:.9em">Nessuna cartella. Crea la prima con <strong>+ Nuova cartella</strong>.</div>';
+    return;
+  }
+  fv.innerHTML = manCartelle.map(c=>{
+    const count = manFiles.filter(f=>f.cartella_id===c.id).length;
+    return `<div onclick="aprireCartellaMan(${c.id})" style="background:#fff;border:1px solid var(--card-border);border-radius:14px;padding:18px;cursor:pointer;transition:.18s;box-shadow:var(--card-shadow);display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;position:relative" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,.08)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--card-shadow)'">
+      <button onclick="event.stopPropagation();eliminaCartellaMan(${c.id},'${(c.nome||'').replace(/'/g,"\\'")}',${count})" title="Elimina cartella" style="position:absolute;top:6px;right:6px;background:none;border:none;color:#9ca3af;cursor:pointer;padding:4px;line-height:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+      <div style="color:#0D9488"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <div style="font-weight:800;font-size:1.05em;color:var(--text)">${c.nome}</div>
+      <div style="margin-top:4px;font-size:.82em;font-weight:700;color:#0D9488;background:rgba(13,148,136,0.12);padding:3px 10px;border-radius:20px">${count} ${count===1?'manuale':'manuali'}</div>
+    </div>`;
+  }).join('');
+}
+
+function aprireCartellaMan(id){
+  currentManCartellaId = id;
+  _manUpdateBackBtn();
+  const cart = manCartelle.find(c=>c.id===id);
+  document.getElementById('man-folders-view').style.display='none';
+  document.getElementById('man-files-view').style.display='block';
+  document.getElementById('man-breadcrumb').innerHTML = `${_manBreadcrumbHome()} <span style="color:var(--dim)">/</span> <strong style="color:#0D9488">${cart?cart.nome:'?'}</strong>`;
+  renderManFiles();
+}
+
+function renderManFiles(){
+  const q = (document.getElementById('man-search').value||'').toLowerCase().trim();
+  let files = manFiles.filter(f=>f.cartella_id===currentManCartellaId);
+  if(q) files = files.filter(f=>(f.titolo||'').toLowerCase().includes(q) || (f.descrizione||'').toLowerCase().includes(q));
+  const tb = document.getElementById('man-files-tbody');
+  const empty = document.getElementById('man-files-empty');
+  if(!files.length){
+    tb.innerHTML = '';
+    empty.style.display='block';
+    empty.textContent = q ? `Nessun manuale corrisponde a "${q}".` : 'Nessun manuale in questa cartella.';
+    return;
+  }
+  empty.style.display='none';
+  tb.innerHTML = files.map(d=>{
+    const dt = new Date(d.created_at);
+    const dataIt = `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    const sizeKb = d.file_size ? (d.file_size>1048576 ? (d.file_size/1048576).toFixed(1)+' MB' : Math.round(d.file_size/1024)+' KB') : '—';
+    const tipo = (d.tipo_mime||'').split('/')[1]?.toUpperCase() || '?';
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:8px;background:rgba(13,148,136,.08);color:#0D9488;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg></div>
+          <div>
+            <div style="font-weight:700;color:var(--text)">${d.titolo}</div>
+            ${d.descrizione?`<div style="font-size:.8em;color:var(--dim);margin-top:2px">${d.descrizione}</div>`:''}
+          </div>
+        </div>
+      </td>
+      <td><span style="font-size:.75em;font-weight:700;text-transform:uppercase;background:rgba(0,0,0,.05);padding:2px 8px;border-radius:4px">${tipo}</span></td>
+      <td>${sizeKb}</td>
+      <td style="font-size:.85em;color:var(--mid)">${dataIt}</td>
+      <td style="text-align:right">
+        <button class="btn-action" onclick="downloadManuale('${d.id}','${d.file_path.replace(/'/g,"\\'")}','${d.titolo.replace(/'/g,"\\'")}')" style="font-size:.78em;padding:6px 10px;display:inline-flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>Apri</button>
+        <button class="btn-action" onclick="eliminaManuale('${d.id}','${d.file_path.replace(/'/g,"\\'")}')" title="Elimina" style="font-size:.78em;padding:6px 8px;color:var(--red);border-color:rgba(220,38,38,.25)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filtraManuali(){if(currentManCartellaId!==null) renderManFiles();}
+
+async function downloadManuale(id, path, titolo){
+  try{
+    const{data,error}=await sb.storage.from('manuali-apparati').createSignedUrl(path, 600);
+    if(error)throw error;
+    window.open(data.signedUrl,'_blank');
+  }catch(e){alert('Errore apertura: '+(e.message||e));}
+}
+
+async function eliminaManuale(id, path){
+  if(!confirm('Eliminare definitivamente questo manuale?'))return;
+  try{
+    const{error}=await sb.from('manuali_apparati').delete().eq('id',id);
+    if(error)throw error;
+    await sb.storage.from('manuali-apparati').remove([path]);
+    manFiles = manFiles.filter(f=>f.id!==id);
+    if(currentManCartellaId===null) renderManCartelle(); else renderManFiles();
+  }catch(e){alert('Errore eliminazione: '+(e.message||e));}
+}
+
+/* Nuova cartella */
+function openNuovaCartellaMan(){
+  document.getElementById('nc-man-nome').value='';
+  document.getElementById('nc-man-status').style.display='none';
+  document.getElementById('modal-nuova-cartella-man').classList.add('open');
+}
+function closeNuovaCartellaMan(){document.getElementById('modal-nuova-cartella-man').classList.remove('open');}
+async function confermaNuovaCartellaMan(){
+  const nome = document.getElementById('nc-man-nome').value.trim();
+  const s = document.getElementById('nc-man-status');
+  if(!nome){s.style.display='block';s.style.background='rgba(220,38,38,0.08)';s.style.color='#991b1b';s.textContent='Inserisci un nome';return;}
+  const btn = document.getElementById('nc-man-btn');
+  btn.disabled=true; btn.textContent='Creazione...';
+  try{
+    const{error}=await sb.from('manuali_apparati_cartelle').insert({nome, created_by:currentUser.id});
+    if(error){
+      if(error.code==='23505'){s.style.display='block';s.style.background='rgba(220,38,38,0.08)';s.style.color='#991b1b';s.textContent='Esiste già una cartella con questo nome';}
+      else{throw error;}
+      btn.disabled=false;btn.textContent='Crea';return;
+    }
+    closeNuovaCartellaMan();
+    await loadManualiApparati();
+  }catch(e){
+    s.style.display='block';s.style.background='rgba(220,38,38,0.08)';s.style.color='#991b1b';s.textContent='Errore: '+(e.message||e);
+    btn.disabled=false;btn.textContent='Crea';
+  }
+}
+
+async function eliminaCartellaMan(id, nome, count){
+  if(count>0){alert(`La cartella "${nome}" contiene ${count} manuale/i. Sposta o elimina prima i file, poi puoi eliminare la cartella.`);return;}
+  if(!confirm(`Eliminare la cartella "${nome}"?`))return;
+  try{
+    const{error}=await sb.from('manuali_apparati_cartelle').delete().eq('id',id);
+    if(error)throw error;
+    await loadManualiApparati();
+  }catch(e){alert('Errore: '+(e.message||e));}
+}
+
+/* Upload manuale */
+function openUploadManuale(){
+  document.getElementById('up-man-titolo').value='';
+  document.getElementById('up-man-desc').value='';
+  document.getElementById('up-man-file').value='';
+  document.getElementById('up-man-status').style.display='none';
+  // Popola dropdown cartelle
+  const sel = document.getElementById('up-man-cartella');
+  sel.innerHTML = manCartelle.length
+    ? manCartelle.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('')
+    : '<option value="">— Crea prima una cartella —</option>';
+  if(currentManCartellaId) sel.value = currentManCartellaId;
+  document.getElementById('modal-upload-manuale').classList.add('open');
+}
+function closeUploadManuale(){document.getElementById('modal-upload-manuale').classList.remove('open');}
+async function confermaUploadManuale(){
+  const titolo = document.getElementById('up-man-titolo').value.trim();
+  const desc = document.getElementById('up-man-desc').value.trim();
+  const cartellaId = parseInt(document.getElementById('up-man-cartella').value);
+  const fileInput = document.getElementById('up-man-file');
+  const file = fileInput.files?.[0];
+  const s = document.getElementById('up-man-status');
+  const btn = document.getElementById('up-man-btn');
+  const showErr = m=>{s.style.display='block';s.style.background='rgba(220,38,38,0.08)';s.style.color='#991b1b';s.textContent=m;};
+  s.style.display='none';
+  if(!titolo){showErr('Inserisci un titolo');return;}
+  if(!cartellaId){showErr('Seleziona una cartella (creane una se non esiste)');return;}
+  if(!file){showErr('Seleziona un file');return;}
+  if(file.size > 50*1024*1024){showErr('File troppo grande (max 50 MB)');return;}
+  btn.disabled=true;
+  const origTxt=btn.textContent; btn.textContent='Caricamento...';
+  s.style.display='block'; s.style.background='rgba(13,148,136,0.08)'; s.style.color='#0D9488'; s.textContent='Upload in corso...';
+  try{
+    const ext = (file.name.split('.').pop()||'bin').toLowerCase();
+    const safeTitle = titolo.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'').substring(0,40);
+    const path = `${cartellaId}/${Date.now()}_${safeTitle}.${ext}`;
+    const{error:errUp}=await sb.storage.from('manuali-apparati').upload(path, file, {contentType:file.type, upsert:false});
+    if(errUp)throw errUp;
+    const{error:errIns}=await sb.from('manuali_apparati').insert({
+      cartella_id: cartellaId, titolo, descrizione: desc||null,
+      file_path: path, file_size: file.size, tipo_mime: file.type||'application/octet-stream',
+      uploaded_by: currentUser.id
+    });
+    if(errIns){await sb.storage.from('manuali-apparati').remove([path]);throw errIns;}
+    s.style.background='rgba(22,163,74,0.1)'; s.style.color='#14532D'; s.textContent='✓ Manuale caricato';
+    btn.textContent=origTxt; btn.disabled=false;
+    await loadManualiApparati();
+    setTimeout(closeUploadManuale, 800);
+  }catch(e){
+    btn.textContent=origTxt; btn.disabled=false;
+    showErr('Errore: '+(e.message||e));
   }
 }
 
@@ -4696,6 +4985,7 @@ function showPage(page){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   if(page==='siti'){setTimeout(()=>initDashMap(),100);renderTappe();caricaIndirizzoAzienda();}
   if(page==='manuali'){loadManuali();}
+  if(page==='manuali-apparati'){loadManualiApparati();}
   if(page==='documenti'){loadDocumenti();}
   if(page==='produzione'){loadProduzione();}
   if(page==='impostazioni'){loadImpostazioni();}
