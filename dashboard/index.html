@@ -885,6 +885,28 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         <div class="stat-card" title="Margine lordo = Entrate − Passive (imponibili, IVA esclusa)"><div class="label">Margine Lordo <small style="font-weight:400;font-size:.65em;color:var(--dim)">(Entrate − Passive)</small></div><div class="value" id="eco-tot-margine" style="color:#6366F1">€ 0.00</div></div>
       </div>
 
+      <!-- ★★ BOX 0: SINCRONIZZAZIONE AUTOMATICA ARUBA -->
+      <div style="background:linear-gradient(135deg,rgba(13,148,136,0.08),rgba(22,163,74,0.04));border:2px solid rgba(13,148,136,0.3);border-radius:14px;padding:20px;margin-top:24px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <img src="aruba-logo.png" alt="Aruba.it" style="height:24px;width:auto">
+          <span style="font-weight:800;color:#0D9488;font-size:1em">Sincronizzazione automatica</span>
+          <span id="aruba-sync-server-status" style="font-size:.7em;font-weight:700;padding:3px 8px;border-radius:6px;background:#fef3c7;color:#92400e">Verifica server...</span>
+        </div>
+        <div style="font-size:.85em;color:#6b7280;margin-bottom:14px">Scarica automaticamente le fatture inviate e ricevute da Aruba Fatturazione Elettronica e le importa nel database. Dedup automatico (no duplicati).</div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <select id="aruba-sync-mese" style="padding:9px 14px;border:1.5px solid rgba(13,148,136,0.3);border-radius:10px;font-size:.88em;background:#fff;min-width:180px">
+            <option value="tutti">Tutte le fatture</option>
+            <option value="corrente" selected>Mese corrente</option>
+            <option value="precedente">Mese precedente</option>
+          </select>
+          <button id="aruba-sync-btn" onclick="avviaSyncAruba()" style="padding:10px 22px;font-size:.9em;font-weight:700;background:linear-gradient(135deg,#0D9488,#16A34A);color:#fff;border:none;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:8px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            Sincronizza da Aruba
+          </button>
+        </div>
+        <div id="aruba-sync-output" style="display:none;margin-top:12px;font-size:.82em;padding:12px;border-radius:10px;max-height:200px;overflow-y:auto;font-family:monospace;white-space:pre-wrap;line-height:1.5"></div>
+      </div>
+
       <!-- ★★ BOX 1: IMPORTA FATTURE ATTIVE ARUBA (FattureInviate) -->
       <div style="background:linear-gradient(135deg,rgba(118,184,42,0.06),rgba(118,184,42,0.02));border:1.5px solid rgba(118,184,42,0.3);border-radius:14px;padding:18px;margin-top:24px;position:relative">
         <div style="display:flex;align-items:center;gap:10px;font-weight:700;color:#3F6612;font-size:.95em;margin-bottom:4px">
@@ -2938,6 +2960,48 @@ function fmCloseLb(){document.getElementById('lightbox').classList.remove('show'
 document.addEventListener('keydown',e=>{if(!document.getElementById('lightbox').classList.contains('show'))return;if(e.key==='ArrowLeft')fmLbNav(-1);if(e.key==='ArrowRight')fmLbNav(1);if(e.key==='Escape')fmCloseLb()})
 
 /* Economia */
+/* === SYNC ARUBA (server locale) === */
+const ARUBA_SERVER = 'http://localhost:8787';
+async function checkArubaSyncServer(){
+  const s = document.getElementById('aruba-sync-server-status');
+  try{
+    const r = await fetch(ARUBA_SERVER+'/status', {signal: AbortSignal.timeout(3000)});
+    if(r.ok){s.textContent='Server attivo';s.style.background='rgba(22,163,74,0.12)';s.style.color='#14532D';document.getElementById('aruba-sync-btn').disabled=false;}
+    else throw 0;
+  }catch(e){
+    s.textContent='Server offline';s.style.background='rgba(220,38,38,0.08)';s.style.color='#991b1b';
+    document.getElementById('aruba-sync-btn').disabled=true;
+    document.getElementById('aruba-sync-btn').title='Avvia server_aruba.py dal terminale';
+  }
+}
+async function avviaSyncAruba(){
+  const btn = document.getElementById('aruba-sync-btn');
+  const out = document.getElementById('aruba-sync-output');
+  const mese = document.getElementById('aruba-sync-mese').value;
+  btn.disabled=true; btn.textContent='Sincronizzazione in corso...';
+  out.style.display='block'; out.style.background='rgba(13,148,136,0.06)'; out.style.color='#0D9488';
+  out.textContent='Avvio scraper Aruba... (può richiedere 2-3 minuti)\n';
+  try{
+    const r = await fetch(`${ARUBA_SERVER}/sync?mese=${mese}`, {signal: AbortSignal.timeout(300000)});
+    const data = await r.json();
+    if(data.ok){
+      out.style.background='rgba(22,163,74,0.08)'; out.style.color='#14532D';
+      out.textContent = data.output || 'Completato senza output';
+      // Ricarica Economia per vedere i nuovi dati
+      loadEconomia();
+    }else{
+      out.style.background='rgba(220,38,38,0.06)'; out.style.color='#991b1b';
+      out.textContent = (data.error || 'Errore sconosciuto') + '\n\n' + (data.output || '');
+    }
+  }catch(e){
+    out.style.background='rgba(220,38,38,0.06)'; out.style.color='#991b1b';
+    out.textContent = 'Errore connessione: ' + e.message + '\n\nAssicurati che server_aruba.py sia in esecuzione.';
+  }
+  btn.disabled=false; btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> Sincronizza da Aruba';
+}
+// Check server all'avvio dell'economia
+setTimeout(checkArubaSyncServer, 2000);
+
 function initEconomia(){
   const sel=document.getElementById('eco-mese');
   sel.innerHTML='';
