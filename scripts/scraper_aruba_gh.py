@@ -15,9 +15,11 @@ SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6I
 
 async def _login(page, user, pwd):
     await page.goto(LOGIN_URL, wait_until='load', timeout=60000)
-    await page.wait_for_timeout(5000)
+    await page.wait_for_timeout(8000)
+    # Aspetta che il form login appaia (redirect OAuth può essere lento su server remoti)
+    await page.wait_for_selector('input[type="password"]', timeout=60000)
     await page.fill('input[type="password"]', pwd)
-    await page.fill('input[name="username"]', user)
+    await page.fill('input[name="username"], input[placeholder*="ARUBA"]', user)
     await page.click('button:has-text("Accedi")')
     await page.wait_for_function("() => window.location.hash.includes('dashboard')", timeout=TIMEOUT)
     await page.wait_for_timeout(5000)
