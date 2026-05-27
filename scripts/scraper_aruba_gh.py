@@ -15,9 +15,20 @@ SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6I
 
 async def _login(page, user, pwd):
     await page.goto(LOGIN_URL, wait_until='load', timeout=60000)
-    await page.wait_for_timeout(8000)
+    await page.wait_for_timeout(10000)
+    # Debug: screenshot per capire cosa vede il browser da GitHub
+    await page.screenshot(path='_aruba_download/debug_gh_login.png')
+    print(f'  DEBUG URL dopo goto: {page.url}')
+    print(f'  DEBUG title: {await page.title()}')
     # Aspetta che il form login appaia (redirect OAuth può essere lento su server remoti)
-    await page.wait_for_selector('input[type="password"]', timeout=60000)
+    try:
+        await page.wait_for_selector('input[type="password"]', timeout=60000)
+    except:
+        # Se non appare, screenshot + dump HTML
+        await page.screenshot(path='_aruba_download/debug_gh_timeout.png')
+        html = await page.content()
+        with open('_aruba_download/debug_gh_page.html', 'w') as f: f.write(html[:5000])
+        raise
     await page.fill('input[type="password"]', pwd)
     await page.fill('input[name="username"], input[placeholder*="ARUBA"]', user)
     await page.click('button:has-text("Accedi")')
