@@ -2960,18 +2960,32 @@ function fmCloseLb(){document.getElementById('lightbox').classList.remove('show'
 document.addEventListener('keydown',e=>{if(!document.getElementById('lightbox').classList.contains('show'))return;if(e.key==='ArrowLeft')fmLbNav(-1);if(e.key==='ArrowRight')fmLbNav(1);if(e.key==='Escape')fmCloseLb()})
 
 /* Economia */
-/* === SYNC ARUBA (server locale) === */
-const ARUBA_SERVER = 'http://localhost:8787';
+/* === SYNC ARUBA (trigger via Supabase -> scheduler container NAS) === */
+// Lo scraper gira nel container "aruba-scraper" sul NAS QNAP. La dashboard non lo
+// chiama direttamente (NAS non esposto): inserisce un record in scraper_triggers,
+// lo scheduler.py sul NAS fa polling, esegue lo scraper e aggiorna lo status.
+function resetSyncBtn(btn){
+  btn.disabled=false;
+  btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> Sincronizza da Aruba';
+}
 async function checkArubaSyncServer(){
   const s = document.getElementById('aruba-sync-server-status');
+  const btn = document.getElementById('aruba-sync-btn');
+  if(btn) btn.disabled=false;
   try{
-    const r = await fetch(ARUBA_SERVER+'/status', {signal: AbortSignal.timeout(3000)});
-    if(r.ok){s.textContent='Server attivo';s.style.background='rgba(22,163,74,0.12)';s.style.color='#14532D';document.getElementById('aruba-sync-btn').disabled=false;}
-    else throw 0;
+    const {data,error}=await sb.from('scraper_triggers').select('status,created_at,completed_at').order('created_at',{ascending:false}).limit(1);
+    if(error) throw error;
+    if(data && data.length){
+      const t=data[0];
+      const when=new Date(t.completed_at||t.created_at).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      const map={completed:'✓ OK',error:'✗ errore',running:'in corso',pending:'in coda'};
+      s.textContent='Ultima: '+(map[t.status]||t.status)+' · '+when;
+    }else{
+      s.textContent='Pronta';
+    }
+    s.style.background='rgba(22,163,74,0.12)';s.style.color='#14532D';
   }catch(e){
-    s.textContent='Server offline';s.style.background='rgba(220,38,38,0.08)';s.style.color='#991b1b';
-    document.getElementById('aruba-sync-btn').disabled=true;
-    document.getElementById('aruba-sync-btn').title='Avvia server_aruba.py dal terminale';
+    s.textContent='Pronta';s.style.background='#fef3c7';s.style.color='#92400e';
   }
 }
 async function avviaSyncAruba(){
@@ -2980,26 +2994,60 @@ async function avviaSyncAruba(){
   const mese = document.getElementById('aruba-sync-mese').value;
   btn.disabled=true; btn.textContent='Sincronizzazione in corso...';
   out.style.display='block'; out.style.background='rgba(13,148,136,0.06)'; out.style.color='#0D9488';
-  out.textContent='Avvio scraper Aruba... (può richiedere 2-3 minuti)\n';
+  out.textContent='Invio richiesta al NAS...\n';
+  let trigId=null;
   try{
-    const r = await fetch(`${ARUBA_SERVER}/sync?mese=${mese}`, {signal: AbortSignal.timeout(300000)});
-    const data = await r.json();
-    if(data.ok){
-      out.style.background='rgba(22,163,74,0.08)'; out.style.color='#14532D';
-      out.textContent = data.output || 'Completato senza output';
-      // Ricarica Economia per vedere i nuovi dati
-      loadEconomia();
-    }else{
-      out.style.background='rgba(220,38,38,0.06)'; out.style.color='#991b1b';
-      out.textContent = (data.error || 'Errore sconosciuto') + '\n\n' + (data.output || '');
-    }
+    const ins=await sb.from('scraper_triggers').insert([{mese,requested_by:(currentUser?currentUser.id:null)}]).select('id').single();
+    if(ins.error) throw ins.error;
+    trigId=ins.data.id;
   }catch(e){
     out.style.background='rgba(220,38,38,0.06)'; out.style.color='#991b1b';
-    out.textContent = 'Errore connessione: ' + e.message + '\n\nAssicurati che server_aruba.py sia in esecuzione.';
+    out.textContent='Errore creazione richiesta: '+(e.message||e)+'\n\nDevi essere loggato come coordinatore o amministratore.';
+    resetSyncBtn(btn); return;
   }
-  btn.disabled=false; btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> Sincronizza da Aruba';
+  // Polling stato del trigger appena creato
+  const START=Date.now();
+  const PENDING_WARN=120000;   // 2 min senza pickup -> container forse spento
+  const MAX_WAIT=720000;       // 12 min totali
+  let warnedPending=false;
+  const poll=setInterval(async()=>{
+    const elapsed=Date.now()-START;
+    let t;
+    try{
+      const {data,error}=await sb.from('scraper_triggers').select('status,output,error').eq('id',trigId).single();
+      if(error) throw error; t=data;
+    }catch(e){ return; } // riprova al giro successivo
+    if(t.status==='pending'){
+      if(elapsed>PENDING_WARN && !warnedPending){
+        warnedPending=true;
+        out.style.background='#fef3c7'; out.style.color='#92400e';
+        out.textContent='⏳ In coda da oltre 2 minuti.\nIl container "aruba-scraper" sul NAS potrebbe essere spento o non raggiungibile.\nControlla Container Station. Continuo ad attendere...';
+      }else if(!warnedPending){
+        out.textContent='⏳ In coda — in attesa che il NAS prenda il job...';
+      }
+    }else if(t.status==='running'){
+      out.style.background='rgba(13,148,136,0.06)'; out.style.color='#0D9488';
+      out.textContent='🔄 Scraper in esecuzione sul NAS... (login Aruba + download + import, 2-3 min)';
+    }else if(t.status==='completed'){
+      clearInterval(poll);
+      out.style.background='rgba(22,163,74,0.08)'; out.style.color='#14532D';
+      out.textContent='✅ Completata\n\n'+(t.output||'');
+      loadEconomia(); checkArubaSyncServer(); resetSyncBtn(btn);
+    }else if(t.status==='error'){
+      clearInterval(poll);
+      out.style.background='rgba(220,38,38,0.06)'; out.style.color='#991b1b';
+      out.textContent='❌ Errore\n\n'+(t.error||'')+'\n\n'+(t.output||'');
+      checkArubaSyncServer(); resetSyncBtn(btn);
+    }
+    if(elapsed>MAX_WAIT){
+      clearInterval(poll);
+      out.style.background='#fef3c7'; out.style.color='#92400e';
+      out.textContent='⏱️ Timeout: nessuna risposta dopo 12 minuti. Controlla i log del container sul NAS.';
+      resetSyncBtn(btn);
+    }
+  },4000);
 }
-// Check server all'avvio dell'economia
+// Check stato all'avvio dell'economia
 setTimeout(checkArubaSyncServer, 2000);
 
 function initEconomia(){
