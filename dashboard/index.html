@@ -1059,6 +1059,16 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <canvas id="eco-chart-clienti" style="max-height:280px"></canvas>
         </div>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+        <div style="background:#fff;border:1px solid var(--card-border);border-radius:12px;padding:18px;box-shadow:var(--card-shadow)">
+          <div style="font-size:.85em;font-weight:700;color:var(--mid);margin-bottom:10px">Entrate vs Passive per mese</div>
+          <canvas id="eco-chart-barcmp" style="max-height:280px"></canvas>
+        </div>
+        <div style="background:#fff;border:1px solid var(--card-border);border-radius:12px;padding:18px;box-shadow:var(--card-shadow)">
+          <div style="font-size:.85em;font-weight:700;color:var(--mid);margin-bottom:10px">Margine lordo per mese</div>
+          <canvas id="eco-chart-barmar" style="max-height:280px"></canvas>
+        </div>
+      </div>
     </div>
 
     <!-- Modal Aggiungi Costo -->
@@ -3251,7 +3261,7 @@ async function loadEconomia(){
 }
 
 /* === GRAFICI ECONOMIA (Chart.js) === */
-let _ecoChartTrend=null, _ecoChartClienti=null;
+let _ecoChartTrend=null, _ecoChartClienti=null, _ecoChartBarCmp=null, _ecoChartBarMar=null;
 
 async function renderEcoCharts(meseCorrente){
   if(typeof Chart==='undefined')return;
@@ -3358,6 +3368,39 @@ async function renderEcoCharts(meseCorrente){
         }
       });
     }
+  }
+
+  // Grafico 3: Entrate vs Passive per mese (colonne raggruppate)
+  const ctxBC=document.getElementById('eco-chart-barcmp');
+  if(ctxBC){
+    if(_ecoChartBarCmp)_ecoChartBarCmp.destroy();
+    _ecoChartBarCmp=new Chart(ctxBC,{
+      type:'bar',
+      data:{labels:months.map(mm=>mm.label),datasets:[
+        {label:'Entrate',data:datasets.ent,backgroundColor:'#16A34A'},
+        {label:'Passive',data:datasets.pas,backgroundColor:'#DC2626'}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:10,font:{size:11}}},
+          tooltip:{callbacks:{label:(c)=>` ${c.dataset.label}: € ${c.parsed.y.toFixed(2)}`}}},
+        scales:{y:{beginAtZero:true,ticks:{callback:v=>'€'+v}},x:{ticks:{font:{size:11}}}}}
+    });
+  }
+
+  // Grafico 4: Margine lordo per mese (colonne, verde/rosso per segno)
+  const ctxBM=document.getElementById('eco-chart-barmar');
+  if(ctxBM){
+    if(_ecoChartBarMar)_ecoChartBarMar.destroy();
+    _ecoChartBarMar=new Chart(ctxBM,{
+      type:'bar',
+      data:{labels:months.map(mm=>mm.label),datasets:[
+        {label:'Margine',data:datasets.mar,backgroundColor:datasets.mar.map(v=>v>=0?'#16A34A':'#DC2626')}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{label:(c)=>` Margine: € ${c.parsed.y.toFixed(2)}`}}},
+        scales:{y:{ticks:{callback:v=>'€'+v}},x:{ticks:{font:{size:11}}}}}
+    });
   }
 }
 
