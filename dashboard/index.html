@@ -885,6 +885,16 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         <div class="stat-card" title="Margine lordo = Entrate − Passive (imponibili, IVA esclusa)"><div class="label">Margine Lordo <small style="font-weight:400;font-size:.65em;color:var(--dim)">(Entrate − Passive)</small></div><div class="value" id="eco-tot-margine" style="color:#6366F1">€ 0.00</div></div>
       </div>
 
+      <!-- ★★ MESI GIA CARICATI -->
+      <div style="background:#fff;border:1px solid var(--card-border);border-radius:14px;padding:16px 18px;margin-top:18px;box-shadow:var(--card-shadow)">
+        <div style="display:flex;align-items:center;gap:8px;font-weight:800;color:var(--mid);font-size:.92em;margin-bottom:10px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+          Mesi già caricati
+          <span style="font-size:.72em;font-weight:600;color:var(--dim)">— clicca un mese per aprirlo</span>
+        </div>
+        <div id="eco-mesi-caricati" style="display:flex;flex-wrap:wrap;gap:8px"><span style="color:var(--dim);font-size:.85em">Caricamento…</span></div>
+      </div>
+
       <!-- ★★ BOX 0: SINCRONIZZAZIONE AUTOMATICA ARUBA -->
       <div style="background:linear-gradient(135deg,rgba(13,148,136,0.08),rgba(22,163,74,0.04));border:2px solid rgba(13,148,136,0.3);border-radius:14px;padding:20px;margin-top:24px">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
@@ -894,11 +904,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         </div>
         <div style="font-size:.85em;color:#6b7280;margin-bottom:14px">Scarica automaticamente le fatture inviate e ricevute da Aruba Fatturazione Elettronica e le importa nel database. Dedup automatico (no duplicati).</div>
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-          <select id="aruba-sync-mese" style="padding:9px 14px;border:1.5px solid rgba(13,148,136,0.3);border-radius:10px;font-size:.88em;background:#fff;min-width:180px">
-            <option value="tutti">Tutte le fatture</option>
-            <option value="corrente" selected>Mese corrente</option>
-            <option value="precedente">Mese precedente</option>
-          </select>
+          <select id="aruba-sync-mese" title="Scegli il mese da sincronizzare" style="padding:9px 14px;border:1.5px solid rgba(13,148,136,0.3);border-radius:10px;font-size:.88em;background:#fff;min-width:180px"></select>
           <button id="aruba-sync-btn" onclick="avviaSyncAruba()" style="padding:10px 22px;font-size:.9em;font-weight:700;background:linear-gradient(135deg,#0D9488,#16A34A);color:#fff;border:none;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:8px">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
             Sincronizza da Aruba
@@ -979,8 +985,13 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
       </div>
 
       <!-- TABELLA FATTURE ATTIVE DEL MESE -->
-      <div class="section-header" style="font-size:1em;margin-top:24px">Fatture attive del mese</div>
-      <div class="table-wrap" style="margin-top:6px"><table>
+      <div class="section-header eco-acc-head" onclick="toggleEcoAcc('attive')" style="font-size:1em;margin-top:24px;cursor:pointer;display:flex;align-items:center;gap:10px">
+        <svg id="eco-attive-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .15s;flex:0 0 auto"><path d="m9 18 6-6-6-6"/></svg>
+        <span>Fatture attive del mese</span>
+        <span id="eco-attive-badge" style="font-size:.7em;font-weight:700;color:var(--dim);background:rgba(0,0,0,0.04);padding:2px 8px;border-radius:6px"></span>
+        <span id="eco-attive-sum" style="margin-left:auto;font-weight:800;color:var(--green);font-size:.95em"></span>
+      </div>
+      <div class="table-wrap eco-acc-body" id="eco-attive-wrap" style="margin-top:6px;display:none"><table>
         <thead><tr><th style="width:90px">Numero</th><th style="width:90px">Data</th><th>Cliente</th><th>Descrizione</th><th style="text-align:right;width:90px">Imponibile</th><th style="text-align:right;width:90px">IVA</th><th style="text-align:right;width:90px">Totale</th><th style="width:100px">Stato</th><th style="width:60px"></th></tr></thead>
         <tbody id="eco-attive-table"></tbody>
         <tfoot>
@@ -995,11 +1006,14 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
       </table></div>
 
       <!-- TABELLA FATTURE PASSIVE (da Aruba / AI) -->
-      <div class="section-header" style="font-size:1em;margin-top:24px;display:flex;align-items:center;gap:10px">
-        Fatture passive del mese
+      <div class="section-header eco-acc-head" onclick="toggleEcoAcc('passive')" style="font-size:1em;margin-top:24px;cursor:pointer;display:flex;align-items:center;gap:10px">
+        <svg id="eco-passive-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .15s;flex:0 0 auto"><path d="m9 18 6-6-6-6"/></svg>
+        <span>Fatture passive del mese</span>
         <span style="font-size:.65em;font-weight:700;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:6px;letter-spacing:.4px">DA ARUBA / AI</span>
+        <span id="eco-passive-badge" style="font-size:.7em;font-weight:700;color:var(--dim);background:rgba(0,0,0,0.04);padding:2px 8px;border-radius:6px"></span>
+        <span id="eco-passive-sum" style="margin-left:auto;font-weight:800;color:var(--red);font-size:.95em"></span>
       </div>
-      <div class="table-wrap" style="margin-top:6px"><table>
+      <div class="table-wrap eco-acc-body" id="eco-passive-wrap" style="margin-top:6px;display:none"><table>
         <thead><tr><th>Fornitore</th><th style="width:100px">Numero</th><th style="width:90px">Data</th><th style="text-align:right">Importo (IVA escl.)</th><th style="width:80px">Fonte</th><th style="width:50px"></th></tr></thead>
         <tbody id="eco-passive-table"></tbody>
         <tfoot><tr style="background:rgba(220,38,38,0.06)">
@@ -1011,13 +1025,16 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
 
       <!-- TABELLA ALTRI COSTI (manuali) -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px">
-        <div class="section-header" style="font-size:1em;margin:0;display:flex;align-items:center;gap:10px">
-          Altri costi del mese
+        <div class="section-header eco-acc-head" onclick="toggleEcoAcc('altri')" style="font-size:1em;margin:0;display:flex;align-items:center;gap:10px;cursor:pointer;flex:1">
+          <svg id="eco-altri-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .15s;flex:0 0 auto"><path d="m9 18 6-6-6-6"/></svg>
+          <span>Altri costi del mese</span>
           <span style="font-size:.65em;font-weight:700;color:var(--accent);background:rgba(13,148,136,0.1);padding:2px 8px;border-radius:6px;letter-spacing:.4px">MANUALI</span>
+          <span id="eco-altri-badge" style="font-size:.7em;font-weight:700;color:var(--dim);background:rgba(0,0,0,0.04);padding:2px 8px;border-radius:6px"></span>
+          <span id="eco-altri-sum" style="margin-left:auto;font-weight:800;color:var(--mid);font-size:.95em"></span>
         </div>
-        <button class="btn-action primary" onclick="openAddCosto()" style="padding:8px 16px;font-size:.85em">+ Aggiungi costo</button>
+        <button class="btn-action primary" onclick="event.stopPropagation();openAddCosto()" style="padding:8px 16px;font-size:.85em;margin-left:10px">+ Aggiungi costo</button>
       </div>
-      <div class="table-wrap" style="margin-top:6px"><table>
+      <div class="table-wrap eco-acc-body" id="eco-altri-wrap" style="margin-top:6px;display:none"><table>
         <thead><tr><th>Categoria</th><th>Voce</th><th>Note</th><th style="text-align:right">Importo</th><th style="width:50px"></th></tr></thead>
         <tbody id="eco-altri-table"></tbody>
         <tfoot><tr style="background:rgba(120,113,108,0.06)">
@@ -2968,10 +2985,21 @@ function resetSyncBtn(btn){
   btn.disabled=false;
   btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg> Sincronizza da Aruba';
 }
+function _populateSyncMesi(){
+  const sel=document.getElementById('aruba-sync-mese');if(!sel||sel.dataset.filled)return;
+  const now=new Date();let html='<option value="tutti">Tutte le fatture</option>';
+  for(let i=0;i<18;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    html+=`<option value="${ym}"${i===0?' selected':''}>${_ymLabel(ym)}</option>`;
+  }
+  sel.innerHTML=html;sel.dataset.filled='1';
+}
 async function checkArubaSyncServer(){
   const s = document.getElementById('aruba-sync-server-status');
   const btn = document.getElementById('aruba-sync-btn');
   if(btn) btn.disabled=false;
+  _populateSyncMesi();
   try{
     const {data,error}=await sb.from('scraper_triggers').select('status,created_at,completed_at').order('created_at',{ascending:false}).limit(1);
     if(error) throw error;
@@ -3068,6 +3096,52 @@ function initEconomia(){
   loadEconomia();
 }
 
+/* === ACCORDION + MESI CARICATI + CHIP FONTE (Economia) === */
+function toggleEcoAcc(key){
+  const body=document.getElementById('eco-'+key+'-wrap');
+  const chev=document.getElementById('eco-'+key+'-chev');
+  if(!body)return;
+  const open=body.style.display==='none';
+  body.style.display=open?'':'none';
+  if(chev)chev.style.transform=open?'rotate(90deg)':'';
+}
+const _ECO_MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+function _ymLabel(ym){const p=(ym||'').split('-');return p.length===2?`${_ECO_MESI[parseInt(p[1])-1]||p[1]} ${p[0]}`:ym;}
+function _fonteChip(fonte){
+  if(fonte==='ai')return ' <span style="font-size:.62em;background:rgba(124,58,237,0.08);color:#7c3aed;padding:1px 5px;border-radius:4px;font-weight:700;vertical-align:middle">AI</span>';
+  if(fonte==='aruba')return ' <span style="font-size:.62em;background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:4px;font-weight:700;vertical-align:middle">aruba</span>';
+  if(fonte==='manuale')return ' <span style="font-size:.62em;background:rgba(13,148,136,0.08);color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:700;vertical-align:middle">man</span>';
+  return '';
+}
+function selEcoMese(ym){
+  const sel=document.getElementById('eco-mese');
+  if(![...sel.options].some(o=>o.value===ym)){
+    const o=document.createElement('option');o.value=ym;o.textContent=_ymLabel(ym);sel.appendChild(o);
+  }
+  sel.value=ym;loadEconomia();
+}
+async function loadMesiCaricati(){
+  const box=document.getElementById('eco-mesi-caricati');if(!box)return;
+  try{
+    const[a,c]=await Promise.all([
+      sb.from('fatture_attive').select('data_emissione'),
+      sb.from('costi_mensili').select('mese,fonte')
+    ]);
+    const map={};
+    (a.data||[]).forEach(r=>{const ym=(r.data_emissione||'').slice(0,7);if(ym){(map[ym]=map[ym]||{att:0,pass:0}).att++;}});
+    (c.data||[]).forEach(r=>{if(r.fonte!=='aruba'&&r.fonte!=='ai')return;const ym=(r.mese||'').slice(0,7);if(ym){(map[ym]=map[ym]||{att:0,pass:0}).pass++;}});
+    const yms=Object.keys(map).sort().reverse();
+    const cur=document.getElementById('eco-mese').value;
+    box.innerHTML=yms.length?yms.map(ym=>{
+      const m=map[ym];const active=ym===cur;
+      return `<button onclick="selEcoMese('${ym}')" style="cursor:pointer;border:1.5px solid ${active?'var(--accent)':'var(--card-border)'};background:${active?'rgba(13,148,136,0.08)':'#fff'};border-radius:10px;padding:7px 12px;text-align:left;display:flex;flex-direction:column;gap:2px">
+        <span style="font-weight:800;font-size:.85em;color:${active?'var(--accent)':'var(--text)'}">${_ymLabel(ym)}</span>
+        <span style="font-size:.72em;color:var(--dim)">${m.att} att · ${m.pass} pass</span>
+      </button>`;
+    }).join(''):'<span style="color:var(--dim);font-size:.85em">Nessun mese ancora caricato. Usa Sincronizza da Aruba o importa un file.</span>';
+  }catch(e){box.innerHTML='<span style="color:var(--dim);font-size:.85em">Impossibile caricare il riepilogo mesi.</span>';}
+}
+
 async function loadEconomia(){
   const mese=document.getElementById('eco-mese').value;if(!mese)return;
 
@@ -3119,7 +3193,7 @@ async function loadEconomia(){
     return `<tr>
       <td style="font-family:monospace;font-size:.85em;font-weight:700">${f.numero||'—'}</td>
       <td>${dataIt}</td>
-      <td style="font-weight:600">${f.cliente||'—'}</td>
+      <td style="font-weight:600">${f.cliente||'—'}${_fonteChip(f.fonte)}</td>
       <td style="color:var(--dim);font-size:.85em">${(f.descrizione||'').substring(0,60)}</td>
       <td style="text-align:right">${(+f.imponibile||0).toFixed(2)}</td>
       <td style="text-align:right;color:var(--dim)">${(+f.iva||0).toFixed(2)}</td>
@@ -3135,6 +3209,8 @@ async function loadEconomia(){
   document.getElementById('eco-attive-footer-imponibile').textContent='€ '+totEntrate.toFixed(2);
   document.getElementById('eco-attive-footer-iva').textContent='€ '+totIvaAttive.toFixed(2);
   document.getElementById('eco-attive-footer-totale').textContent='€ '+totLordoAttive.toFixed(2);
+  document.getElementById('eco-attive-badge').textContent=`${fattureAttiveMese.length} fatture`;
+  document.getElementById('eco-attive-sum').textContent='€ '+totLordoAttive.toFixed(2);
 
   // === Tabella FATTURE PASSIVE (Aruba/AI) ===
   const tbP=document.getElementById('eco-passive-table');
@@ -3152,6 +3228,8 @@ async function loadEconomia(){
     </tr>`;
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--dim);padding:30px">Nessuna fattura passiva — carica il file Aruba XLS o usa AI Controllo Costi</td></tr>';
   document.getElementById('eco-passive-footer').textContent='€ '+totPassive.toFixed(2);
+  document.getElementById('eco-passive-badge').textContent=`${passive.length} fatture`;
+  document.getElementById('eco-passive-sum').textContent='€ '+totPassive.toFixed(2);
 
   // === Tabella ALTRI COSTI (manuali) ===
   const tbAl=document.getElementById('eco-altri-table');
@@ -3163,9 +3241,13 @@ async function loadEconomia(){
     <td><button class="btn-action" onclick="deleteCosto('${c.id}')" title="Elimina" style="color:var(--red);border-color:rgba(255,69,58,0.3);font-size:.75em;padding:5px 8px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button></td>
   </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--dim);padding:30px">Nessun altro costo manuale — clicca "+ Aggiungi costo"</td></tr>';
   document.getElementById('eco-altri-footer').textContent='€ '+totAltri.toFixed(2);
+  document.getElementById('eco-altri-badge').textContent=`${altri.length} voci`;
+  document.getElementById('eco-altri-sum').textContent='€ '+totAltri.toFixed(2);
 
   // === Grafici Chart.js ===
   renderEcoCharts(mese);
+  // === Riquadro mesi già caricati ===
+  loadMesiCaricati();
 }
 
 /* === GRAFICI ECONOMIA (Chart.js) === */
@@ -3850,18 +3932,21 @@ function _arubaParseNum(v){
   const n=parseFloat(cleaned);
   return isNaN(n)?0:n;
 }
+// Chiave dedup condivisa da TUTTE le vie (scraper/manuale/AI): fornitore-o-cliente | numero | data ISO.
+// Normalizza lowercase+trim per evitare doppioni dovuti a differenze di formato tra le sorgenti.
+function _dedupKey(a,b,c){return `${(a||'').toString().toLowerCase().trim()}|${(b||'').toString().toLowerCase().trim()}|${c||''}`;}
 
 async function aprirArubaPreview(){
   const parsed=window._arubaParsedRows;if(!parsed||!parsed.length)return;
   const meseSel=document.getElementById('eco-mese').value; // YYYY-MM del mese aperto in Economia
   // Carica costi gia presenti per dedup
   const{data:existing}=await sb.from('costi_mensili').select('num_fattura,fornitore,data_fattura').not('num_fattura','is',null);
-  const existSet=new Set((existing||[]).map(c=>`${(c.fornitore||'').toLowerCase().trim()}|${(c.num_fattura||'').trim()}|${c.data_fattura||''}`));
+  const existSet=new Set((existing||[]).map(c=>_dedupKey(c.fornitore,c.num_fattura,c.data_fattura)));
 
   // Annoto se appartengono al mese e se sono duplicati
   const enriched=parsed.map(r=>{
     const inMese=meseSel?(r.mese===meseSel):true;
-    const dupKey=`${r.fornitore.toLowerCase()}|${r.numero}|${r.dataDocStr||''}`;
+    const dupKey=_dedupKey(r.fornitore,r.numero,r.dataDocStr);
     const isDup=existSet.has(dupKey);
     return{...r,inMese,isDup,sel:inMese&&!isDup};
   });
@@ -4013,10 +4098,10 @@ async function aprirArubaAttivePreview(){
   const meseSel=document.getElementById('eco-mese').value;
   // Dedup contro fatture_attive esistenti
   const{data:existing}=await sb.from('fatture_attive').select('numero,cliente,data_emissione');
-  const existSet=new Set((existing||[]).map(c=>`${(c.cliente||'').toLowerCase().trim()}|${(c.numero||'').trim()}|${c.data_emissione||''}`));
+  const existSet=new Set((existing||[]).map(c=>_dedupKey(c.cliente,c.numero,c.data_emissione)));
   const enriched=parsed.map(r=>{
     const inMese=meseSel?(r.mese===meseSel):true;
-    const dupKey=`${r.cliente.toLowerCase()}|${r.numero}|${r.dataDocStr||''}`;
+    const dupKey=_dedupKey(r.cliente,r.numero,r.dataDocStr);
     const isDup=existSet.has(dupKey);
     return{...r,inMese,isDup,sel:inMese&&!isDup};
   });
@@ -6514,25 +6599,38 @@ ${bundleText}`
   }
 }
 
-function mostraPreviewAI(mese){
+async function mostraPreviewAI(mese){
+  // CONTROLLO PREVENTIVO ANTI-DOPPIONE: marca le fatture gia presenti in costi_mensili (qualsiasi fonte)
+  try{
+    const{data:existing}=await sb.from('costi_mensili').select('fornitore,num_fattura,data_fattura').not('num_fattura','is',null)
+    const existSet=new Set((existing||[]).map(c=>_dedupKey(c.fornitore,c.num_fattura,c.data_fattura)))
+    aiCostiResults.forEach(f=>{
+      const dk=_dedupKey(f.fornitore,f.num_fattura,f.data?parseDataIT(f.data):'')
+      f.isDup=!!(f.num_fattura&&f.fornitore&&existSet.has(dk))
+      if(f.isDup)f.selected=false  // di default NON re-importare i doppioni
+    })
+  }catch(e){/* se il check fallisce, prosegui senza marcatura */}
   const totMatch=aiCostiResults.filter(f=>f.matchBanca).length
+  const dupN=aiCostiResults.filter(f=>f.isDup).length
   const totFatture=aiCostiResults.reduce((s,f)=>s+(+f.importo_totale||0),0)
-  const subtitle=`Mese: ${mese} · ${aiCostiResults.length} fatture estratte · Totale: € ${totFatture.toFixed(2)} · ${totMatch} con riscontro banca`
+  const subtitle=`Mese: ${mese} · ${aiCostiResults.length} fatture estratte · Totale: € ${totFatture.toFixed(2)} · ${totMatch} con riscontro banca${dupN?` · ${dupN} già presenti (escluse)`:''}`
   document.getElementById('ai-preview-subtitle').textContent=subtitle
   document.getElementById('ai-fatture-count').textContent=`(${aiCostiResults.length})`
 
   // Tabella fatture — match banca è solo informativo, niente sfondo giallo
   const tbody=document.getElementById('ai-fatture-table')
-  tbody.innerHTML=aiCostiResults.map((f,i)=>`
-    <tr style="border-bottom:1px solid #f3f4f6">
-      <td style="padding:8px 10px"><input type="checkbox" ${f.selected?'checked':''} onchange="toggleFattura(${i},this.checked)"></td>
+  tbody.innerHTML=aiCostiResults.map((f,i)=>{
+    const tagDup=f.isDup?'<span style="font-size:.7em;color:#991b1b;background:rgba(220,38,38,0.1);padding:2px 6px;border-radius:4px;margin-left:6px">già presente</span>':''
+    return `
+    <tr style="border-bottom:1px solid #f3f4f6;${f.isDup?'opacity:0.5;background:rgba(220,38,38,0.06)':''}">
+      <td style="padding:8px 10px"><input type="checkbox" ${f.selected?'checked':''} ${f.isDup?'disabled':''} onchange="toggleFattura(${i},this.checked)"></td>
       <td style="padding:8px 10px;font-size:.78em;color:#7c3aed;font-weight:600">${f.categoria||'—'}</td>
-      <td style="padding:8px 10px;font-weight:600">${f.fornitore||'—'}</td>
+      <td style="padding:8px 10px;font-weight:600">${f.fornitore||'—'}${tagDup}</td>
       <td style="padding:8px 10px;color:#6b7280;font-size:.8em">${f.num_fattura||'—'}</td>
       <td style="padding:8px 10px;color:#6b7280;font-size:.8em">${f.data||'—'}</td>
       <td style="padding:8px 10px;text-align:right;font-weight:700;color:#dc2626">€ ${f.importo_totale?parseFloat(f.importo_totale).toFixed(2):'—'}</td>
       <td style="padding:8px 10px;text-align:center;opacity:.7" title="${f.matchBanca?'Riscontro trovato in estratto conto':'Nessun riscontro in estratto conto (solo informativo)'}">${f.matchBanca?'✅':'➖'}</td>
-    </tr>`).join('')
+    </tr>`}).join('')
 
   // Movimenti senza fattura — sezione informativa, non selezionabile per default
   const movBox=document.getElementById('ai-movimenti-box')
@@ -6583,8 +6681,8 @@ async function salvaAIFatture(){
   const mese=document.getElementById('eco-mese').value
   const rows=[]
 
-  // Fatture selezionate
-  for(const f of aiCostiResults.filter(x=>x.selected)){
+  // Fatture selezionate (esclusi i doppioni gia presenti — cintura+bretelle)
+  for(const f of aiCostiResults.filter(x=>x.selected&&!x.isDup)){
     rows.push({
       voce:f.fornitore||(f.categoria+' — '+f.file),
       importo:+f.importo_totale||0,
