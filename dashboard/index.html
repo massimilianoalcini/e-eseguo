@@ -1106,6 +1106,41 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <canvas id="eco-chart-tec-carb" style="max-height:280px"></canvas>
         </div>
       </div>
+
+      <!-- ★★ COMPOSITORE GRAFICI -->
+      <div style="background:linear-gradient(135deg,rgba(99,102,241,0.06),rgba(13,148,136,0.04));border:1.5px solid rgba(99,102,241,0.25);border-radius:14px;padding:18px;margin-top:24px">
+        <div style="display:flex;align-items:center;gap:8px;font-size:.95em;font-weight:800;color:#4f46e5;margin-bottom:4px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect width="4" height="7" x="7" y="10"/><rect width="4" height="12" x="15" y="5"/></svg>
+          Componi il tuo grafico
+        </div>
+        <div style="font-size:.8em;color:#6b7280;margin-bottom:14px">Scegli cosa misurare, come raggrupparlo e il tipo di grafico, poi premi Genera.</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <select id="cg-metric" style="padding:8px 12px;border:1.5px solid rgba(99,102,241,0.3);border-radius:8px;font-size:.85em;background:#fff">
+            <option value="entrate">Entrate</option>
+            <option value="passive">Fatture Passive</option>
+            <option value="produzione">Produzione</option>
+            <option value="margine">Margine</option>
+            <option value="soldo" selected>Spese Soldo</option>
+            <option value="carburante">Carburante</option>
+          </select>
+          <span style="color:var(--dim);font-size:.8em">raggruppate</span>
+          <select id="cg-dim" style="padding:8px 12px;border:1.5px solid rgba(99,102,241,0.3);border-radius:8px;font-size:.85em;background:#fff">
+            <option value="mese6">per mese (ultimi 6)</option>
+            <option value="mese12">per mese (ultimi 12)</option>
+            <option value="categoria">per categoria (Soldo)</option>
+            <option value="tecnico" selected>per tecnico (Soldo)</option>
+            <option value="cliente">per cliente (Entrate)</option>
+          </select>
+          <select id="cg-type" style="padding:8px 12px;border:1.5px solid rgba(99,102,241,0.3);border-radius:8px;font-size:.85em;background:#fff">
+            <option value="bar" selected>Colonne</option>
+            <option value="line">Linea</option>
+            <option value="doughnut">Torta</option>
+          </select>
+          <button onclick="generaGraficoCustom()" style="padding:8px 20px;background:linear-gradient(135deg,#6366F1,#4f46e5);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.85em">Genera</button>
+          <span id="cg-msg" style="font-size:.8em;color:var(--dim)"></span>
+        </div>
+        <div style="margin-top:16px;background:#fff;border-radius:10px;padding:14px"><canvas id="eco-chart-custom" style="max-height:300px"></canvas></div>
+      </div>
     </div>
 
     <!-- Modal Aggiungi Costo -->
@@ -3344,9 +3379,9 @@ async function renderEcoCharts(meseCorrente){
         labels:months.map(m=>m.label),
         datasets:[
           {label:'Entrate',data:datasets.ent,borderColor:'#16A34A',backgroundColor:'rgba(22,163,74,0.1)',tension:.3,fill:false},
-          {label:'Produzione',data:datasets.prod,borderColor:'#0D9488',backgroundColor:'rgba(13,148,136,0.1)',tension:.3,fill:false},
+          {label:'Produzione',data:datasets.prod,borderColor:'#2563EB',backgroundColor:'rgba(37,99,235,0.1)',tension:.3,fill:false},
           {label:'Passive',data:datasets.pas,borderColor:'#DC2626',backgroundColor:'rgba(220,38,38,0.1)',tension:.3,fill:false},
-          {label:'Margine',data:datasets.mar,borderColor:'#6366F1',backgroundColor:'rgba(99,102,241,0.15)',borderDash:[5,3],tension:.3,fill:false}
+          {label:'Margine',data:datasets.mar,borderColor:'#7C3AED',backgroundColor:'rgba(124,58,237,0.15)',borderDash:[5,3],tension:.3,fill:false}
         ]
       },
       options:{
@@ -3503,6 +3538,71 @@ async function renderEcoCharts(meseCorrente){
       data:{labels:tecC.map(([p])=>p),datasets:[{label:'Carburante',data:tecC.map(([,v])=>v),backgroundColor:'#0D9488'}]},
       options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:(c)=>` € ${c.parsed.x.toFixed(2)}`}}},scales:{x:{beginAtZero:true,ticks:{callback:v=>'€'+v}},y:{ticks:{font:{size:11}}}}}});
   }
+}
+
+/* === COMPOSITORE GRAFICI (coordinatore) === */
+let _ecoChartCustom=null;
+const _CG_LABEL={entrate:'Entrate',passive:'Fatture Passive',produzione:'Produzione',margine:'Margine',soldo:'Spese Soldo',carburante:'Carburante'};
+async function generaGraficoCustom(){
+  const metric=document.getElementById('cg-metric').value;
+  const dim=document.getElementById('cg-dim').value;
+  const type=document.getElementById('cg-type').value;
+  const msg=document.getElementById('cg-msg');
+  msg.style.color='var(--dim)'; msg.textContent='Genero…';
+  const nM = dim==='mese12'?12:6;
+  const now=new Date(); const months=[];
+  for(let i=11;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');months.push({ym,label:formatMese(ym)});}
+  const start=months[0].ym+'-01';
+  const dEnd=new Date(now.getFullYear(),now.getMonth()+1,0); const end=dEnd.getFullYear()+'-'+String(dEnd.getMonth()+1).padStart(2,'0')+'-'+String(dEnd.getDate()).padStart(2,'0');
+  let att=[],cos=[];
+  try{
+    const[a,c]=await Promise.all([
+      sb.from('fatture_attive').select('data_emissione,imponibile,cliente').gte('data_emissione',start).lte('data_emissione',end),
+      sb.from('costi_mensili').select('mese,importo,fonte,categoria,persona').gte('mese',start).lte('mese',end)
+    ]);
+    att=a.data||[]; cos=c.data||[];
+  }catch(e){ msg.style.color='#991b1b'; msg.textContent='Errore caricamento dati'; return; }
+  const sum=arr=>arr.reduce((s,x)=>s+(+x||0),0);
+  const monthVal=(ym)=>{
+    const ent=sum(att.filter(f=>(f.data_emissione||'').startsWith(ym)).map(f=>+f.imponibile||0));
+    const pas=sum(cos.filter(c=>(c.fonte==='aruba'||c.fonte==='ai')&&(c.mese||'').startsWith(ym)).map(c=>+c.importo||0));
+    const sol=sum(cos.filter(c=>c.fonte==='soldo'&&(c.mese||'').startsWith(ym)).map(c=>+c.importo||0));
+    const car=sum(cos.filter(c=>c.fonte==='soldo'&&c.categoria==='Carburante'&&(c.mese||'').startsWith(ym)).map(c=>+c.importo||0));
+    const pro=sum((allInterventi||[]).filter(i=>i.stato==='validato'&&+i.importo>0&&(i.created_at||'').startsWith(ym)).map(i=>+i.importo||0));
+    return({entrate:ent,passive:pas,soldo:sol,carburante:car,produzione:pro,margine:ent-pas})[metric];
+  };
+  let labels=[],data=[],title='';
+  if(dim==='mese6'||dim==='mese12'){
+    const mm=months.slice(12-nM);
+    labels=mm.map(m=>m.label); data=mm.map(m=>monthVal(m.ym)); title=_CG_LABEL[metric]+' · ultimi '+nM+' mesi';
+  }else if(dim==='categoria'){
+    if(metric!=='soldo'){ msg.style.color='#92400e'; msg.textContent='"Per categoria" vale solo per Spese Soldo.'; return; }
+    const g={}; cos.filter(c=>c.fonte==='soldo').forEach(c=>{const k=c.categoria||'Altro';g[k]=(g[k]||0)+(+c.importo||0);});
+    const e=Object.entries(g).sort((a,b)=>b[1]-a[1]); labels=e.map(x=>x[0]); data=e.map(x=>x[1]); title='Spese Soldo per categoria · 12 mesi';
+  }else if(dim==='tecnico'){
+    if(metric!=='soldo'&&metric!=='carburante'){ msg.style.color='#92400e'; msg.textContent='"Per tecnico" vale per Spese Soldo o Carburante.'; return; }
+    const g={}; cos.filter(c=>c.fonte==='soldo'&&(metric==='soldo'||c.categoria==='Carburante')).forEach(c=>{const k=c.persona||'(n.d.)';g[k]=(g[k]||0)+(+c.importo||0);});
+    const e=Object.entries(g).sort((a,b)=>b[1]-a[1]); labels=e.map(x=>x[0]); data=e.map(x=>x[1]); title=_CG_LABEL[metric]+' per tecnico · 12 mesi';
+  }else if(dim==='cliente'){
+    if(metric!=='entrate'){ msg.style.color='#92400e'; msg.textContent='"Per cliente" vale solo per Entrate.'; return; }
+    const g={}; att.forEach(f=>{const k=(f.cliente||'(n.d.)').trim();g[k]=(g[k]||0)+(+f.imponibile||0);});
+    const e=Object.entries(g).sort((a,b)=>b[1]-a[1]).slice(0,10); labels=e.map(x=>x[0]); data=e.map(x=>x[1]); title='Entrate per cliente (top 10) · 12 mesi';
+  }
+  msg.textContent = (!data.length||data.every(v=>!v)) ? 'Nessun dato per questa combinazione.' : '';
+  const PAL=['#2563EB','#16A34A','#DC2626','#F59E0B','#7C3AED','#0D9488','#DB2777','#0891B2','#65A30D','#EA580C'];
+  const isPie=type==='doughnut'; const isLine=type==='line';
+  if(_ecoChartCustom)_ecoChartCustom.destroy();
+  _ecoChartCustom=new Chart(document.getElementById('eco-chart-custom'),{
+    type:type,
+    data:{labels:labels,datasets:[{label:_CG_LABEL[metric],data:data,
+      backgroundColor:isLine?'rgba(37,99,235,0.12)':labels.map((_,i)=>PAL[i%PAL.length]),
+      borderColor:isLine?'#2563EB':'#fff', borderWidth:isPie?2:(isLine?2:0), fill:!isLine&&!isPie?undefined:false, tension:.3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:isPie,position:'bottom',labels:{boxWidth:12,padding:8,font:{size:11}}},
+        title:{display:!!title,text:title,font:{size:12}},
+        tooltip:{callbacks:{label:(c)=>' € '+(+(isPie?c.parsed:c.parsed.y)).toFixed(2)}}},
+      scales:isPie?{}:{y:{beginAtZero:true,ticks:{callback:v=>'€'+v}},x:{ticks:{font:{size:11}}}}}
+  });
 }
 
 /* === FATTURE ATTIVE — modal manuale === */
