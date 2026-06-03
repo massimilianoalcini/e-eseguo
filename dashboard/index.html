@@ -1142,6 +1142,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
             <option value="doughnut">Torta</option>
           </select>
           <button onclick="generaGraficoCustom()" style="padding:8px 20px;background:linear-gradient(135deg,#6366F1,#4f46e5);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.85em">Genera</button>
+          <button onclick="esportaGraficoPDF()" style="padding:8px 16px;background:#fff;color:#4f46e5;border:1.5px solid #6366F1;border-radius:8px;font-weight:700;cursor:pointer;font-size:.85em;display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>Esporta PDF</button>
           <span id="cg-msg" style="font-size:.8em;color:var(--dim)"></span>
         </div>
         <div style="margin-top:16px;background:#fff;border-radius:10px;padding:14px"><canvas id="eco-chart-custom" style="max-height:300px"></canvas></div>
@@ -3634,6 +3635,29 @@ async function generaGraficoCustom(){
         tooltip:{callbacks:{label:(c)=>{const v=isPie?c.parsed:c.parsed.y;return isCount?(' '+v+' interventi'):(' € '+(+v).toFixed(2));}}}},
       scales:isPie?{}:{y:{beginAtZero:true,ticks:{callback:v=>isCount?v:'€'+v}},x:{ticks:{font:{size:11}}}}}
   });
+}
+
+function esportaGraficoPDF(){
+  const msg=document.getElementById('cg-msg');
+  if(!_ecoChartCustom){ msg.style.color='#92400e'; msg.textContent='Genera prima un grafico, poi esporta.'; return; }
+  const jsPDFConstr=window.jspdf?.jsPDF;
+  if(!jsPDFConstr){ alert('Libreria PDF non caricata. Ricarica la pagina (Ctrl+Shift+R).'); return; }
+  const titolo=(((_ecoChartCustom.options||{}).plugins||{}).title||{}).text||'Grafico Economia';
+  let img; try{ img=_ecoChartCustom.toBase64Image('image/png',1); }catch(e){ msg.style.color='#991b1b'; msg.textContent='Impossibile catturare il grafico.'; return; }
+  const doc=new jsPDFConstr({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight();
+  doc.setFillColor(13,148,136); doc.rect(0,0,W,18,'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(14);
+  doc.text('E.ESEGUO — Gestione Economia', 12, 12);
+  doc.setTextColor(31,41,55); doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.text(titolo, 12, 30);
+  const oggi=new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(120,120,120); doc.text('Generato il '+oggi, 12, 36);
+  const cw=_ecoChartCustom.width||800, ch=_ecoChartCustom.height||400;
+  const maxW=W-24, maxH=H-52; let iw=maxW, ih=iw*ch/cw; if(ih>maxH){ ih=maxH; iw=ih*cw/ch; }
+  doc.addImage(img,'PNG',12,42,iw,ih);
+  doc.setFontSize(8); doc.setTextColor(150,150,150); doc.text('E.ESEGUO · marchio registrato N. 302024000141960', 12, H-8);
+  doc.save('grafico_'+titolo.replace(/[^a-z0-9]+/gi,'_').slice(0,40)+'.pdf');
+  msg.style.color='#3F6612'; msg.textContent='✓ PDF esportato.';
 }
 
 /* === FATTURE ATTIVE — modal manuale === */
