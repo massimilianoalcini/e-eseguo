@@ -1096,6 +1096,16 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <canvas id="eco-chart-soldo-cat" style="max-height:280px"></canvas>
         </div>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+        <div style="background:#fff;border:1px solid var(--card-border);border-radius:12px;padding:18px;box-shadow:var(--card-shadow)">
+          <div style="font-size:.85em;font-weight:700;color:var(--mid);margin-bottom:10px">Spese carta per tecnico (mese)</div>
+          <canvas id="eco-chart-tec-mese" style="max-height:280px"></canvas>
+        </div>
+        <div style="background:#fff;border:1px solid var(--card-border);border-radius:12px;padding:18px;box-shadow:var(--card-shadow)">
+          <div style="font-size:.85em;font-weight:700;color:var(--mid);margin-bottom:10px">Carburante per tecnico <span style="font-weight:400;color:var(--dim);font-size:.85em">— ultimi 6 mesi</span></div>
+          <canvas id="eco-chart-tec-carb" style="max-height:280px"></canvas>
+        </div>
+      </div>
     </div>
 
     <!-- Modal Aggiungi Costo -->
@@ -3289,7 +3299,7 @@ async function loadEconomia(){
 }
 
 /* === GRAFICI ECONOMIA (Chart.js) === */
-let _ecoChartTrend=null, _ecoChartClienti=null, _ecoChartBarCmp=null, _ecoChartBarMar=null, _ecoChartSoldoMese=null, _ecoChartSoldoCat=null;
+let _ecoChartTrend=null, _ecoChartClienti=null, _ecoChartBarCmp=null, _ecoChartBarMar=null, _ecoChartSoldoMese=null, _ecoChartSoldoCat=null, _ecoChartTecMese=null, _ecoChartTecCarb=null;
 
 async function renderEcoCharts(meseCorrente){
   if(typeof Chart==='undefined')return;
@@ -3307,7 +3317,7 @@ async function renderEcoCharts(meseCorrente){
   // Carico in parallelo: tutte le fatture attive del range + tutti i costi + intervalli interventi
   const[attRes,costiRes]=await Promise.all([
     sb.from('fatture_attive').select('data_emissione,imponibile,cliente').gte('data_emissione',periodoStart).lte('data_emissione',periodoEnd),
-    sb.from('costi_mensili').select('mese,importo,fonte,categoria').gte('mese',periodoStart).lte('mese',periodoEnd)
+    sb.from('costi_mensili').select('mese,importo,fonte,categoria,persona').gte('mese',periodoStart).lte('mese',periodoEnd)
   ]);
   const attTutte=attRes.data||[];
   const costiTutti=costiRes.data||[];
@@ -3467,6 +3477,31 @@ async function renderEcoCharts(meseCorrente){
             tooltip:{callbacks:{label:(ctx)=>{const tot=ctx.dataset.data.reduce((s,v)=>s+v,0);const p=tot>0?(ctx.parsed/tot*100).toFixed(1):0;return ` ${ctx.label}: € ${ctx.parsed.toFixed(2)} (${p}%)`;}}}}}
       });
     }
+  }
+
+  // === Grafici per TECNICO (Soldo) ===
+  const _palT=['#0D9488','#6366F1','#E8762D','#16A34A','#DC2626','#A855F7','#0891B2','#EAB308'];
+  // Spese carta per tecnico (mese corrente)
+  const perTecM={}; soldoCorr.forEach(c=>{const k=c.persona||'(n.d.)';perTecM[k]=(perTecM[k]||0)+(+c.importo||0);});
+  const tecM=Object.entries(perTecM).sort((a,b)=>b[1]-a[1]);
+  const ctxTM=document.getElementById('eco-chart-tec-mese');
+  if(ctxTM){
+    if(_ecoChartTecMese)_ecoChartTecMese.destroy();
+    if(!tecM.length){ const x=ctxTM.getContext('2d');x.clearRect(0,0,ctxTM.width,ctxTM.height);x.font='13px sans-serif';x.fillStyle='#A8A29E';x.textAlign='center';x.fillText('Nessuna spesa Soldo nel mese',ctxTM.width/2,ctxTM.height/2); }
+    else _ecoChartTecMese=new Chart(ctxTM,{type:'bar',
+      data:{labels:tecM.map(([p])=>p),datasets:[{label:'Spese',data:tecM.map(([,v])=>v),backgroundColor:tecM.map((_,i)=>_palT[i%_palT.length])}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:(c)=>` € ${c.parsed.x.toFixed(2)}`}}},scales:{x:{beginAtZero:true,ticks:{callback:v=>'€'+v}},y:{ticks:{font:{size:11}}}}}});
+  }
+  // Carburante per tecnico (periodo 6 mesi)
+  const perTecC={}; costiTutti.filter(c=>c.fonte==='soldo'&&c.categoria==='Carburante').forEach(c=>{const k=c.persona||'(n.d.)';perTecC[k]=(perTecC[k]||0)+(+c.importo||0);});
+  const tecC=Object.entries(perTecC).sort((a,b)=>b[1]-a[1]);
+  const ctxTC=document.getElementById('eco-chart-tec-carb');
+  if(ctxTC){
+    if(_ecoChartTecCarb)_ecoChartTecCarb.destroy();
+    if(!tecC.length){ const x=ctxTC.getContext('2d');x.clearRect(0,0,ctxTC.width,ctxTC.height);x.font='13px sans-serif';x.fillStyle='#A8A29E';x.textAlign='center';x.fillText('Nessun carburante nel periodo',ctxTC.width/2,ctxTC.height/2); }
+    else _ecoChartTecCarb=new Chart(ctxTC,{type:'bar',
+      data:{labels:tecC.map(([p])=>p),datasets:[{label:'Carburante',data:tecC.map(([,v])=>v),backgroundColor:'#0D9488'}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:(c)=>` € ${c.parsed.x.toFixed(2)}`}}},scales:{x:{beginAtZero:true,ticks:{callback:v=>'€'+v}},y:{ticks:{font:{size:11}}}}}});
   }
 }
 
@@ -4012,7 +4047,7 @@ async function onSoldoCSVSelected(input){
       const m=_soldoMese(g(c,'Data Operazione')); if(!m) continue;
       const imp=Math.abs(_soldoNum(g(c,'Importo netto'))||_soldoNum(g(c,'Importo'))); if(imp<=0) continue;
       const cat2=g(c,'Categoria II'); const pers=_titolo(g(c,'Utente')||g(c,'Etichetta carta'));
-      rows.push({ rif:g(c,'ID transazione'), mese:m+'-01', data:m+'-01', categoria:_SOLDO_CAT[cat2]||'Altro',
+      rows.push({ rif:g(c,'ID transazione'), mese:m+'-01', data:m+'-01', categoria:_SOLDO_CAT[cat2]||'Altro', persona:pers,
         voce:(g(c,'Descrizione')||cat2||'Spesa Soldo')+(pers?' — '+pers:''),
         importo:Math.round(imp*100)/100, note:'Soldo · '+(g(c,'Etichetta carta')||g(c,'Utente')||'')+(cat2?' · '+cat2:'') });
     }
@@ -4032,7 +4067,7 @@ async function onSoldoCSVSelected(input){
 async function confermaImportSoldo(){
   const rows=window._soldoRows||[]; if(!rows.length) return;
   const btn=document.getElementById('soldo-import-btn'); if(btn){ btn.disabled=true; btn.textContent='Importazione...'; }
-  const payload=rows.map(r=>({mese:r.mese,voce:r.voce,importo:r.importo,note:r.note,categoria:r.categoria,data_fattura:r.data,fonte:'soldo',rif_esterno:r.rif,inserito_da:currentUser.id,match_banca:false}));
+  const payload=rows.map(r=>({mese:r.mese,voce:r.voce,importo:r.importo,note:r.note,categoria:r.categoria,persona:r.persona,data_fattura:r.data,fonte:'soldo',rif_esterno:r.rif,inserito_da:currentUser.id,match_banca:false}));
   const{error}=await sb.from('costi_mensili').insert(payload);
   const status=document.getElementById('soldo-status');
   if(error){ status.style.color='#991b1b'; status.textContent='Errore importazione: '+error.message; return; }
