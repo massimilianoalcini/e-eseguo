@@ -1130,6 +1130,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
             <option value="mese6" selected>per mese (ultimi 6)</option>
             <option value="mese12">per mese (ultimi 12)</option>
             <option value="tecnico">per tecnico</option>
+            <option value="mezzo">per mezzo (Soldo)</option>
             <option value="cliente">per cliente</option>
             <option value="lavorazione">per lavorazione</option>
             <option value="fornitore">per fornitore</option>
@@ -3570,7 +3571,7 @@ async function generaGraficoCustom(){
   try{
     const[a,c]=await Promise.all([
       sb.from('fatture_attive').select('data_emissione,imponibile,cliente').gte('data_emissione',start).lte('data_emissione',end),
-      sb.from('costi_mensili').select('mese,importo,fonte,categoria,persona,fornitore').gte('mese',start).lte('mese',end)
+      sb.from('costi_mensili').select('mese,importo,fonte,categoria,persona,fornitore,carta').gte('mese',start).lte('mese',end)
     ]);
     att=a.data||[]; cos=c.data||[];
   }catch(e){ msg.style.color='#991b1b'; msg.textContent='Errore caricamento dati'; return; }
@@ -3603,6 +3604,10 @@ async function generaGraficoCustom(){
     else if(metric==='interventi') e=grp(intv,i=>tecNome(i.tecnico_id),()=>1);
     else { msg.style.color='#92400e'; msg.textContent='"Per tecnico" vale per Produzione, N. Interventi, Spese Soldo o Carburante.'; return; }
     labels=e.map(x=>x[0]); data=e.map(x=>x[1]); title=_CG_LABEL[metric]+' per tecnico · 12 mesi';
+  }else if(dim==='mezzo'){
+    if(metric!=='soldo'&&metric!=='carburante'){ msg.style.color='#92400e'; msg.textContent='"Per mezzo" vale per Spese carta o Carburante.'; return; }
+    const e=grp(cos.filter(c=>c.fonte==='soldo'&&(metric==='soldo'||c.categoria==='Carburante')),c=>_mezzoLabel(c.carta),c=>+c.importo||0);
+    labels=e.map(x=>x[0]); data=e.map(x=>x[1]); title=_CG_LABEL[metric]+' per mezzo · 12 mesi';
   }else if(dim==='cliente'){
     let e;
     if(metric==='entrate') e=top(grp(att,f=>f.cliente,f=>+f.imponibile||0),10);
@@ -4224,6 +4229,8 @@ function _parseCSV(text){
   return rows;
 }
 const _SOLDO_CAT={'Stazioni di servizio':'Carburante','Pedaggio stradale':'Pedaggi','Parcheggi':'Parcheggi','Hotels':'Trasferte'};
+const _SOLDO_MEZZI={'4976':{t:'FA913TX',m:'VW Caddy',a:'Podestà Enzo'},'6482':{t:'HC092SL',m:'Dacia Duster',a:'Tabarrini Francesco'},'6285':{t:'GZ745WP',m:'Ford Courier',a:'Milano Paolo'},'6150':{t:'FM740KX',m:'Fiat Panda',a:'Serafini Christian'},'8827':{t:null,m:'Ufficio (acquisti online)',a:'Open Tech'}};
+function _mezzoLabel(carta){const k=(carta||'').replace(/\D/g,'').slice(-4);const x=_SOLDO_MEZZI[k];return x?(x.t?x.t+' · '+x.m:x.m):(k?'Carta '+k:'(n.d.)');}
 function _soldoNum(s){ const n=parseFloat((s||'').toString().trim().replace(/[^\d.\-]/g,'')); return isNaN(n)?0:n; }
 function _soldoMese(s){ s=(s||'').trim(); return s.length>=10?(s.slice(6,10)+'-'+s.slice(3,5)):''; } // gg/mm/aaaa -> aaaa-mm
 function _titolo(s){ return (s||'').toLowerCase().replace(/\b[a-zà-ù]/g,m=>m.toUpperCase()); }
@@ -4247,8 +4254,8 @@ async function onSoldoCSVSelected(input){
       if(g(c,'Tipo')!=='Pagamento' || g(c,'Stato transazione')!=='Contabilizzata') continue;
       const m=_soldoMese(g(c,'Data Operazione')); if(!m) continue;
       const imp=Math.abs(_soldoNum(g(c,'Importo netto'))||_soldoNum(g(c,'Importo'))); if(imp<=0) continue;
-      const cat2=g(c,'Categoria II'); const pers=_titolo(g(c,'Utente')||g(c,'Etichetta carta'));
-      rows.push({ rif:g(c,'ID transazione'), mese:m+'-01', data:m+'-01', categoria:_SOLDO_CAT[cat2]||'Altro', persona:pers,
+      const cat2=g(c,'Categoria II'); const pers=_titolo(g(c,'Utente')||g(c,'Etichetta carta')); const cartaN=(g(c,'Carta')||'').replace(/\D/g,'').slice(-4);
+      rows.push({ rif:g(c,'ID transazione'), mese:m+'-01', data:m+'-01', categoria:_SOLDO_CAT[cat2]||'Altro', persona:pers, carta:cartaN,
         voce:(g(c,'Descrizione')||cat2||'Spesa Soldo')+(pers?' — '+pers:''),
         importo:Math.round(imp*100)/100, note:'Soldo · '+(g(c,'Etichetta carta')||g(c,'Utente')||'')+(cat2?' · '+cat2:'') });
     }
@@ -4268,7 +4275,7 @@ async function onSoldoCSVSelected(input){
 async function confermaImportSoldo(){
   const rows=window._soldoRows||[]; if(!rows.length) return;
   const btn=document.getElementById('soldo-import-btn'); if(btn){ btn.disabled=true; btn.textContent='Importazione...'; }
-  const payload=rows.map(r=>({mese:r.mese,voce:r.voce,importo:r.importo,note:r.note,categoria:r.categoria,persona:r.persona,data_fattura:r.data,fonte:'soldo',rif_esterno:r.rif,inserito_da:currentUser.id,match_banca:false}));
+  const payload=rows.map(r=>({mese:r.mese,voce:r.voce,importo:r.importo,note:r.note,categoria:r.categoria,persona:r.persona,carta:r.carta,data_fattura:r.data,fonte:'soldo',rif_esterno:r.rif,inserito_da:currentUser.id,match_banca:false}));
   const{error}=await sb.from('costi_mensili').insert(payload);
   const status=document.getElementById('soldo-status');
   if(error){ status.style.color='#991b1b'; status.textContent='Errore importazione: '+error.message; if(btn){btn.disabled=false;btn.textContent='Importa '+rows.length+' spese';} return; }
