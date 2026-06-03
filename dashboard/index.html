@@ -4070,7 +4070,7 @@ async function confermaImportSoldo(){
   const payload=rows.map(r=>({mese:r.mese,voce:r.voce,importo:r.importo,note:r.note,categoria:r.categoria,persona:r.persona,data_fattura:r.data,fonte:'soldo',rif_esterno:r.rif,inserito_da:currentUser.id,match_banca:false}));
   const{error}=await sb.from('costi_mensili').insert(payload);
   const status=document.getElementById('soldo-status');
-  if(error){ status.style.color='#991b1b'; status.textContent='Errore importazione: '+error.message; return; }
+  if(error){ status.style.color='#991b1b'; status.textContent='Errore importazione: '+error.message; if(btn){btn.disabled=false;btn.textContent='Importa '+rows.length+' spese';} return; }
   window._soldoRows=null;
   status.style.color='#3F6612'; status.innerHTML=`✓ Importate <b>${payload.length}</b> spese Soldo. Le trovi in <b>"Altri costi del mese"</b> (col badge Soldo), selezionando il mese.`;
   loadEconomia();
