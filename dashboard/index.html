@@ -1143,9 +1143,15 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           </select>
           <button onclick="generaGraficoCustom()" style="padding:8px 20px;background:linear-gradient(135deg,#6366F1,#4f46e5);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.85em">Genera</button>
           <button onclick="esportaGraficoPDF()" style="padding:8px 16px;background:#fff;color:#4f46e5;border:1.5px solid #6366F1;border-radius:8px;font-weight:700;cursor:pointer;font-size:.85em;display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>Esporta PDF</button>
+          <button onclick="aggiungiAlReport()" style="padding:8px 14px;background:#fff;color:#4f46e5;border:1.5px solid #6366F1;border-radius:8px;font-weight:700;cursor:pointer;font-size:.85em">➕ Al report</button>
           <span id="cg-msg" style="font-size:.8em;color:var(--dim)"></span>
         </div>
         <div style="margin-top:16px;background:#fff;border-radius:10px;padding:14px"><canvas id="eco-chart-custom" style="max-height:300px"></canvas></div>
+        <div id="cg-report-bar" style="display:none;margin-top:12px;align-items:center;gap:12px;flex-wrap:wrap;background:rgba(99,102,241,0.06);border:1px dashed rgba(99,102,241,0.3);border-radius:10px;padding:10px 14px">
+          <span style="font-size:.85em;font-weight:700;color:#4f46e5">🗂️ Report: <span id="cg-report-count">0</span> grafici</span>
+          <button onclick="esportaReportPDF()" style="padding:7px 16px;background:linear-gradient(135deg,#6366F1,#4f46e5);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.82em">📄 Esporta report PDF</button>
+          <button onclick="svuotaReport()" style="padding:7px 14px;background:#fff;color:#991b1b;border:1px solid rgba(220,38,38,0.3);border-radius:8px;font-weight:700;cursor:pointer;font-size:.82em">Svuota</button>
+        </div>
       </div>
     </div>
 
@@ -3658,6 +3664,46 @@ function esportaGraficoPDF(){
   doc.setFontSize(8); doc.setTextColor(150,150,150); doc.text('E.ESEGUO · marchio registrato N. 302024000141960', 12, H-8);
   doc.save('grafico_'+titolo.replace(/[^a-z0-9]+/gi,'_').slice(0,40)+'.pdf');
   msg.style.color='#3F6612'; msg.textContent='✓ PDF esportato.';
+}
+
+/* === REPORT PDF MULTIPLO === */
+window._reportCharts=[];
+function _aggiornaReportBar(){
+  const bar=document.getElementById('cg-report-bar'); const cnt=document.getElementById('cg-report-count');
+  if(!bar)return; cnt.textContent=window._reportCharts.length; bar.style.display=window._reportCharts.length?'flex':'none';
+}
+function aggiungiAlReport(){
+  const msg=document.getElementById('cg-msg');
+  if(!_ecoChartCustom){ msg.style.color='#92400e'; msg.textContent='Genera prima un grafico, poi aggiungilo.'; return; }
+  const titolo=(((_ecoChartCustom.options||{}).plugins||{}).title||{}).text||'Grafico';
+  try{ window._reportCharts.push({img:_ecoChartCustom.toBase64Image('image/png',1),title:titolo,w:_ecoChartCustom.width||800,h:_ecoChartCustom.height||400}); }
+  catch(e){ msg.style.color='#991b1b'; msg.textContent='Impossibile aggiungere il grafico.'; return; }
+  _aggiornaReportBar(); msg.style.color='#3F6612'; msg.textContent='✓ Aggiunto al report ('+window._reportCharts.length+' grafici).';
+}
+function svuotaReport(){ window._reportCharts=[]; _aggiornaReportBar(); const m=document.getElementById('cg-msg'); m.style.color='var(--dim)'; m.textContent='Report svuotato.'; }
+function esportaReportPDF(){
+  const list=window._reportCharts||[]; if(!list.length) return;
+  const jsPDFConstr=window.jspdf?.jsPDF; if(!jsPDFConstr){ alert('Libreria PDF non caricata. Ricarica la pagina (Ctrl+Shift+R).'); return; }
+  const doc=new jsPDFConstr({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight();
+  const oggi=new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
+  // Copertina
+  doc.setFillColor(13,148,136); doc.rect(0,0,W,H,'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(28); doc.text('E.ESEGUO', W/2, H/2-14,{align:'center'});
+  doc.setFontSize(17); doc.text('Report Economia', W/2, H/2-2,{align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(12); doc.text(list.length+' grafici · '+oggi, W/2, H/2+10,{align:'center'});
+  // Una pagina per grafico
+  list.forEach((c,idx)=>{
+    doc.addPage();
+    doc.setFillColor(13,148,136); doc.rect(0,0,W,16,'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text('E.ESEGUO — Report Economia', 12, 11);
+    doc.setTextColor(31,41,55); doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.text(c.title, 12, 28);
+    const maxW=W-24, maxH=H-46; let iw=maxW, ih=iw*c.h/c.w; if(ih>maxH){ ih=maxH; iw=ih*c.w/c.h; }
+    doc.addImage(c.img,'PNG',12,34,iw,ih);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(150,150,150); doc.text('Pag. '+(idx+1)+'/'+list.length+' · '+oggi, 12, H-8);
+  });
+  doc.save('report_economia_'+oggi.replace(/\//g,'-')+'.pdf');
+  const m=document.getElementById('cg-msg'); m.style.color='#3F6612'; m.textContent='✓ Report PDF esportato ('+list.length+' grafici).';
 }
 
 /* === FATTURE ATTIVE — modal manuale === */
