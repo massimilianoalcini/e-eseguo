@@ -984,6 +984,23 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         </div>
       </div>
 
+      <!-- ★★ BOX SOLDO: IMPORTA SPESE CARTA -->
+      <div style="background:linear-gradient(135deg,rgba(13,148,136,0.06),rgba(99,102,241,0.04));border:1.5px solid rgba(13,148,136,0.3);border-radius:14px;padding:18px;margin-top:20px">
+        <div style="display:flex;align-items:center;gap:10px;font-weight:700;color:#0D9488;font-size:.95em;margin-bottom:4px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+          Importa spese carta <strong>Soldo</strong>
+        </div>
+        <div style="font-size:.8em;color:#6b7280;margin-bottom:14px">Scarica da Soldo il report transazioni in <code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid rgba(13,148,136,0.3)">CSV</code> (Report → Transazioni → Scarica → CSV) e caricalo qui. Importa solo le spese reali (Pagamento contabilizzato), categorizzate, con dedup automatico su ID transazione.</div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <label style="flex:1;min-width:240px;display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fff;border:1.5px dashed rgba(13,148,136,0.5);border-radius:10px;cursor:pointer;font-size:.85em;color:#0D9488">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            <span id="lbl-soldo-csv">Seleziona CSV transazioni Soldo...</span>
+            <input type="file" id="input-soldo-csv" accept=".csv" style="display:none" onchange="onSoldoCSVSelected(this)">
+          </label>
+        </div>
+        <div id="soldo-status" style="margin-top:10px;font-size:.82em;color:#6b7280;line-height:1.5"></div>
+      </div>
+
       <!-- TABELLA FATTURE ATTIVE DEL MESE -->
       <div class="section-header eco-acc-head" onclick="toggleEcoAcc('attive')" style="font-size:1em;margin-top:24px;cursor:pointer;display:flex;align-items:center;gap:10px">
         <svg id="eco-attive-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .15s;flex:0 0 auto"><path d="m9 18 6-6-6-6"/></svg>
@@ -1028,7 +1045,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         <div class="section-header eco-acc-head" onclick="toggleEcoAcc('altri')" style="font-size:1em;margin:0;display:flex;align-items:center;gap:10px;cursor:pointer;flex:1">
           <svg id="eco-altri-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .15s;flex:0 0 auto"><path d="m9 18 6-6-6-6"/></svg>
           <span>Altri costi del mese</span>
-          <span style="font-size:.65em;font-weight:700;color:var(--accent);background:rgba(13,148,136,0.1);padding:2px 8px;border-radius:6px;letter-spacing:.4px">MANUALI</span>
+          <span style="font-size:.65em;font-weight:700;color:var(--accent);background:rgba(13,148,136,0.1);padding:2px 8px;border-radius:6px;letter-spacing:.4px">MANUALI / SOLDO</span>
           <span id="eco-altri-badge" style="font-size:.7em;font-weight:700;color:var(--dim);background:rgba(0,0,0,0.04);padding:2px 8px;border-radius:6px"></span>
           <span id="eco-altri-sum" style="margin-left:auto;font-weight:800;color:var(--mid);font-size:.95em"></span>
         </div>
@@ -3121,6 +3138,7 @@ function _fonteChip(fonte){
   if(fonte==='ai')return ' <span style="font-size:.62em;background:rgba(124,58,237,0.08);color:#7c3aed;padding:1px 5px;border-radius:4px;font-weight:700;vertical-align:middle">AI</span>';
   if(fonte==='aruba')return ' <span style="font-size:.62em;background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:4px;font-weight:700;vertical-align:middle">aruba</span>';
   if(fonte==='manuale')return ' <span style="font-size:.62em;background:rgba(13,148,136,0.08);color:var(--accent);padding:1px 5px;border-radius:4px;font-weight:700;vertical-align:middle">man</span>';
+  if(fonte==='soldo')return ' <span style="font-size:.62em;background:rgba(13,148,136,0.12);color:#0D9488;padding:1px 5px;border-radius:4px;font-weight:700;vertical-align:middle">Soldo</span>';
   return '';
 }
 function selEcoMese(ym){
@@ -3176,7 +3194,7 @@ async function loadEconomia(){
   const totProduzione=meseValidati.reduce((s,i)=>s+(+i.importo),0);
   // 3) PASSIVE = somma costi_mensili da fonte aruba/ai
   const passive=allCosti.filter(c=>c.fonte==='aruba'||c.fonte==='ai');
-  const altri=allCosti.filter(c=>c.fonte==='manuale'||!c.fonte);
+  const altri=allCosti.filter(c=>c.fonte==='manuale'||c.fonte==='soldo'||!c.fonte);
   const totPassive=passive.reduce((s,c)=>s+(+c.importo||0),0);
   const totAltri=altri.reduce((s,c)=>s+(+c.importo||0),0);
   // 4) MARGINE LORDO = Entrate − Passive
@@ -3245,7 +3263,7 @@ async function loadEconomia(){
   const tbAl=document.getElementById('eco-altri-table');
   tbAl.innerHTML=altri.length?altri.map(c=>`<tr>
     <td style="font-size:.78em;color:var(--accent);font-weight:600">${c.categoria||'—'}</td>
-    <td style="font-weight:600">${c.voce||'—'}</td>
+    <td style="font-weight:600">${c.voce||'—'}${_fonteChip(c.fonte)}</td>
     <td style="color:var(--dim);font-size:.82em">${c.note||''}</td>
     <td style="text-align:right;font-weight:700;color:var(--mid)">€ ${parseFloat(c.importo).toFixed(2)}</td>
     <td><button class="btn-action" onclick="deleteCosto('${c.id}')" title="Elimina" style="color:var(--red);border-color:rgba(255,69,58,0.3);font-size:.75em;padding:5px 8px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button></td>
@@ -3903,6 +3921,77 @@ function esportaProdPDF(){
 
 /* === IMPORTA REPORT ARUBA XLS (FattureRicevute) === */
 window._arubaParsedRows=null;
+
+/* === IMPORT SPESE SOLDO (CSV) === */
+function _parseCSV(text){
+  const rows=[]; let field='', row=[], inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQ){ if(c==='"'){ if(text[i+1]==='"'){field+='"';i++;} else inQ=false; } else field+=c; }
+    else{
+      if(c==='"') inQ=true;
+      else if(c===',') { row.push(field); field=''; }
+      else if(c==='\r') {}
+      else if(c==='\n') { row.push(field); rows.push(row); row=[]; field=''; }
+      else field+=c;
+    }
+  }
+  if(field.length||row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+const _SOLDO_CAT={'Stazioni di servizio':'Carburante','Pedaggio stradale':'Pedaggi','Parcheggi':'Parcheggi','Hotels':'Trasferte'};
+function _soldoNum(s){ const n=parseFloat((s||'').toString().trim().replace(/[^\d.\-]/g,'')); return isNaN(n)?0:n; }
+function _soldoMese(s){ s=(s||'').trim(); return s.length>=10?(s.slice(6,10)+'-'+s.slice(3,5)):''; } // gg/mm/aaaa -> aaaa-mm
+function _titolo(s){ return (s||'').toLowerCase().replace(/\b[a-zà-ù]/g,m=>m.toUpperCase()); }
+window._soldoRows=null;
+async function onSoldoCSVSelected(input){
+  const file=input.files&&input.files[0]; if(!file) return;
+  document.getElementById('lbl-soldo-csv').textContent=file.name;
+  const status=document.getElementById('soldo-status');
+  status.style.color='#6b7280'; status.textContent='Lettura file...';
+  try{
+    const arr=_parseCSV(await file.text());
+    if(arr.length<2){ status.style.color='#991b1b'; status.textContent='File vuoto o non valido.'; return; }
+    const head=arr[0].map(h=>h.trim()); const idx={}; head.forEach((h,k)=>idx[h]=k);
+    const need=['Tipo','Stato transazione','Data Operazione','Categoria II','Descrizione','Utente','Etichetta carta','Importo','Importo netto','ID transazione'];
+    const miss=need.filter(n=>!(n in idx));
+    if(miss.length){ status.style.color='#991b1b'; status.textContent='Non sembra un export transazioni Soldo (colonne mancanti: '+miss.join(', ')+').'; return; }
+    const g=(c,n)=>c[idx[n]]!==undefined?String(c[idx[n]]).trim():'';
+    const rows=[];
+    for(let r=1;r<arr.length;r++){
+      const c=arr[r]; if(!c||c.length<5) continue;
+      if(g(c,'Tipo')!=='Pagamento' || g(c,'Stato transazione')!=='Contabilizzata') continue;
+      const m=_soldoMese(g(c,'Data Operazione')); if(!m) continue;
+      const imp=Math.abs(_soldoNum(g(c,'Importo netto'))||_soldoNum(g(c,'Importo'))); if(imp<=0) continue;
+      const cat2=g(c,'Categoria II'); const pers=_titolo(g(c,'Utente')||g(c,'Etichetta carta'));
+      rows.push({ rif:g(c,'ID transazione'), mese:m+'-01', data:m+'-01', categoria:_SOLDO_CAT[cat2]||'Altro',
+        voce:(g(c,'Descrizione')||cat2||'Spesa Soldo')+(pers?' — '+pers:''),
+        importo:Math.round(imp*100)/100, note:'Soldo · '+(g(c,'Etichetta carta')||g(c,'Utente')||'')+(cat2?' · '+cat2:'') });
+    }
+    if(!rows.length){ status.style.color='#991b1b'; status.textContent='Nessuna spesa valida (Pagamento + Contabilizzata) nel file.'; return; }
+    const{data:existing}=await sb.from('costi_mensili').select('rif_esterno').eq('fonte','soldo').not('rif_esterno','is',null);
+    const seen=new Set((existing||[]).map(e=>e.rif_esterno));
+    const nuovi=rows.filter(r=>!seen.has(r.rif)); const dup=rows.length-nuovi.length;
+    window._soldoRows=nuovi;
+    const perCat={}; nuovi.forEach(r=>perCat[r.categoria]=(perCat[r.categoria]||0)+r.importo);
+    const tot=nuovi.reduce((s,r)=>s+r.importo,0);
+    const catStr=Object.entries(perCat).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`${c}: € ${v.toFixed(2)}`).join(' · ');
+    status.style.color='#3F6612';
+    status.innerHTML=`<b>${rows.length}</b> spese lette · <b>${nuovi.length} nuove</b> (€ ${tot.toFixed(2)})${dup?` · <span style="color:#991b1b">${dup} già presenti</span>`:''}<br><span style="color:#6b7280">${catStr||'—'}</span>`+
+      (nuovi.length?`<br><button onclick="confermaImportSoldo()" id="soldo-import-btn" style="margin-top:8px;padding:8px 18px;background:linear-gradient(135deg,#0D9488,#16A34A);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.85em">Importa ${nuovi.length} spese</button>`:'');
+  }catch(e){ status.style.color='#991b1b'; status.textContent='Errore lettura file: '+(e.message||e); }
+}
+async function confermaImportSoldo(){
+  const rows=window._soldoRows||[]; if(!rows.length) return;
+  const btn=document.getElementById('soldo-import-btn'); if(btn){ btn.disabled=true; btn.textContent='Importazione...'; }
+  const payload=rows.map(r=>({mese:r.mese,voce:r.voce,importo:r.importo,note:r.note,categoria:r.categoria,data_fattura:r.data,fonte:'soldo',rif_esterno:r.rif,inserito_da:currentUser.id,match_banca:false}));
+  const{error}=await sb.from('costi_mensili').insert(payload);
+  const status=document.getElementById('soldo-status');
+  if(error){ status.style.color='#991b1b'; status.textContent='Errore importazione: '+error.message; return; }
+  window._soldoRows=null;
+  status.style.color='#3F6612'; status.innerHTML=`✓ Importate <b>${payload.length}</b> spese Soldo. Le trovi in <b>"Altri costi del mese"</b> (col badge Soldo), selezionando il mese.`;
+  loadEconomia();
+}
 
 async function onArubaXLSSelected(input){
   const file=input.files?.[0];if(!file)return;
