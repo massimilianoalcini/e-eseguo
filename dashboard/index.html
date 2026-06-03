@@ -1086,6 +1086,16 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <canvas id="eco-chart-barmar" style="max-height:280px"></canvas>
         </div>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+        <div style="background:#fff;border:1px solid var(--card-border);border-radius:12px;padding:18px;box-shadow:var(--card-shadow)">
+          <div style="font-size:.85em;font-weight:700;color:var(--mid);margin-bottom:10px">Spese di spostamento (Soldo) per mese <span style="font-weight:400;color:var(--dim);font-size:.85em">— carburante, pedaggi, parcheggi, trasferte</span></div>
+          <canvas id="eco-chart-soldo-mese" style="max-height:280px"></canvas>
+        </div>
+        <div style="background:#fff;border:1px solid var(--card-border);border-radius:12px;padding:18px;box-shadow:var(--card-shadow)">
+          <div style="font-size:.85em;font-weight:700;color:var(--mid);margin-bottom:10px">Spese carta Soldo per categoria (mese)</div>
+          <canvas id="eco-chart-soldo-cat" style="max-height:280px"></canvas>
+        </div>
+      </div>
     </div>
 
     <!-- Modal Aggiungi Costo -->
@@ -3279,7 +3289,7 @@ async function loadEconomia(){
 }
 
 /* === GRAFICI ECONOMIA (Chart.js) === */
-let _ecoChartTrend=null, _ecoChartClienti=null, _ecoChartBarCmp=null, _ecoChartBarMar=null;
+let _ecoChartTrend=null, _ecoChartClienti=null, _ecoChartBarCmp=null, _ecoChartBarMar=null, _ecoChartSoldoMese=null, _ecoChartSoldoCat=null;
 
 async function renderEcoCharts(meseCorrente){
   if(typeof Chart==='undefined')return;
@@ -3297,7 +3307,7 @@ async function renderEcoCharts(meseCorrente){
   // Carico in parallelo: tutte le fatture attive del range + tutti i costi + intervalli interventi
   const[attRes,costiRes]=await Promise.all([
     sb.from('fatture_attive').select('data_emissione,imponibile,cliente').gte('data_emissione',periodoStart).lte('data_emissione',periodoEnd),
-    sb.from('costi_mensili').select('mese,importo,fonte').gte('mese',periodoStart).lte('mese',periodoEnd)
+    sb.from('costi_mensili').select('mese,importo,fonte,categoria').gte('mese',periodoStart).lte('mese',periodoEnd)
   ]);
   const attTutte=attRes.data||[];
   const costiTutti=costiRes.data||[];
@@ -3419,6 +3429,44 @@ async function renderEcoCharts(meseCorrente){
           tooltip:{callbacks:{label:(c)=>` Margine: € ${c.parsed.y.toFixed(2)}`}}},
         scales:{y:{ticks:{callback:v=>'€'+v}},x:{ticks:{font:{size:11}}}}}
     });
+  }
+
+  // === Grafici SOLDO (spese carta) ===
+  const _MOB=['Carburante','Pedaggi','Parcheggi','Trasferte'];
+  const soldoMobMese=months.map(({ym})=>costiTutti.filter(c=>c.fonte==='soldo'&&_MOB.includes(c.categoria)&&(c.mese||'').startsWith(ym)).reduce((s,c)=>s+(+c.importo||0),0));
+  // Grafico 5: Spese di spostamento (Soldo) per mese
+  const ctxSM=document.getElementById('eco-chart-soldo-mese');
+  if(ctxSM){
+    if(_ecoChartSoldoMese)_ecoChartSoldoMese.destroy();
+    _ecoChartSoldoMese=new Chart(ctxSM,{
+      type:'bar',
+      data:{labels:months.map(mm=>mm.label),datasets:[{label:'Spostamenti',data:soldoMobMese,backgroundColor:'#0D9488'}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:(c)=>` € ${c.parsed.y.toFixed(2)}`}}},
+        scales:{y:{beginAtZero:true,ticks:{callback:v=>'€'+v}},x:{ticks:{font:{size:11}}}}}
+    });
+  }
+  // Grafico 6: Soldo per categoria (mese corrente, doughnut)
+  const soldoCorr=costiTutti.filter(c=>c.fonte==='soldo'&&(c.mese||'').startsWith(meseCorrente));
+  const perCatS={}; soldoCorr.forEach(c=>{const k=c.categoria||'Altro';perCatS[k]=(perCatS[k]||0)+(+c.importo||0);});
+  const catS=Object.entries(perCatS).sort((a,b)=>b[1]-a[1]);
+  const ctxSC=document.getElementById('eco-chart-soldo-cat');
+  if(ctxSC){
+    if(_ecoChartSoldoCat)_ecoChartSoldoCat.destroy();
+    if(!catS.length){
+      const ctx=ctxSC.getContext('2d');ctx.clearRect(0,0,ctxSC.width,ctxSC.height);
+      ctx.font='13px sans-serif';ctx.fillStyle='#A8A29E';ctx.textAlign='center';
+      ctx.fillText('Nessuna spesa Soldo nel mese',ctxSC.width/2,ctxSC.height/2);
+    }else{
+      const palS={'Carburante':'#0D9488','Trasferte':'#6366F1','Altro':'#94a3b8','Parcheggi':'#E8762D','Pedaggi':'#EAB308'};
+      _ecoChartSoldoCat=new Chart(ctxSC,{
+        type:'doughnut',
+        data:{labels:catS.map(([c])=>c),datasets:[{data:catS.map(([,v])=>v),backgroundColor:catS.map(([c])=>palS[c]||'#0891B2'),borderWidth:2,borderColor:'#fff'}]},
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:8,font:{size:11}}},
+            tooltip:{callbacks:{label:(ctx)=>{const tot=ctx.dataset.data.reduce((s,v)=>s+v,0);const p=tot>0?(ctx.parsed/tot*100).toFixed(1):0;return ` ${ctx.label}: € ${ctx.parsed.toFixed(2)} (${p}%)`;}}}}}
+      });
+    }
   }
 }
 
