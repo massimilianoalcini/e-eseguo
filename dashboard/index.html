@@ -1154,6 +1154,22 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <button onclick="svuotaReport()" style="padding:7px 14px;background:#fff;color:#991b1b;border:1px solid rgba(220,38,38,0.3);border-radius:8px;font-weight:700;cursor:pointer;font-size:.82em">Svuota</button>
         </div>
       </div>
+
+      <!-- ★★ COSTO CARBURANTE / KM PER MEZZO (Soldo x Verizon) -->
+      <div style="background:#fff;border:1px solid var(--card-border);border-radius:12px;padding:18px;box-shadow:var(--card-shadow);margin-top:14px">
+        <div style="display:flex;align-items:center;gap:8px;font-weight:800;color:var(--accent);font-size:.92em;margin-bottom:4px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 17H4V5h12v4"/><path d="M14 9h4l4 4v4h-2"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+          Costo carburante per km, per mezzo <span style="font-size:.72em;font-weight:600;color:var(--dim)">— carburante Soldo &divide; km Verizon (mese selezionato)</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0 10px">
+          <button onclick="calcolaCostoKm()" style="padding:8px 18px;background:linear-gradient(135deg,#0D9488,#16A34A);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.85em">Calcola €/km (mese selezionato)</button>
+          <span id="ckm-status" style="font-size:.8em;color:var(--dim)"></span>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Mezzo</th><th style="text-align:right;width:120px">Carburante</th><th style="text-align:right;width:120px">Km (Verizon)</th><th style="text-align:right;width:110px">€/km</th></tr></thead>
+          <tbody id="ckm-tbody"></tbody>
+        </table></div>
+      </div>
     </div>
 
     <!-- Modal Aggiungi Costo -->
@@ -3709,6 +3725,53 @@ function esportaReportPDF(){
   });
   doc.save('report_economia_'+oggi.replace(/\//g,'-')+'.pdf');
   const m=document.getElementById('cg-msg'); m.style.color='#3F6612'; m.textContent='✓ Report PDF esportato ('+list.length+' grafici).';
+}
+
+/* === COSTO CARBURANTE / KM PER MEZZO (Soldo x Verizon) === */
+async function calcolaCostoKm(){
+  const mese=document.getElementById('eco-mese').value; if(!mese) return;
+  const status=document.getElementById('ckm-status'); const tb=document.getElementById('ckm-tbody');
+  status.style.color='var(--mid)'; status.textContent='Leggo le spese e interrogo Verizon (qualche secondo)…'; tb.innerHTML='';
+  const [y,mo]=mese.split('-').map(Number);
+  const last=new Date(y,mo,0);
+  const mStart=mese+'-01';
+  const mEnd=last.getFullYear()+'-'+String(last.getMonth()+1).padStart(2,'0')+'-'+String(last.getDate()).padStart(2,'0');
+  // Carburante Soldo per carta nel mese
+  const carb={};
+  try{
+    const{data}=await sb.from('costi_mensili').select('carta,importo').eq('fonte','soldo').eq('categoria','Carburante').gte('mese',mStart).lte('mese',mEnd);
+    (data||[]).forEach(r=>{const k=(r.carta||'').replace(/\D/g,'').slice(-4); carb[k]=(carb[k]||0)+(+r.importo||0);});
+  }catch(e){ status.style.color='#991b1b'; status.textContent='Errore lettura spese: '+(e.message||e); return; }
+  // Range UTC del mese (end clampato a ora)
+  const from=new Date(y,mo-1,1,0,0,0);
+  const reqTo=new Date(y,mo-1,last.getDate(),23,59,59);
+  const now=new Date(); const to=reqTo>now?new Date(now.getTime()-60000):reqTo;
+  const fromUtc=from.toISOString().replace(/\.\d{3}Z$/,'Z');
+  const toUtc=to.toISOString().replace(/\.\d{3}Z$/,'Z');
+  // Mezzi con targa dalla mappa
+  const vs=Object.entries(_SOLDO_MEZZI).filter(([k,v])=>v.t);
+  let results;
+  try{
+    results=await Promise.all(vs.map(async([card,v])=>{
+      let km=0, err=false;
+      try{ const pts=await _fetchHistory(v.t,fromUtc,toUtc); if(pts.length){ km=_calcStatsForPoints(pts,5,14,1.85).km; } }
+      catch(e){ err=true; }
+      return {card,targa:v.t,mezzo:v.m,autista:v.a,fuel:(carb[card]||0),km,err};
+    }));
+  }catch(e){ status.style.color='#991b1b'; status.textContent='Errore Verizon: '+(e.message||e); return; }
+  results.sort((a,b)=>b.fuel-a.fuel);
+  tb.innerHTML=results.map(r=>{
+    const ek = r.km>0 ? r.fuel/r.km : null;
+    const kmCell = r.km>0 ? (Math.round(r.km).toLocaleString('it-IT')+' km') : (r.err?'<span style="color:#991b1b">errore</span>':'n.d.');
+    return `<tr>
+      <td><b>${r.targa}</b> <span style="color:var(--dim);font-size:.85em">${r.mezzo} · ${r.autista}</span></td>
+      <td style="text-align:right;color:var(--red);font-weight:700">€ ${r.fuel.toFixed(2)}</td>
+      <td style="text-align:right">${kmCell}</td>
+      <td style="text-align:right;font-weight:800;color:var(--accent)">${ek!=null?'€ '+ek.toFixed(3)+'/km':'—'}</td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--dim);padding:20px">Nessun mezzo</td></tr>';
+  status.style.color='#3F6612';
+  status.innerHTML='✓ '+formatMese(mese)+' — km letti dall\'<b>odometro Verizon</b>. "n.d." = nessun dato GPS per quella targa nel mese (mezzo non in flotta Verizon o fermo).';
 }
 
 /* === FATTURE ATTIVE — modal manuale === */
