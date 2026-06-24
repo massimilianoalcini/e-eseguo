@@ -7723,8 +7723,8 @@ function _disegnaEtichettePercorso(canvas){
       const w=ctx.measureText(it.label).width+padX*2;
       // candidati: impila SOPRA il pallino, poi SOTTO, finche' non collide
       const cands=[];
-      for(let k=0;k<8;k++) cands.push({bx:it.x-w/2, by:it.y-13*sy-h-k*(h+gap)});
-      for(let k=0;k<8;k++) cands.push({bx:it.x-w/2, by:it.y+13*sy+k*(h+gap)});
+      for(let k=0;k<8;k++) cands.push({bx:it.x-w/2, by:it.y-28*sy-h-k*(h+gap)});
+      for(let k=0;k<8;k++) cands.push({bx:it.x-w/2, by:it.y+28*sy+k*(h+gap)});
       let chosen=null;
       for(const c of cands){
         let bx=c.bx; if(bx<2)bx=2; if(bx+w>canvas.width-2)bx=canvas.width-2-w;
@@ -7733,7 +7733,7 @@ function _disegnaEtichettePercorso(canvas){
         if(!hit({x:bx,y:by,w,h})){ chosen={bx,by}; break; }
       }
       if(!chosen){ let bx=it.x-w/2; if(bx<2)bx=2; if(bx+w>canvas.width-2)bx=canvas.width-2-w;
-        let by=it.y-13*sy-h; if(by<2)by=it.y+13*sy; chosen={bx,by}; }
+        let by=it.y-28*sy-h; if(by<2)by=it.y+28*sy; chosen={bx,by}; }
       const bx=chosen.bx, by=chosen.by;
       placed.push({x:bx,y:by,w,h});
       // lineetta di collegamento pallino -> etichetta
