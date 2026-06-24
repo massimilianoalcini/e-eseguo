@@ -5316,7 +5316,7 @@ function selectGeoResult(tipo,lat,lng,label){
     const existing=dashMap._percMarker?.[tipo];
     if(existing)dashMap.removeLayer(existing);
     if(!dashMap._percMarker)dashMap._percMarker={};
-    dashMap._percMarker[tipo]=L.circleMarker([+lat,+lng],{radius:12,fillColor:color,color:'#fff',weight:3,fillOpacity:.9}).addTo(dashMap);
+    dashMap._percMarker[tipo]=L.circleMarker([+lat,+lng],{radius:6,fillColor:color,color:'#fff',weight:2,fillOpacity:1}).addTo(dashMap);
     dashMap._percMarker[tipo].bindTooltip(tipo==='partenza'?'Partenza':'Arrivo',{permanent:true,direction:'top'});
   }
 }
@@ -5489,7 +5489,7 @@ function addTappa(codice,citta,lat,lng){
   renderTappe();
   // Aggiungi marker sulla mappa (arancio per siti DB)
   if(dashMap){
-    const marker=L.circleMarker([+lat,+lng],{radius:10,fillColor:'#FF9F0A',color:'#FF9F0A',weight:2,fillOpacity:0.8}).addTo(dashMap);
+    const marker=L.circleMarker([+lat,+lng],{radius:5,fillColor:'#FF9F0A',color:'#ffffff',weight:2,fillOpacity:1}).addTo(dashMap);
     marker.bindTooltip('Tappa '+percorsoTappe.length+': '+codice,{permanent:true,direction:'top',className:'leaflet-tooltip-percorso'});
   }
 }
@@ -5506,7 +5506,7 @@ function addTappaMaps(displayName,lat,lng){
   renderTappe();
   // Marker viola/indigo per distinguere le tappe Maps dai siti DB
   if(dashMap){
-    const marker=L.circleMarker([+lat,+lng],{radius:10,fillColor:'#6366F1',color:'#6366F1',weight:2,fillOpacity:0.8}).addTo(dashMap);
+    const marker=L.circleMarker([+lat,+lng],{radius:5,fillColor:'#6366F1',color:'#ffffff',weight:2,fillOpacity:1}).addTo(dashMap);
     marker.bindTooltip('Tappa '+percorsoTappe.length+': '+codice+' ('+shortName.split(',')[0]+')',{permanent:true,direction:'top',className:'leaflet-tooltip-percorso'});
   }
 }
