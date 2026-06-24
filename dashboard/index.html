@@ -7704,7 +7704,11 @@ function _disegnaEtichettePercorso(canvas){
     const fs=Math.max(11,Math.round(13*sx));
     ctx.font='bold '+fs+'px Arial,Helvetica,sans-serif';
     ctx.textBaseline='middle';
-    let tappaN=0;
+    const h=fs+10, gap=4*sy, padX=7*sx;
+    const placed=[];
+    const hit=(a)=>placed.some(b=> a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y);
+    // prepara le etichette (con punto-ancora sul pallino)
+    const items=[]; let tappaN=0;
     stops.forEach((s)=>{
       if(s.lat==null||s.lng==null)return;
       const cod=String(s.codice||'').replace(/🏢/g,'').trim();
@@ -7713,20 +7717,37 @@ function _disegnaEtichettePercorso(canvas){
       else if(/arrivo/i.test(cod)) label='Arrivo';
       else { tappaN++; label=tappaN+'  '+cod; }
       const p=dashMap.latLngToContainerPoint([s.lat,s.lng]);
-      const x=p.x*sx, y=p.y*sy;
-      const padX=7*sx, h=fs+10;
-      const w=ctx.measureText(label).width+padX*2;
-      let bx=x-w/2, by=y-14*sy-h;
-      if(by<2) by=y+14*sy;            // se esce in alto, mettila sotto
-      if(bx<2) bx=2;
-      if(bx+w>canvas.width-2) bx=canvas.width-2-w;
-      ctx.fillStyle='rgba(255,255,255,0.95)';
-      ctx.strokeStyle='#0D9488';
-      ctx.lineWidth=Math.max(1,1.5*sx);
+      items.push({label,x:p.x*sx,y:p.y*sy});
+    });
+    items.forEach((it)=>{
+      const w=ctx.measureText(it.label).width+padX*2;
+      // candidati: impila SOPRA il pallino, poi SOTTO, finche' non collide
+      const cands=[];
+      for(let k=0;k<8;k++) cands.push({bx:it.x-w/2, by:it.y-13*sy-h-k*(h+gap)});
+      for(let k=0;k<8;k++) cands.push({bx:it.x-w/2, by:it.y+13*sy+k*(h+gap)});
+      let chosen=null;
+      for(const c of cands){
+        let bx=c.bx; if(bx<2)bx=2; if(bx+w>canvas.width-2)bx=canvas.width-2-w;
+        const by=c.by;
+        if(by<2||by+h>canvas.height-2) continue;
+        if(!hit({x:bx,y:by,w,h})){ chosen={bx,by}; break; }
+      }
+      if(!chosen){ let bx=it.x-w/2; if(bx<2)bx=2; if(bx+w>canvas.width-2)bx=canvas.width-2-w;
+        let by=it.y-13*sy-h; if(by<2)by=it.y+13*sy; chosen={bx,by}; }
+      const bx=chosen.bx, by=chosen.by;
+      placed.push({x:bx,y:by,w,h});
+      // lineetta di collegamento pallino -> etichetta
+      const lx=bx+w/2, ly=(by>it.y)?by:by+h;
+      ctx.strokeStyle='rgba(13,148,136,0.55)'; ctx.lineWidth=Math.max(1,1*sx);
+      ctx.beginPath(); ctx.moveTo(it.x,it.y); ctx.lineTo(lx,ly); ctx.stroke();
+      // riquadro
+      ctx.fillStyle='rgba(255,255,255,0.96)';
+      ctx.strokeStyle='#0D9488'; ctx.lineWidth=Math.max(1,1.5*sx);
       _roundRectPath(ctx,bx,by,w,h,6*sx);
       ctx.fill(); ctx.stroke();
+      // testo
       ctx.fillStyle='#0D2B52';
-      ctx.fillText(label,bx+padX,by+h/2);
+      ctx.fillText(it.label,bx+padX,by+h/2);
     });
   }catch(e){console.error('etichette percorso:',e);}
 }
