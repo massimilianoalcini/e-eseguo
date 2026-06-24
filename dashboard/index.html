@@ -7682,6 +7682,55 @@ ${lineStr}
 </kml>`;
 }
 
+// Disegna un rettangolo arrotondato (helper canvas)
+function _roundRectPath(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+// Disegna numero + codice sito accanto a ogni pallino DENTRO l'immagine
+// (leaflet-image non cattura i tooltip: per questo la mappa allegata era "muta")
+function _disegnaEtichettePercorso(canvas){
+  try{
+    const stops=window._lastPercFullStops||[];
+    if(!stops.length||!dashMap)return;
+    const ctx=canvas.getContext('2d');
+    const size=dashMap.getSize();
+    const sx=canvas.width/size.x, sy=canvas.height/size.y;
+    const fs=Math.max(11,Math.round(13*sx));
+    ctx.font='bold '+fs+'px Arial,Helvetica,sans-serif';
+    ctx.textBaseline='middle';
+    let tappaN=0;
+    stops.forEach((s)=>{
+      if(s.lat==null||s.lng==null)return;
+      const cod=String(s.codice||'').replace(/🏢/g,'').trim();
+      let label;
+      if(/partenza/i.test(cod)) label='Partenza';
+      else if(/arrivo/i.test(cod)) label='Arrivo';
+      else { tappaN++; label=tappaN+'  '+cod; }
+      const p=dashMap.latLngToContainerPoint([s.lat,s.lng]);
+      const x=p.x*sx, y=p.y*sy;
+      const padX=7*sx, h=fs+10;
+      const w=ctx.measureText(label).width+padX*2;
+      let bx=x-w/2, by=y-14*sy-h;
+      if(by<2) by=y+14*sy;            // se esce in alto, mettila sotto
+      if(bx<2) bx=2;
+      if(bx+w>canvas.width-2) bx=canvas.width-2-w;
+      ctx.fillStyle='rgba(255,255,255,0.95)';
+      ctx.strokeStyle='#0D9488';
+      ctx.lineWidth=Math.max(1,1.5*sx);
+      _roundRectPath(ctx,bx,by,w,h,6*sx);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#0D2B52';
+      ctx.fillText(label,bx+padX,by+h/2);
+    });
+  }catch(e){console.error('etichette percorso:',e);}
+}
+
 // Cattura screenshot mappa Leaflet -> JPEG base64
 function catturaMappaJpeg(){
   return new Promise((resolve,reject)=>{
@@ -7690,6 +7739,8 @@ function catturaMappaJpeg(){
     leafletImage(dashMap,function(err,canvas){
       if(err){reject(err);return;}
       try{
+        // Etichette siti disegnate direttamente sull'immagine (punto 3)
+        _disegnaEtichettePercorso(canvas);
         // Quality 0.85 -> bilanciamento qualita/peso
         const dataUrl=canvas.toDataURL('image/jpeg',0.85);
         // Strip "data:image/jpeg;base64," prefix
