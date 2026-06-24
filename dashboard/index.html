@@ -5701,7 +5701,7 @@ function renderPercorsoOnMap(){
   if(percorsoRoute){dashMap.removeLayer(percorsoRoute);percorsoRoute=null;}
   // Rimetti i marker delle tappe
   percorsoTappe.forEach((t,i)=>{
-    const marker=L.circleMarker([t.lat,t.lng],{radius:10,fillColor:'#FF9F0A',color:'#FF9F0A',weight:2,fillOpacity:0.8}).addTo(dashMap);
+    const marker=L.circleMarker([t.lat,t.lng],{radius:5,fillColor:'#FF9F0A',color:'#ffffff',weight:2,fillOpacity:1}).addTo(dashMap);
     marker.bindTooltip('Tappa '+(i+1)+': '+t.codice,{permanent:true,direction:'top'});
   });
 }
