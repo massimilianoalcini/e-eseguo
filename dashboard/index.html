@@ -7704,7 +7704,7 @@ function _disegnaEtichettePercorso(canvas){
     const fs=Math.max(11,Math.round(13*sx));
     ctx.font='bold '+fs+'px Arial,Helvetica,sans-serif';
     ctx.textBaseline='middle';
-    const h=fs+10, gap=4*sy, padX=7*sx;
+    const h=fs+10, gap=11*sy, padX=7*sx;
     const placed=[];
     const hit=(a)=>placed.some(b=> a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y);
     // prepara le etichette (con punto-ancora sul pallino)
@@ -7736,9 +7736,12 @@ function _disegnaEtichettePercorso(canvas){
         let by=it.y-28*sy-h; if(by<2)by=it.y+28*sy; chosen={bx,by}; }
       const bx=chosen.bx, by=chosen.by;
       placed.push({x:bx,y:by,w,h});
-      // lineetta di collegamento pallino -> etichetta
+      // lineetta di collegamento pallino -> etichetta (alone bianco + tratto teal, ben visibile)
       const lx=bx+w/2, ly=(by>it.y)?by:by+h;
-      ctx.strokeStyle='rgba(13,148,136,0.55)'; ctx.lineWidth=Math.max(1,1*sx);
+      ctx.lineCap='round';
+      ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.lineWidth=Math.max(2.5,3*sx);
+      ctx.beginPath(); ctx.moveTo(it.x,it.y); ctx.lineTo(lx,ly); ctx.stroke();
+      ctx.strokeStyle='#0D9488'; ctx.lineWidth=Math.max(1.3,1.7*sx);
       ctx.beginPath(); ctx.moveTo(it.x,it.y); ctx.lineTo(lx,ly); ctx.stroke();
       // riquadro
       ctx.fillStyle='rgba(255,255,255,0.96)';
