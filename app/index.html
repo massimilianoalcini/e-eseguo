@@ -170,6 +170,11 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
 .foto-panel-close{width:32px;height:32px;border-radius:50%;background:var(--bg);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1em;color:var(--text-dim)}
 .foto-panel-body{flex:1;overflow-y:auto;padding:14px}
 .foto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rep-box{background:var(--bg);border-radius:14px;padding:10px 14px;margin-bottom:14px;border:1px solid rgba(0,0,0,0.06)}
+.rep-row{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.05)}
+.rep-row:last-child{border-bottom:none}
+.rep-label{flex:0 0 90px;font-size:.68em;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;padding-top:3px}
+.rep-val{flex:1;font-size:.9em;color:var(--text);white-space:pre-wrap;word-break:break-word;line-height:1.4}
 .foto-thumb-view{width:100%;aspect-ratio:1;border-radius:12px;overflow:hidden;cursor:pointer;position:relative;background:var(--bg)}
 .foto-thumb-view img{width:100%;height:100%;object-fit:cover;transition:transform .2s}
 .foto-thumb-view:active img{transform:scale(.95)}
@@ -370,6 +375,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
     <div class="foto-panel-sub" id="foto-panel-sub"></div>
   </div>
   <div class="foto-panel-body">
+    <div id="foto-report"></div>
     <div class="foto-grid" id="foto-grid"></div>
   </div>
 </div>
@@ -1208,6 +1214,8 @@ async function openFotoPanel(intId,codice,cliente,nFoto){
   document.getElementById('foto-grid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-dim);font-size:.88em">Caricamento foto...</div>';
   document.getElementById('foto-overlay').style.display='';
   document.getElementById('foto-panel').classList.add('open');
+  document.getElementById('foto-report').innerHTML='';
+  loadInterventoReport(intId);
   if(!nFoto){document.getElementById('foto-grid').innerHTML='<div class="foto-empty">Nessuna foto per questo intervento</div>';return;}
   const{data:fotos}=await sb.from('foto').select('storage_path,filename').eq('intervento_id',intId).order('created_at');
   if(!fotos||!fotos.length){document.getElementById('foto-grid').innerHTML='<div class="foto-empty">Nessuna foto trovata</div>';return;}
@@ -1217,6 +1225,27 @@ async function openFotoPanel(intId,codice,cliente,nFoto){
   if(!signed||!signed.length){document.getElementById('foto-grid').innerHTML='<div class="foto-empty">Errore caricamento foto</div>';return;}
   lbPhotos=signed.map(s=>s.signedUrl);
   document.getElementById('foto-grid').innerHTML=lbPhotos.map((url,i)=>`<div class="foto-thumb-view" onclick="openLightbox(${i})"><img src="${url}" loading="lazy" onerror="this.parentElement.style.background='#f0f0f0'"></div>`).join('');
+}
+function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+async function loadInterventoReport(intId){
+  const box=document.getElementById('foto-report');
+  if(!box)return;
+  const{data,error}=await sb.rpc('intervento_dettaglio',{p_id:intId});
+  const r=Array.isArray(data)?data[0]:data;
+  if(error||!r){box.innerHTML='';return;}
+  const dt=r.created_at?new Date(r.created_at):null;
+  const ds=dt?dt.toLocaleDateString('it-IT')+' '+dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'';
+  const oraI=r.ora_inizio?new Date(r.ora_inizio).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'';
+  const dur=(r.durata_minuti!=null)?(Math.floor(r.durata_minuti/60)+'h '+(r.durata_minuti%60)+'m'):'';
+  const row=(label,val)=>val?`<div class="rep-row"><div class="rep-label">${label}</div><div class="rep-val">${esc(val)}</div></div>`:'';
+  let rows='';
+  rows+=row('Tecnico',r.tecnico_nome);
+  rows+=row('Lavorazione',r.lavorazione);
+  rows+=row('Report',r.note);
+  rows+=row('Segnalazioni',r.segnalazioni);
+  if(oraI||dur)rows+=`<div class="rep-row"><div class="rep-label">Orario</div><div class="rep-val">${esc(oraI)}${dur?' &middot; '+esc(dur):''}</div></div>`;
+  rows+=row('Data',ds);
+  box.innerHTML=rows?`<div class="rep-box">${rows}</div>`:'';
 }
 function closeFotoPanel(){
   document.getElementById('foto-panel').classList.remove('open');
