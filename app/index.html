@@ -1095,7 +1095,7 @@ let allInterventi=[];
 async function loadInterventi(){
   const c=document.getElementById('interventi-list');
   const cnt=document.getElementById('interventi-count');
-  const{data,error}=await sb.from('interventi').select('*').eq('tecnico_id',currentUser.id).order('created_at',{ascending:false});
+  const{data,error}=await sb.from('interventi').select('id,codice_sito,nome_sito,cliente_finale,lavorazione,note,segnalazioni,n_foto,created_at,stato').eq('tecnico_id',currentUser.id).order('created_at',{ascending:false});
   if(error||!data||!data.length){
     allInterventi=[];
     cnt.style.display='none';
