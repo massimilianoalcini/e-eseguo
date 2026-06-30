@@ -7775,14 +7775,14 @@ function catturaMappaJpeg(){
         // Riduci il PESO dell'immagine: downscale a max 1100px + qualita 0.62.
         // (Un'immagine troppo pesante faceva sforare la edge function -> errore 546 con Aruba.)
         let out=canvas;
-        const MAXW=1100;
+        const MAXW=760;
         if(canvas.width>MAXW){
           const sc=MAXW/canvas.width;
           out=document.createElement('canvas');
           out.width=MAXW; out.height=Math.round(canvas.height*sc);
           out.getContext('2d').drawImage(canvas,0,0,out.width,out.height);
         }
-        const dataUrl=out.toDataURL('image/jpeg',0.62);
+        const dataUrl=out.toDataURL('image/jpeg',0.55);
         const b64=dataUrl.split(',')[1];
         resolve(b64);
       }catch(e){reject(e);}
