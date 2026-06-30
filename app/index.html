@@ -268,6 +268,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
       <div class="action-buttons">
         <button class="action-btn primary" onclick="switchTab('intervento')"><svg viewBox="0 0 24 24" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Nuovo Intervento</button>
         <button class="action-btn secondary" onclick="switchTab('interventi')"><svg viewBox="0 0 24 24" fill="#A8A29E"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>Interventi Inviati</button>
+        <button class="action-btn" onclick="switchTab('archivio')" style="background:linear-gradient(135deg,#D97706,#F59E0B);color:white;border:none;box-shadow:0 4px 16px rgba(217,119,6,0.3)"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>Archivio Interventi</button>
         <button class="action-btn navigate" onclick="switchTab('naviga')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/></svg>Naviga verso un Sito</button>
         <button class="action-btn" onclick="switchTab('manuali')" style="background:linear-gradient(135deg,#0D9488,#14B8A6);color:white;border:none;box-shadow:0 4px 16px rgba(13,148,136,0.3);position:relative">
           <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
@@ -316,6 +317,19 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
       <div class="search-wrap" style="margin-bottom:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input type="text" id="interventi-search" placeholder="Cerca per codice sito, nome o localita..." autocomplete="off" oninput="searchInterventi()"><button class="clear-btn" id="interventi-clear-btn" onclick="clearInterventiSearch()" style="display:none">&times;</button></div>
       <div class="results-count" id="interventi-count" style="display:none;font-size:.78em;color:var(--text-dim);margin-bottom:8px"></div>
       <div id="interventi-list"></div>
+    </div></div>
+    <div class="tab-page" id="tab-archivio"><div class="interventi-scroll">
+      <div class="interventi-title"><svg width="22" height="22" viewBox="0 0 24 24" fill="var(--accent)"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>Archivio Interventi</div>
+      <div id="arch-siti-view">
+        <div class="search-wrap" style="margin-bottom:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input type="text" id="arch-search" placeholder="Cerca sito (codice o nome)..." autocomplete="off" oninput="searchArchivioSiti()"></div>
+        <div class="results-count" id="arch-count" style="font-size:.78em;color:var(--text-dim);margin-bottom:8px"></div>
+        <div id="arch-siti-list"></div>
+      </div>
+      <div id="arch-int-view" style="display:none">
+        <button onclick="backArchivioSiti()" style="background:none;border:none;color:var(--accent);font-weight:700;font-size:.9em;padding:6px 0;margin-bottom:6px;cursor:pointer;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Tutti i siti</button>
+        <div id="arch-int-header"></div>
+        <div id="arch-int-list"></div>
+      </div>
     </div></div>
     <div class="tab-page" id="tab-documenti"><div class="interventi-scroll">
       <button id="doc-app-back-btn" onclick="docAppGoBack()" style="display:none;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;border:1px solid rgba(0,0,0,0.1);background:#fff;color:var(--text);font-weight:700;font-size:.92em;margin-bottom:10px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
@@ -817,7 +831,7 @@ async function loadRecent(){
   }).join('');
 }
 
-function switchTab(t){currentTab=t;document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+t)?.classList.add('active');document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.tab===t));if(t==='mappa')setTimeout(()=>{initMap();map?.invalidateSize();renderMapMarkers();},100);if(t==='interventi')loadInterventi();if(t==='intervento'){updateGPSBadge();prefillOraInizio();}if(t==='documenti'){caricaDocumentiApp();}if(t==='manuali'){caricaManualiApp();}}
+function switchTab(t){currentTab=t;document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+t)?.classList.add('active');document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.tab===t));if(t==='mappa')setTimeout(()=>{initMap();map?.invalidateSize();renderMapMarkers();},100);if(t==='interventi')loadInterventi();if(t==='intervento'){updateGPSBadge();prefillOraInizio();}if(t==='documenti'){caricaDocumentiApp();}if(t==='manuali'){caricaManualiApp();}if(t==='archivio'){loadArchivioSiti();}}
 function prefillOraInizio(){const el=document.getElementById('int-ora-inizio');if(!el)return;const now=new Date();const hh=String(now.getHours()).padStart(2,'0');const mm=String(now.getMinutes()).padStart(2,'0');el.value=hh+':'+mm;}
 
 async function startSync(){const o=document.getElementById('sync-overlay'),b=document.getElementById('sync-bar'),s=document.getElementById('sync-status');o.classList.add('show');b.style.width='30%';s.textContent='Connessione al database...';try{const{data:cnt}=await sb.rpc('get_siti_count');window._sitiTotal=cnt||0;b.style.width='100%';s.textContent=`${window._sitiTotal} siti disponibili!`;const tm=await openDB();const t=tm.transaction(STORE_META,'readwrite');t.objectStore(STORE_META).put({key:'lastSync',value:new Date().toISOString()});await new Promise(r=>{t.oncomplete=r});tm.close();await updateSyncBadge();setTimeout(()=>o.classList.remove('show'),800);}catch(err){s.textContent='Errore: '+err.message;setTimeout(()=>o.classList.remove('show'),2000);}}
@@ -854,34 +868,44 @@ async function calcolaPercorso(){
   const btn=document.getElementById('route-btn'),btnTxt=document.getElementById('route-btn-text');
   btn.disabled=true; btnTxt.textContent='Calcolo in corso...';
   const sLat=+selectedSite.latitudine, sLng=+selectedSite.longitudine;
-  try{
-    const url=`https://router.project-osrm.org/route/v1/driving/${myLng},${myLat};${sLng},${sLat}?overview=full&geometries=geojson`;
-    const resp=await fetch(url);
-    const data=await resp.json();
-    if(data.code!=='Ok'||!data.routes||!data.routes.length)throw new Error('Percorso non trovato');
-    const route=data.routes[0];
-    const distKm=route.distance/1000;
-    const durSec=route.duration;
-    const litri=distKm/FUEL_KM_PER_L;
-    const costo=litri*FUEL_PRICE_PER_L;
-    /* Format time */
+  /* Mostra i risultati nei riquadri (approx=true => stima in linea d'aria) */
+  function showResult(distKm,durSec,approx){
+    const litri=distKm/FUEL_KM_PER_L, costo=litri*FUEL_PRICE_PER_L;
     const ore=Math.floor(durSec/3600), min=Math.round((durSec%3600)/60);
     const tempoStr=ore>0?`${ore}h ${min}min`:`${min} min`;
-    /* Display results */
-    document.getElementById('route-km').textContent=distKm<10?distKm.toFixed(1)+' km':Math.round(distKm)+' km';
-    document.getElementById('route-time').textContent=tempoStr;
+    document.getElementById('route-km').textContent=(distKm<10?distKm.toFixed(1):Math.round(distKm))+' km'+(approx?' ~':'');
+    document.getElementById('route-time').textContent=(approx?'≈ ':'')+tempoStr;
     document.getElementById('route-fuel').textContent=litri.toFixed(1)+' L';
     document.getElementById('route-cost').textContent='€ '+costo.toFixed(2);
     document.getElementById('route-result').style.display='';
     btnTxt.textContent='Ricalcola percorso';
     btn.disabled=false;
+  }
+  try{
+    /* Timeout 12s: in campo con rete scarsa la fetch non deve impallarsi all'infinito */
+    const ctrl=new AbortController();
+    const timer=setTimeout(()=>ctrl.abort(),12000);
+    const url=`https://router.project-osrm.org/route/v1/driving/${myLng},${myLat};${sLng},${sLat}?overview=full&geometries=geojson`;
+    let data;
+    try{
+      const resp=await fetch(url,{signal:ctrl.signal});
+      data=await resp.json();
+    }finally{ clearTimeout(timer); }
+    if(data.code!=='Ok'||!data.routes||!data.routes.length)throw new Error('Percorso non trovato');
+    const route=data.routes[0];
+    showResult(route.distance/1000, route.duration, false);
     /* Store route geometry for map */
     lastRouteCoords=route.geometry.coordinates.map(c=>[c[1],c[0]]);
   }catch(err){
-    btnTxt.textContent='Errore — riprova';
-    btn.disabled=false;
     console.error('OSRM error:',err);
-    setTimeout(()=>{btnTxt.textContent='Calcola distanza e percorso';},2500);
+    /* Fallback: stima in linea d'aria (haversine ×1.3) cosi il tecnico ottiene comunque un dato */
+    const R=6371, toRad=Math.PI/180;
+    const dLat=(sLat-myLat)*toRad, dLng=(sLng-myLng)*toRad;
+    const a=Math.sin(dLat/2)**2+Math.cos(myLat*toRad)*Math.cos(sLat*toRad)*Math.sin(dLng/2)**2;
+    const distKm=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))*1.3;
+    const durSec=distKm/50*3600; /* media ~50 km/h */
+    lastRouteCoords=[[myLat,myLng],[sLat,sLng]];
+    showResult(distKm,durSec,true);
   }
 }
 
@@ -1121,6 +1145,58 @@ function clearInterventiSearch(){
   document.getElementById('interventi-clear-btn').style.display='none';
   document.getElementById('interventi-count').style.display='none';
   renderInterventi(allInterventi);
+}
+
+/* === ARCHIVIO INTERVENTI (punto 4): tutti i siti, tutti i tecnici, SENZA costo === */
+let archSiti=[];
+async function loadArchivioSiti(){
+  document.getElementById('arch-int-view').style.display='none';
+  document.getElementById('arch-siti-view').style.display='';
+  const list=document.getElementById('arch-siti-list');
+  list.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-dim);font-size:.88em">Caricamento archivio...</div>';
+  const{data,error}=await sb.rpc('archivio_siti');
+  if(error){list.innerHTML=`<div class="empty-interventi"><div class="ei-title">Errore</div><div class="ei-sub">${error.message}</div></div>`;return;}
+  archSiti=Array.isArray(data)?data:[];
+  renderArchivioSiti(archSiti);
+}
+function renderArchivioSiti(arr){
+  const list=document.getElementById('arch-siti-list'),cnt=document.getElementById('arch-count');
+  cnt.textContent=arr.length+' siti con interventi';
+  if(!arr.length){list.innerHTML='<div class="empty-interventi"><div class="ei-title">Nessun sito</div><div class="ei-sub">Nessun intervento in archivio</div></div>';return;}
+  list.innerHTML=arr.map(s=>{
+    const dt=s.ultima_data?new Date(s.ultima_data).toLocaleDateString('it-IT'):'';
+    return `<div class="int-card glass" onclick="openArchivioSito('${s.codice_sito}')"><div class="int-top"><div style="display:flex;align-items:center;gap:10px;min-width:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="#0D9488" style="flex-shrink:0"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg><div style="min-width:0"><div class="int-code">${s.codice_sito}</div><div class="int-client">${s.nome_sito||''}</div></div></div><div style="text-align:right;flex-shrink:0"><span class="int-foto-badge">${s.n_interventi} interv.</span><div style="font-size:.7em;color:var(--text-dim);margin-top:5px">${dt}</div></div></div></div>`;
+  }).join('');
+}
+function searchArchivioSiti(){
+  const q=document.getElementById('arch-search').value.trim().toLowerCase();
+  if(!q){renderArchivioSiti(archSiti);return;}
+  renderArchivioSiti(archSiti.filter(s=>(s.codice_sito||'').toLowerCase().includes(q)||(s.nome_sito||'').toLowerCase().includes(q)));
+}
+async function openArchivioSito(codice){
+  document.getElementById('arch-siti-view').style.display='none';
+  document.getElementById('arch-int-view').style.display='';
+  document.getElementById('arch-int-header').innerHTML='';
+  const list=document.getElementById('arch-int-list');
+  list.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-dim);font-size:.88em">Caricamento interventi...</div>';
+  const{data}=await sb.rpc('archivio_interventi_sito',{p_codice:codice});
+  const arr=Array.isArray(data)?data:[];
+  document.getElementById('arch-int-header').innerHTML=`<div style="margin-bottom:12px"><div class="int-code" style="font-size:1.2em;color:var(--accent)">${codice}</div><div class="int-client">${(arr[0]&&arr[0].nome_sito)||''} &middot; ${arr.length} intervento/i</div></div>`;
+  renderArchivioInterventi(arr);
+}
+function renderArchivioInterventi(arr){
+  const list=document.getElementById('arch-int-list');
+  if(!arr.length){list.innerHTML='<div class="empty-interventi"><div class="ei-title">Nessun intervento</div></div>';return;}
+  list.innerHTML=arr.map(r=>{
+    const dt=new Date(r.created_at);
+    const ds=dt.toLocaleDateString('it-IT')+' '+dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    const fotoBtn=r.n_foto?`<span class="int-foto-badge int-foto-tap" onclick="event.stopPropagation();openFotoPanel('${r.id}','${r.codice_sito||''}','${(r.cliente_finale||'').replace(/'/g,"\\'")}',${r.n_foto})"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>${r.n_foto} foto</span>`:'<span style="font-size:.75em;color:var(--text-dim)">Nessuna foto</span>';
+    return `<div class="int-card glass" onclick="openFotoPanel('${r.id}','${r.codice_sito||''}','${(r.cliente_finale||'').replace(/'/g,"\\'")}',${r.n_foto||0})"><div class="int-top"><div style="min-width:0"><div class="int-code" style="font-size:.95em">&#128119; ${r.tecnico_nome||'Tecnico'}</div><div class="int-client">${r.cliente_finale||''} &middot; ${r.lavorazione||''}</div></div><div class="int-date">${ds}</div></div>${r.note?`<div class="int-lav">${r.note}</div>`:''}<div class="int-bottom">${fotoBtn}</div></div>`;
+  }).join('');
+}
+function backArchivioSiti(){
+  document.getElementById('arch-int-view').style.display='none';
+  document.getElementById('arch-siti-view').style.display='';
 }
 
 /* === FOTO VIEWER === */
