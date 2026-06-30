@@ -972,9 +972,10 @@ function renderTecniciChips(){
   const box=document.getElementById('tecnici-chips');
   if(!box)return;
   if(!allTecnici.length){box.innerHTML='<div class="chip-empty">Nessun altro tecnico</div>';return;}
-  box.innerHTML=allTecnici.map(t=>`<div class="chip${formTecnici.includes(t.id)?' sel':''}" onclick="toggleTecnico('${t.id}')">${esc(t.full_name||'Tecnico')}</div>`).join('');
+  box.innerHTML=allTecnici.map((t,idx)=>`<div class="chip${formTecnici.includes(t.id)?' sel':''}" onclick="toggleTecnico(${idx})">${esc(t.full_name||'Tecnico')}</div>`).join('');
 }
-function toggleTecnico(id){
+function toggleTecnico(idx){
+  const id=allTecnici[idx]&&allTecnici[idx].id;if(!id)return;
   const i=formTecnici.indexOf(id);
   if(i>=0)formTecnici.splice(i,1);else formTecnici.push(id);
   renderTecniciChips();
@@ -1016,9 +1017,10 @@ function renderMezziChips(){
   const box=document.getElementById('mezzi-chips');
   if(!box)return;
   if(!allMezzi.length){box.innerHTML='<div class="chip-empty">Nessun mezzo disponibile</div>';return;}
-  box.innerHTML=allMezzi.map(m=>`<div class="chip${formMezzi.includes(m.targa)?' sel':''}" onclick="toggleMezzo('${m.targa}')">${esc(m.targa)}${m.modello?' · '+esc(m.modello):''}</div>`).join('');
+  box.innerHTML=allMezzi.map((m,idx)=>`<div class="chip${formMezzi.includes(m.targa)?' sel':''}" onclick="toggleMezzo(${idx})">${esc(m.targa)}${m.modello?' · '+esc(m.modello):''}</div>`).join('');
 }
-function toggleMezzo(targa){
+function toggleMezzo(idx){
+  const targa=allMezzi[idx]&&allMezzi[idx].targa;if(!targa)return;
   const i=formMezzi.indexOf(targa);
   if(i>=0)formMezzi.splice(i,1);else formMezzi.push(targa);
   renderMezziChips();
