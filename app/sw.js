@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eeseguo-v18';
+const CACHE_NAME = 'eeseguo-v19';
 const ASSETS = [
   './',
   './index.html',
@@ -38,7 +38,20 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Cache-first for everything else
+  // Network-first per la navigazione / HTML: dopo un deploy si vede subito la
+  // versione nuova (fallback alla cache se offline).
+  if (e.request.mode === 'navigate' || e.request.destination === 'document') {
+    e.respondWith(
+      fetch(e.request).then(resp => {
+        const copy = resp.clone();
+        caches.open(CACHE_NAME).then(c => c.put('./index.html', copy)).catch(() => {});
+        return resp;
+      }).catch(() => caches.match(e.request).then(c => c || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Cache-first for everything else (asset statici)
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
