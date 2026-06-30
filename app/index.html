@@ -175,10 +175,10 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
 .rep-row:last-child{border-bottom:none}
 .rep-label{flex:0 0 90px;font-size:.68em;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;padding-top:3px}
 .rep-val{flex:1;font-size:.9em;color:var(--text);white-space:pre-wrap;word-break:break-word;line-height:1.4}
-.chip-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
-.chip{padding:8px 12px;border-radius:20px;border:1.5px solid #D5D1CA;background:var(--card);color:var(--text-mid);font-size:.82em;font-weight:600;cursor:pointer;user-select:none;transition:all .12s}
-.chip.sel{background:var(--accent);border-color:var(--accent);color:#fff}
-.chip-empty{font-size:.8em;color:var(--text-dim);padding:4px 0}
+.sel-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.sel-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 8px 7px 13px;border-radius:20px;background:var(--accent);color:#fff;font-size:.82em;font-weight:600}
+.sel-pill button{background:rgba(255,255,255,0.25);border:none;color:#fff;width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:.95em;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.sel-pill button:active{background:rgba(255,255,255,0.45)}
 .foto-thumb-view{width:100%;aspect-ratio:1;border-radius:12px;overflow:hidden;cursor:pointer;position:relative;background:var(--bg)}
 .foto-thumb-view img{width:100%;height:100%;object-fit:cover;transition:transform .2s}
 .foto-thumb-view:active img{transform:scale(.95)}
@@ -315,8 +315,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
       <div class="form-group"><label class="form-label">Lavorazione *</label><select class="form-select" id="int-lavorazione" onchange="toggleLavorazioneAltro()"><option value="">Seleziona lavorazione...</option></select><input class="form-input" id="int-lavorazione-altro" placeholder="Descrivi la lavorazione..." style="display:none;margin-top:8px;"></div>
       <div class="form-group"><label class="form-label">Report</label><textarea class="form-textarea" id="int-note" placeholder="Report intervento (opzionale)..."></textarea></div>
       <div class="form-group"><label class="form-label">Segnalazioni</label><textarea class="form-textarea" id="int-segnalazioni" placeholder="Segnalazioni (opzionale)..." style="min-height:60px"></textarea></div>
-      <div class="form-group"><label class="form-label">Tecnici di supporto</label><div class="chip-wrap" id="tecnici-chips"><div class="chip-empty">Caricamento tecnici…</div></div></div>
-      <div class="form-group"><label class="form-label">Mezzi utilizzati</label><div class="chip-wrap" id="mezzi-chips"><div class="chip-empty">Apri il form per caricare i mezzi…</div></div></div>
+      <div class="form-group"><label class="form-label">Tecnici di supporto</label><select class="form-select" id="tecnici-select" onchange="addTecnico(this.value)"><option value="">Caricamento tecnici…</option></select><div class="sel-pills" id="tecnici-selected"></div></div>
+      <div class="form-group"><label class="form-label">Mezzi utilizzati</label><select class="form-select" id="mezzi-select" onchange="addMezzo(this.value)"><option value="">Apri il form per caricare i mezzi…</option></select><div class="sel-pills" id="mezzi-selected"></div></div>
       <div class="form-group"><label class="form-label">Foto</label><div style="display:flex;gap:10px"><button type="button" onclick="document.getElementById('photo-input-cam').click()" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 8px;background:var(--card);border:2px dashed #D5D1CA;border-radius:14px;color:var(--accent);font-weight:700;font-size:.82em;cursor:pointer"><svg width="30" height="30" viewBox="0 0 24 24" fill="#0D9488"><path d="M9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>Scatta foto</button><button type="button" onclick="document.getElementById('photo-input-gallery').click()" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 8px;background:var(--card);border:2px dashed #D5D1CA;border-radius:14px;color:var(--accent);font-weight:700;font-size:.82em;cursor:pointer"><svg width="30" height="30" viewBox="0 0 24 24" fill="#0D9488"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>Dalla galleria</button></div><div class="photo-zone-sub" style="text-align:center;margin-top:6px">Massimo 20 foto per intervento</div><input type="file" id="photo-input-cam" accept="image/*" capture="environment" style="display:none" onchange="handlePhotos(this)"><input type="file" id="photo-input-gallery" accept="image/*" multiple style="display:none" onchange="handlePhotos(this)"><div class="photo-preview" id="photo-preview"></div></div>
       <div class="form-group"><label class="form-label">Posizione GPS</label><div class="gps-badge no" id="gps-status"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span id="gps-text">In attesa del GPS...</span></div></div>
       <div class="form-group"><label class="form-label">Ora inizio intervento</label><input type="time" class="form-input" id="int-ora-inizio" style="font-size:1.1em;font-weight:700;color:var(--accent);letter-spacing:.5px"></div>
@@ -961,25 +961,29 @@ async function loadDropdowns(){
 let formTecnici=[],formMezzi=[],allTecnici=[],allMezzi=[],mezziLoaded=false;
 
 async function loadTecnici(){
-  const box=document.getElementById('tecnici-chips');
-  if(!box)return;
+  const sel=document.getElementById('tecnici-select');
+  if(!sel)return;
   const{data,error}=await sb.from('profiles').select('id,full_name').eq('role','tecnico').order('full_name');
-  if(error){box.innerHTML='<div class="chip-empty">Errore caricamento tecnici</div>';return;}
+  if(error){sel.innerHTML='<option value="">Errore caricamento tecnici</option>';return;}
   allTecnici=(data||[]).filter(t=>t.id!==currentUser.id);
-  renderTecniciChips();
+  renderTecniciSelect();renderTecniciSelected();
 }
-function renderTecniciChips(){
-  const box=document.getElementById('tecnici-chips');
+function renderTecniciSelect(){
+  const sel=document.getElementById('tecnici-select');
+  if(!sel)return;
+  const disp=allTecnici.filter(t=>!formTecnici.includes(t.id));
+  sel.innerHTML='<option value="">'+(allTecnici.length?'Aggiungi tecnico…':'Nessun altro tecnico')+'</option>'+disp.map(t=>`<option value="${t.id}">${esc(t.full_name||'Tecnico')}</option>`).join('');
+}
+function renderTecniciSelected(){
+  const box=document.getElementById('tecnici-selected');
   if(!box)return;
-  if(!allTecnici.length){box.innerHTML='<div class="chip-empty">Nessun altro tecnico</div>';return;}
-  box.innerHTML=allTecnici.map((t,idx)=>`<div class="chip${formTecnici.includes(t.id)?' sel':''}" onclick="toggleTecnico(${idx})">${esc(t.full_name||'Tecnico')}</div>`).join('');
+  box.innerHTML=formTecnici.map((id,i)=>{
+    const t=allTecnici.find(x=>x.id===id);
+    return `<span class="sel-pill">${esc(t?t.full_name:'Tecnico')}<button type="button" onclick="removeTecnicoAt(${i})">&times;</button></span>`;
+  }).join('');
 }
-function toggleTecnico(idx){
-  const id=allTecnici[idx]&&allTecnici[idx].id;if(!id)return;
-  const i=formTecnici.indexOf(id);
-  if(i>=0)formTecnici.splice(i,1);else formTecnici.push(id);
-  renderTecniciChips();
-}
+function addTecnico(id){if(id&&!formTecnici.includes(id))formTecnici.push(id);renderTecniciSelect();renderTecniciSelected();}
+function removeTecnicoAt(i){formTecnici.splice(i,1);renderTecniciSelect();renderTecniciSelected();}
 
 async function verizonVehicles(){
   const{data:{session}}=await sb.auth.getSession();
@@ -1001,30 +1005,36 @@ async function verizonVehicles(){
   }).filter(x=>x.targa);
 }
 async function loadMezzi(force){
-  const box=document.getElementById('mezzi-chips');
-  if(!box)return;
-  if(mezziLoaded&&!force){renderMezziChips();return;}
-  box.innerHTML='<div class="chip-empty">Caricamento mezzi da Verizon…</div>';
+  const sel=document.getElementById('mezzi-select');
+  if(!sel)return;
+  if(mezziLoaded&&!force){renderMezziSelect();renderMezziSelected();return;}
+  sel.innerHTML='<option value="">Caricamento mezzi da Verizon…</option>';
   try{
     allMezzi=await verizonVehicles();
     mezziLoaded=true;
-    renderMezziChips();
+    renderMezziSelect();renderMezziSelected();
   }catch(e){
-    box.innerHTML=`<div class="chip-empty">Mezzi non disponibili (${esc(e.message||'errore')}) · <span style="color:var(--accent);cursor:pointer;font-weight:700" onclick="loadMezzi(true)">riprova</span></div>`;
+    sel.innerHTML='<option value="">Mezzi non disponibili</option>';
+    const box=document.getElementById('mezzi-selected');
+    if(box)box.innerHTML=`<span style="font-size:.8em;color:var(--text-dim)">Verizon non raggiungibile · <span style="color:var(--accent);cursor:pointer;font-weight:700" onclick="loadMezzi(true)">riprova</span></span>`;
   }
 }
-function renderMezziChips(){
-  const box=document.getElementById('mezzi-chips');
+function renderMezziSelect(){
+  const sel=document.getElementById('mezzi-select');
+  if(!sel)return;
+  const disp=allMezzi.filter(m=>!formMezzi.includes(m.targa));
+  sel.innerHTML='<option value="">'+(allMezzi.length?'Aggiungi mezzo…':'Nessun mezzo disponibile')+'</option>'+disp.map(m=>`<option value="${m.targa}">${esc(m.targa)}${m.modello?' · '+esc(m.modello):''}</option>`).join('');
+}
+function renderMezziSelected(){
+  const box=document.getElementById('mezzi-selected');
   if(!box)return;
-  if(!allMezzi.length){box.innerHTML='<div class="chip-empty">Nessun mezzo disponibile</div>';return;}
-  box.innerHTML=allMezzi.map((m,idx)=>`<div class="chip${formMezzi.includes(m.targa)?' sel':''}" onclick="toggleMezzo(${idx})">${esc(m.targa)}${m.modello?' · '+esc(m.modello):''}</div>`).join('');
+  box.innerHTML=formMezzi.map((tg,i)=>{
+    const m=allMezzi.find(x=>x.targa===tg);
+    return `<span class="sel-pill">${esc(m?(m.targa+(m.modello?' · '+m.modello:'')):tg)}<button type="button" onclick="removeMezzoAt(${i})">&times;</button></span>`;
+  }).join('');
 }
-function toggleMezzo(idx){
-  const targa=allMezzi[idx]&&allMezzi[idx].targa;if(!targa)return;
-  const i=formMezzi.indexOf(targa);
-  if(i>=0)formMezzi.splice(i,1);else formMezzi.push(targa);
-  renderMezziChips();
-}
+function addMezzo(targa){if(targa&&!formMezzi.includes(targa))formMezzi.push(targa);renderMezziSelect();renderMezziSelected();}
+function removeMezzoAt(i){formMezzi.splice(i,1);renderMezziSelect();renderMezziSelected();}
 
 function toggleLavorazioneAltro(){
   const sel=document.getElementById('int-lavorazione');
@@ -1165,7 +1175,7 @@ function resetForm(){
   document.getElementById('int-note').value='';
   document.getElementById('int-segnalazioni').value='';
   document.getElementById('photo-preview').innerHTML='';
-  formTecnici=[];formMezzi=[];renderTecniciChips();renderMezziChips();
+  formTecnici=[];formMezzi=[];renderTecniciSelect();renderTecniciSelected();renderMezziSelect();renderMezziSelected();
   prefillOraInizio();
 }
 
