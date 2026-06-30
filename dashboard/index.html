@@ -7765,7 +7765,8 @@ function catturaMappaJpeg(){
     const _mostraVerdi = dashMarkers && dashMap.hasLayer(dashMarkers);
     if(_mostraVerdi) dashMap.removeLayer(dashMarkers);
     const _ripristinaVerdi = ()=>{ if(_mostraVerdi && dashMarkers) dashMarkers.addTo(dashMap); };
-    leafletImage(dashMap,function(err,canvas){
+    // attendi che la mappa (canvas) si ridisegni SENZA i verdi, poi scatta
+    setTimeout(()=>leafletImage(dashMap,function(err,canvas){
       _ripristinaVerdi();
       if(err){reject(err);return;}
       try{
@@ -7785,7 +7786,7 @@ function catturaMappaJpeg(){
         const b64=dataUrl.split(',')[1];
         resolve(b64);
       }catch(e){reject(e);}
-    });
+    }),300);
   });
 }
 
