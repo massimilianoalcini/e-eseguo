@@ -7707,15 +7707,15 @@ function _disegnaEtichettePercorso(canvas){
     const h=fs+10, gap=11*sy, padX=7*sx;
     const placed=[];
     const hit=(a)=>placed.some(b=> a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y);
-    // prepara le etichette (con punto-ancora sul pallino)
+    // prepara le etichette: SOLO i siti da visitare (Partenza/Arrivo = sede restano
+    // solo come puntino, senza targhetta).
     const items=[]; let tappaN=0;
     stops.forEach((s)=>{
       if(s.lat==null||s.lng==null)return;
       const cod=String(s.codice||'').replace(/🏢/g,'').trim();
-      let label;
-      if(/partenza/i.test(cod)) label='Partenza';
-      else if(/arrivo/i.test(cod)) label='Arrivo';
-      else { tappaN++; label=tappaN+'  '+cod; }
+      if(/partenza|arrivo/i.test(cod)) return; // sede: niente targhetta
+      tappaN++;
+      const label=tappaN+'  '+cod;
       const p=dashMap.latLngToContainerPoint([s.lat,s.lng]);
       items.push({label,x:p.x*sx,y:p.y*sy});
     });
@@ -7760,7 +7760,13 @@ function catturaMappaJpeg(){
   return new Promise((resolve,reject)=>{
     if(typeof leafletImage!=='function'){reject(new Error('leaflet-image non caricato'));return;}
     if(!dashMap){reject(new Error('Mappa non inizializzata'));return;}
+    // Nella foto del percorso deve comparire SOLO il giro: nascondo i pallini verdi
+    // dei siti trovati dalla ricerca (li rimetto subito dopo lo scatto).
+    const _mostraVerdi = dashMarkers && dashMap.hasLayer(dashMarkers);
+    if(_mostraVerdi) dashMap.removeLayer(dashMarkers);
+    const _ripristinaVerdi = ()=>{ if(_mostraVerdi && dashMarkers) dashMarkers.addTo(dashMap); };
     leafletImage(dashMap,function(err,canvas){
+      _ripristinaVerdi();
       if(err){reject(err);return;}
       try{
         // Etichette siti disegnate direttamente sull'immagine (punto 3)
