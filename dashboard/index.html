@@ -2188,15 +2188,18 @@ function renderInterventiTable(list){
   const isValidati=currentStatoTab==='validato';
   document.getElementById('interventi-table').innerHTML=list.map(r=>{
     const rowClass=r.stato==='validato'?'row-validato':'row-da-validare';
+    const btnElimina=`<button class="btn-action" style="color:var(--red);border-color:rgba(220,38,38,.25);font-size:.75em;white-space:nowrap" onclick="deleteIntervento('${r.id}')" title="Elimina intervento">🗑 Elimina</button>`;
     const azioniBtn=r.stato==='validato'
       ?`<div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
           <span class="badge badge-validato">✅ Validato</span>
           <button class="btn-action" style="background:rgba(232,118,45,0.1);color:var(--orange);font-size:.75em;white-space:nowrap;border-color:rgba(232,118,45,0.2)" onclick="generateReport('${r.id}')">📄 Report</button>
+          ${btnElimina}
         </div>`
       :`<div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
           <button class="btn-modifica" onclick="openEditModal('${r.id}')" style="display:inline-flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>Modifica / Valida</button>
           <button class="btn-action" style="background:rgba(232,118,45,0.1);color:var(--orange);font-size:.75em;white-space:nowrap;border-color:rgba(232,118,45,0.2)" onclick="generateReport('${r.id}')">📄 Report</button>
           <button class="btn-action primary" style="white-space:nowrap;" onclick="openImportoModal('${r.id}')">€ Importo</button>
+          ${btnElimina}
         </div>`;
     return`<tr class="${rowClass}">
       <td class="td-code td-code-link" onclick="showStorico('${r.codice_sito||''}')" title="Vedi storico sito">${r.codice_sito||'—'}</td>
@@ -2211,6 +2214,35 @@ function renderInterventiTable(list){
       <td>${azioniBtn}</td>
     </tr>`;
   }).join('');
+}
+
+/* === Punto 11: elimina intervento (solo coordinatore/admin, policy RLS dedicate) === */
+async function deleteIntervento(id){
+  const r=allInterventi.find(i=>i.id===id);if(!r)return;
+  let msg=`Eliminare DEFINITIVAMENTE questo intervento?\n\n${r.codice_sito||'—'} · ${getTecName(r.tecnico_id)} · ${formatDate(r.created_at)}`;
+  if(r.n_foto)msg+=`\n\nVerranno eliminate anche ${r.n_foto} foto.`;
+  if(r.stato==='validato')msg+=`\n\n⚠️ ATTENZIONE: intervento GIÀ VALIDATO${r.importo!=null&&+r.importo>0?' con importo € '+(+r.importo).toFixed(2):''}: eliminandolo sparirà anche da Produzione ed Economia.`;
+  msg+='\n\nL\'azione NON è reversibile.';
+  if(!confirm(msg))return;
+  if(r.stato==='validato'&&!confirm('Confermi l\'eliminazione di un intervento VALIDATO?'))return;
+  try{
+    // 1. Percorsi foto (per pulire lo storage dopo il delete: il CASCADE elimina le righe)
+    const{data:fotos}=await sb.from('foto').select('storage_path').eq('intervento_id',id);
+    const paths=(fotos||[]).map(f=>f.storage_path).filter(Boolean);
+    // 2. Elimina l'intervento (FK ON DELETE CASCADE elimina anche le righe foto)
+    const{data:del,error}=await sb.from('interventi').delete().eq('id',id).select('id');
+    if(error)throw error;
+    if(!del||!del.length)throw new Error('Nessuna riga eliminata (permessi insufficienti?)');
+    // 3. Best-effort: rimuovi i file foto dallo storage
+    if(paths.length){
+      const{error:errSt}=await sb.storage.from('foto-interventi').remove(paths);
+      if(errSt)console.warn('Pulizia storage foto:',errSt.message);
+    }
+    // 4. Aggiorna la UI
+    allInterventi=allInterventi.filter(i=>i.id!==id);
+    renderInterventi();
+    renderOverview();
+  }catch(e){alert('Errore eliminazione: '+(e.message||e));}
 }
 
 /* === Modifica intervento (edit completo coordinatore) === */
