@@ -143,6 +143,14 @@ tr.row-da-validare td{background:rgba(232,118,45,0.05)}
 tr.row-da-validare:hover td{background:rgba(232,118,45,0.1)}
 tr.row-validato td{background:rgba(22,163,74,0.05)}
 tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
+/* Colonna Azioni sempre visibile (sticky a destra) — tabella Gestione Interventi */
+.tbl-sticky-azioni th:last-child,.tbl-sticky-azioni td:last-child{position:sticky;right:0;z-index:2;box-shadow:-8px 0 10px -8px rgba(0,0,0,0.18)}
+.tbl-sticky-azioni th:last-child{background:#FAFAFA}
+.tbl-sticky-azioni td:last-child{background:#fff}
+.tbl-sticky-azioni tr.row-da-validare td:last-child{background:#FEF8F5}
+.tbl-sticky-azioni tr.row-da-validare:hover td:last-child{background:#FDF1EA}
+.tbl-sticky-azioni tr.row-validato td:last-child{background:#F3FAF6}
+.tbl-sticky-azioni tr.row-validato:hover td:last-child{background:#ECF8F1}
 /* Badge stato */
 .badge-validato{background:rgba(22,163,74,0.12);color:var(--green)}
 .badge-da-validare{background:rgba(232,118,45,0.12);color:var(--orange)}
@@ -594,7 +602,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         <select class="filter-select" id="f-cliente" onchange="filterInterventi()"><option value="">Tutti i clienti</option></select>
         <select class="filter-select" id="f-mese" onchange="filterInterventi()"><option value="">Tutti i mesi</option></select>
       </div>
-      <div class="table-wrap"><table>
+      <div class="table-wrap"><table class="tbl-sticky-azioni">
         <thead><tr><th>Codice Sito</th><th>Sito</th><th>Tecnico</th><th>Cliente</th><th>Lavorazione</th><th>Foto</th><th>Durata</th><th>Importo</th><th>Data</th><th>Azioni</th></tr></thead>
         <tbody id="interventi-table"></tbody>
       </table></div>
