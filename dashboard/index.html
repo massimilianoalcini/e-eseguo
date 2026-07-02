@@ -7871,17 +7871,18 @@ function catturaMappaJpeg(){
       try{
         // Etichette siti disegnate direttamente sull'immagine (punto 3)
         _disegnaEtichettePercorso(canvas);
-        // Riduci il PESO dell'immagine: downscale a max 1100px + qualita 0.62.
-        // (Un'immagine troppo pesante faceva sforare la edge function -> errore 546 con Aruba.)
+        // Qualita' ALTA (1100px / 0.8): l'immagine ora viene ospitata su
+        // Supabase Storage e mostrata nel corpo email via URL — NON viaggia
+        // piu' come allegato SMTP, quindi il peso non causa piu' il 546.
         let out=canvas;
-        const MAXW=760;
+        const MAXW=1100;
         if(canvas.width>MAXW){
           const sc=MAXW/canvas.width;
           out=document.createElement('canvas');
           out.width=MAXW; out.height=Math.round(canvas.height*sc);
           out.getContext('2d').drawImage(canvas,0,0,out.width,out.height);
         }
-        const dataUrl=out.toDataURL('image/jpeg',0.55);
+        const dataUrl=out.toDataURL('image/jpeg',0.8);
         const b64=dataUrl.split(',')[1];
         resolve(b64);
       }catch(e){reject(e);}
@@ -7930,6 +7931,18 @@ async function inviaPercorsoEmail(){
   try{
     // 1) JPEG mappa
     const jpegB64=await catturaMappaJpeg();
+    // 1b) FIX 546: ospita l'immagine su Storage e mostrala nel corpo email
+    //     (email leggera via SMTP -> niente piu' WORKER_RESOURCE_LIMIT).
+    //     Se l'upload fallisce, fallback: allega il JPEG come prima.
+    status.textContent='Caricamento mappa...';
+    let mapUrl=null;
+    try{
+      const bytes=Uint8Array.from(atob(jpegB64),c=>c.charCodeAt(0));
+      const mapPath='percorsi/'+new Date().toISOString().slice(0,10)+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.jpg';
+      const{error:upErr}=await sb.storage.from('mappe-email').upload(mapPath,bytes,{contentType:'image/jpeg'});
+      if(!upErr)mapUrl=sb.storage.from('mappe-email').getPublicUrl(mapPath).data.publicUrl;
+      else console.warn('Upload mappa fallito, uso allegato:',upErr.message);
+    }catch(e){console.warn('Upload mappa fallito, uso allegato:',e.message||e);}
     status.textContent='Generazione KML...';
     // 2) KML
     const kmlStr=generaKMLPercorso();
@@ -7953,8 +7966,10 @@ async function inviaPercorsoEmail(){
   </table>
   <h3 style="color:#1C1917;margin-top:20px;font-size:1em">Sequenza tappe</h3>
   <ol style="padding-left:18px;line-height:1.7">${tappeListHtml}</ol>
+  ${mapUrl?`<h3 style="color:#1C1917;margin-top:20px;font-size:1em">Mappa del percorso</h3>
+  <a href="${mapUrl}" target="_blank"><img src="${mapUrl}" alt="Mappa percorso" style="width:100%;max-width:640px;border-radius:8px;border:1px solid #E7E5E0;display:block;margin:10px 0"></a>`:''}
   <div style="background:#F0FDF4;border-left:4px solid #16A34A;padding:12px 14px;margin-top:16px;border-radius:4px;color:#14532D;font-size:.92em">
-    Allegati: <strong>percorso.jpg</strong> (mappa) e <strong>percorso.kml</strong> (apri in Google Maps).
+    ${mapUrl?'In allegato: <strong>percorso.kml</strong> (apri in Google Maps). La mappa &egrave; visualizzata qui sopra (tocca per ingrandirla).':'Allegati: <strong>percorso.jpg</strong> (mappa) e <strong>percorso.kml</strong> (apri in Google Maps).'}
   </div>
   <hr style="border:none;border-top:1px solid #E7E5E0;margin:20px 0 12px">
   <div style="color:#78756E;font-size:.8em">E.ESEGUO &middot; coordinamento manutenzioni TLC</div>
@@ -7980,7 +7995,8 @@ async function inviaPercorsoEmail(){
         subject,
         body_html:bodyHtml,
         attachments:[
-          {filename:'percorso.jpg',content_base64:jpegB64,content_type:'image/jpeg'},
+          // FIX 546: il JPEG viaggia come allegato SOLO in fallback (upload Storage fallito)
+          ...(mapUrl?[]:[{filename:'percorso.jpg',content_base64:jpegB64,content_type:'image/jpeg'}]),
           {filename:'percorso.kml',content_base64:kmlB64,content_type:'application/vnd.google-earth.kml+xml'}
         ]
       })
