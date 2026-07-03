@@ -8131,7 +8131,31 @@ async function inviaPercorsoEmail(){
     // 3) Body HTML
     const s=window._lastPercSummary||{};
     const stops=window._lastPercFullStops||[];
-    const tappeListHtml=stops.map((t,i)=>`<li>${(t.codice||'').replace(/[<>&]/g,'')}${t.fullAddress?' &mdash; '+t.fullAddress.replace(/[<>&]/g,''):''}</li>`).join('');
+    // Note di accesso dei siti (dal DB) sotto ogni tappa: il tecnico le legge direttamente dall'email
+    status.textContent='Recupero note di accesso...';
+    const siteCodes=stops.filter(t=>t.tipo==='sito'&&t.codice).map(t=>t.codice);
+    const noteMap={};
+    if(siteCodes.length){
+      try{
+        const{data:notesRows}=await sb.from('siti').select('codice_sito,itinerario,descrizione_accesso,note_accesso').in('codice_sito',siteCodes);
+        (notesRows||[]).forEach(r=>{noteMap[r.codice_sito]=r;});
+      }catch(e){console.warn('Note accesso non recuperate:',e.message||e);}
+    }
+    const _e=(x)=>String(x||'').replace(/[<>&]/g,'');
+    const tappeListHtml=stops.map((t,i)=>{
+      let li=`<li style="margin-bottom:10px"><strong>${_e(t.codice)}</strong>${t.fullAddress?' &mdash; '+_e(t.fullAddress):''}`;
+      const n=noteMap[t.codice];
+      if(n){
+        const parts=[];
+        if(n.itinerario)parts.push('<strong>Itinerario:</strong> '+_e(n.itinerario));
+        if(n.descrizione_accesso)parts.push('<strong>Accesso:</strong> '+_e(n.descrizione_accesso));
+        if(n.note_accesso)parts.push('<strong>&#9888;&#65039; Note:</strong> '+_e(n.note_accesso));
+        if(parts.length){
+          li+=`<div style="background:#FFF7ED;border-left:3px solid #F97316;padding:8px 10px;margin-top:5px;border-radius:4px;color:#7C2D12;font-size:.9em;line-height:1.45">${parts.join('<br>')}</div>`;
+        }
+      }
+      return li+'</li>';
+    }).join('');
     const noteHtml=note?`<div style="background:#FFF7ED;border-left:3px solid #F97316;padding:10px 14px;margin:14px 0;border-radius:4px;color:#7C2D12">${note.replace(/[<>&]/g,'').replace(/\n/g,'<br>')}</div>`:'';
     const bodyHtml=`<!DOCTYPE html><html><body style="font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:640px;margin:0 auto;padding:20px;color:#1C1917;background:#FAFAFA">
 <div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
