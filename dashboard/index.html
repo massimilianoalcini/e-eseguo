@@ -520,6 +520,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
     <button class="nav-btn" data-page="documenti" onclick="showPage('documenti')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>Documenti</button>
     <div class="nav-section">Territorio</div>
     <button class="nav-btn" data-page="siti" onclick="showPage('siti')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>Siti & Mappa</button>
+    <button class="nav-btn" data-page="mappa-inwit" onclick="showPage('mappa-inwit')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>Mappa Inwit</button>
     <button class="nav-btn" data-page="flotta" onclick="showPage('flotta')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>Mezzi</button>
     <button class="nav-btn" data-page="impostazioni" onclick="showPage('impostazioni')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Impostazioni</button>
     <div style="flex:1"></div>
@@ -1720,6 +1721,20 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
     </div>
 
     <!-- FLOTTA VERIZON -->
+    <!-- MAPPA INWIT (My Maps del coordinatore, consultazione live) -->
+    <div class="page-section" id="page-mappa-inwit">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div>
+          <div style="font-size:1.15em;font-weight:800;color:var(--text)">Mappa Inwit</div>
+          <div style="font-size:.82em;color:var(--dim)">Piano di pianificazione del coordinatore (Google My Maps) &middot; sempre aggiornata in tempo reale</div>
+        </div>
+        <a href="https://www.google.com/maps/d/viewer?mid=1zbtSLYqTVJ_hwME5xrganeEMuYKiaiU" target="_blank" class="btn-action" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-weight:700"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Apri in Google Maps</a>
+      </div>
+      <div style="background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+        <iframe id="inwit-map-frame" data-src="https://www.google.com/maps/d/embed?mid=1zbtSLYqTVJ_hwME5xrganeEMuYKiaiU" style="width:100%;height:calc(100vh - 190px);min-height:480px;border:0;display:block" loading="lazy" title="Mappa Inwit"></iframe>
+      </div>
+    </div>
+
     <div class="page-section" id="page-flotta">
       <div class="flotta-header">
         <div class="title">
@@ -5811,6 +5826,7 @@ function showPage(page){
   document.getElementById('page-'+page)?.classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   if(page==='siti'){setTimeout(()=>initDashMap(),100);renderTappe();caricaIndirizzoAzienda();}
+  if(page==='mappa-inwit'){const f=document.getElementById('inwit-map-frame');if(f&&!f.getAttribute('src'))f.setAttribute('src',f.dataset.src);}
   if(page==='manuali'){loadManuali();}
   if(page==='manuali-apparati'){loadManualiApparati();}
   if(page==='documenti'){loadDocumenti();}
