@@ -7943,9 +7943,17 @@ function generaKMLPercorso(){
   </Placemark>`;
   }).join('\n');
   // Polyline percorso (geometry GeoJSON da OSRM = [lng,lat])
+  // FIX 546: la geometria completa di un giro lungo = migliaia di punti ->
+  // KML da centinaia di KB -> allegato pesante -> WORKER_RESOURCE_LIMIT.
+  // Campiono a max 300 punti (visivamente identica, file ~15KB).
   let lineStr='';
   if(route&&route.geometry&&route.geometry.coordinates){
-    const coords=route.geometry.coordinates.map(c=>c[0]+','+c[1]+',0').join(' ');
+    let cArr=route.geometry.coordinates;
+    if(cArr.length>300){
+      const step=Math.ceil(cArr.length/300);
+      cArr=cArr.filter((c,i)=>i%step===0||i===route.geometry.coordinates.length-1);
+    }
+    const coords=cArr.map(c=>c[0]+','+c[1]+',0').join(' ');
     lineStr=`  <Placemark>
     <name>Percorso</name>
     <Style><LineStyle><color>ff8899ff</color><width>4</width></LineStyle></Style>
