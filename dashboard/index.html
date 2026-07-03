@@ -8142,6 +8142,17 @@ async function inviaPercorsoEmail(){
       }catch(e){console.warn('Note accesso non recuperate:',e.message||e);}
     }
     const _e=(x)=>String(x||'').replace(/[<>&]/g,'');
+    // Bottone "Apri il percorso in Google Maps": partenza/tappe/arrivo precaricati, navigabile dal telefono
+    let gmapsDirUrl='',wpTronche=false;
+    if(stops.length>=2){
+      const fmt=t=>t.lat+','+t.lng;
+      let mids=stops.slice(1,-1);
+      if(mids.length>9){mids=mids.slice(0,9);wpTronche=true;}
+      gmapsDirUrl='https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(fmt(stops[0]))
+        +'&destination='+encodeURIComponent(fmt(stops[stops.length-1]))
+        +(mids.length?'&waypoints='+encodeURIComponent(mids.map(fmt).join('|')):'')
+        +'&travelmode=driving';
+    }
     const tappeListHtml=stops.map((t,i)=>{
       let li=`<li style="margin-bottom:10px"><strong>${_e(t.codice)}</strong>${t.fullAddress?' &mdash; '+_e(t.fullAddress):''}`;
       const n=noteMap[t.codice];
@@ -8173,6 +8184,7 @@ async function inviaPercorsoEmail(){
   <ol style="padding-left:18px;line-height:1.7">${tappeListHtml}</ol>
   ${mapUrl?`<h3 style="color:#1C1917;margin-top:20px;font-size:1em">Mappa del percorso</h3>
   <a href="${mapUrl}" target="_blank"><img src="${mapUrl}" alt="Mappa percorso" style="width:100%;max-width:640px;border-radius:8px;border:1px solid #E7E5E0;display:block;margin:10px 0"></a>`:''}
+  ${gmapsDirUrl?`<a href="${gmapsDirUrl}" target="_blank" style="display:block;text-align:center;background:#1A73E8;color:#ffffff;padding:14px;border-radius:10px;font-weight:700;text-decoration:none;margin-top:14px;font-size:1.05em">&#128506;&#65039; Apri il percorso in Google Maps</a>${wpTronche?'<div style="font-size:.8em;color:#78756E;margin-top:6px;text-align:center">Percorso molto lungo: il link include le prime 9 tappe intermedie (tutte nella mappa e nel KML).</div>':''}`:''}
   <div style="background:#F0FDF4;border-left:4px solid #16A34A;padding:12px 14px;margin-top:16px;border-radius:4px;color:#14532D;font-size:.92em">
     ${mapUrl?'In allegato: <strong>percorso.kml</strong> (apri in Google Maps). La mappa &egrave; visualizzata qui sopra (tocca per ingrandirla).':'Allegati: <strong>percorso.jpg</strong> (mappa) e <strong>percorso.kml</strong> (apri in Google Maps).'}
   </div>
