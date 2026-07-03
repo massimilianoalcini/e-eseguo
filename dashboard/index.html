@@ -151,6 +151,12 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
 .tbl-sticky-azioni tr.row-da-validare:hover td:last-child{background:#FDF1EA}
 .tbl-sticky-azioni tr.row-validato td:last-child{background:#F3FAF6}
 .tbl-sticky-azioni tr.row-validato:hover td:last-child{background:#ECF8F1}
+/* Mappa Inwit — vista gemella */
+.inwit-toggle{padding:8px 16px;border-radius:10px;border:1.5px solid rgba(13,148,136,0.25);background:#fff;color:var(--accent);font-size:.85em;font-weight:700;cursor:pointer}
+.inwit-toggle.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.gem-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;border:1.5px solid #D5D1CA;background:#fff;font-size:.8em;font-weight:700;color:var(--mid);cursor:pointer;opacity:.45}
+.gem-chip.active{opacity:1;border-color:var(--accent);color:var(--text)}
+.gem-dot{width:10px;height:10px;border-radius:50%;display:inline-block;border:1.5px solid rgba(0,0,0,0.15)}
 /* Badge stato */
 .badge-validato{background:rgba(22,163,74,0.12);color:var(--green)}
 .badge-da-validare{background:rgba(232,118,45,0.12);color:var(--orange)}
@@ -1726,12 +1732,28 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
         <div>
           <div style="font-size:1.15em;font-weight:800;color:var(--text)">Mappa Inwit</div>
-          <div style="font-size:.82em;color:var(--dim)">Piano di pianificazione del coordinatore (Google My Maps) &middot; sempre aggiornata in tempo reale</div>
+          <div style="font-size:.82em;color:var(--dim)">Piano di pianificazione del coordinatore &middot; sempre aggiornata in tempo reale</div>
         </div>
-        <a href="https://www.google.com/maps/d/viewer?mid=1zbtSLYqTVJ_hwME5xrganeEMuYKiaiU" target="_blank" class="btn-action" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-weight:700"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Apri in Google Maps</a>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="inwit-toggle active" id="btn-inwit-google" onclick="switchInwitView('google')">Vista Google</button>
+          <button class="inwit-toggle" id="btn-inwit-eseguo" onclick="switchInwitView('eseguo')">Vista ESEGUO</button>
+          <a href="https://www.google.com/maps/d/viewer?mid=1zbtSLYqTVJ_hwME5xrganeEMuYKiaiU" target="_blank" class="btn-action" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-weight:700"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Apri in Google Maps</a>
+        </div>
       </div>
-      <div style="background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+      <div id="inwit-vista-google" style="background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
         <iframe id="inwit-map-frame" data-src="https://www.google.com/maps/d/embed?mid=1zbtSLYqTVJ_hwME5xrganeEMuYKiaiU" style="width:100%;height:calc(100vh - 190px);min-height:480px;border:0;display:block" loading="lazy" title="Mappa Inwit"></iframe>
+      </div>
+      <div id="inwit-vista-eseguo" style="display:none">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <div id="inwit-gemella-chips" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+          <div style="flex:1"></div>
+          <span id="inwit-gemella-count" style="font-size:.82em;color:var(--dim);font-weight:700"></span>
+          <button class="btn-action" onclick="loadGemella(true)" title="Rileggi la mappa del coordinatore" style="font-size:.8em;padding:6px 12px">🔄 Aggiorna</button>
+        </div>
+        <div id="inwit-gemella-status" style="font-size:.85em;color:var(--dim);margin-bottom:8px"></div>
+        <div style="background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+          <div id="inwit-gemella-map" style="width:100%;height:calc(100vh - 250px);min-height:440px"></div>
+        </div>
       </div>
     </div>
 
@@ -5821,12 +5843,141 @@ function renderPercorsoOnMap(){
 }
 
 /* Navigation */
+/* === MAPPA INWIT — vista gemella ESEGUO (punti letti dal KML, pin cliccabili) === */
+const INWIT_MID='1zbtSLYqTVJ_hwME5xrganeEMuYKiaiU';
+let gemMap=null,gemLayers={},gemPts=[],gemLoaded=false,_inwitView='google';
+function escG(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function switchInwitView(v){
+  _inwitView=v;
+  document.getElementById('inwit-vista-google').style.display=v==='google'?'':'none';
+  document.getElementById('inwit-vista-eseguo').style.display=v==='eseguo'?'':'none';
+  document.getElementById('btn-inwit-google').classList.toggle('active',v==='google');
+  document.getElementById('btn-inwit-eseguo').classList.toggle('active',v==='eseguo');
+  if(v==='google'){const f=document.getElementById('inwit-map-frame');if(f&&!f.getAttribute('src'))f.setAttribute('src',f.dataset.src);}
+  if(v==='eseguo'){if(!gemLoaded)loadGemella();else setTimeout(()=>{if(gemMap)gemMap.invalidateSize();},80);}
+}
+function _gemGet(dati,...names){
+  for(const n of names){for(const k in dati){if(k.toLowerCase().replace(/[^a-z]/g,'')===n)return dati[k];}}
+  return '';
+}
+function gemPopupHtml(p,idx){
+  const g=(...ns)=>_gemGet(p.dati,...ns);
+  const nomsito=g('nomsito','nomesito');
+  const citta=g('citt','citta');
+  const week=g('weekdiscadenza','datadiscadenza');
+  const entro=g('dachiudereentromat');
+  const note=g('notedaccesso');
+  return `<div style="min-width:230px;max-width:300px">
+    <div style="font-weight:800;color:#0D9488;font-size:1.05em">${escG(p.nome)}</div>
+    ${nomsito?`<div style="font-weight:600">${escG(nomsito)}${citta?' · '+escG(citta):''}</div>`:''}
+    <div style="font-size:.85em;color:#78756E;margin-top:2px">${escG(p.folder)}${week?' · scad. week '+escG(week):''}${entro?' · entro '+escG(entro):''}</div>
+    ${note?`<div style="font-size:.82em;background:#FFF7ED;border-left:3px solid #F97316;padding:6px 8px;margin-top:6px;border-radius:4px;max-height:90px;overflow:auto">${escG(note)}</div>`:''}
+    <button onclick="inwitAddPercorso(${idx})" style="margin-top:8px;width:100%;padding:8px;background:#0D9488;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer">➕ Aggiungi al percorso</button>
+  </div>`;
+}
+function inwitAddPercorso(idx){
+  const p=gemPts[idx];if(!p)return;
+  if(percorsoTappe.find(t=>t.codice===p.nome)){alert(p.nome+' è già tra le tappe del percorso.');return;}
+  addTappa(p.nome,_gemGet(p.dati,'citt','citta')||'',p.lat,p.lng);
+  alert('✅ '+p.nome+' aggiunto al percorso ('+percorsoTappe.length+' tappe).\nLo trovi in Siti & Mappa → Calcola Percorso.');
+}
+function updateGemCount(){
+  const el=document.getElementById('inwit-gemella-count');if(!el)return;
+  let vis=0;
+  for(const fn in gemLayers){if(gemMap&&gemMap.hasLayer(gemLayers[fn]))vis+=gemPts.filter(p=>p.folder===fn).length;}
+  el.textContent=vis+' / '+gemPts.length+' punti visibili';
+}
+async function loadGemella(force){
+  const st=document.getElementById('inwit-gemella-status');
+  st.textContent='Caricamento punti dalla mappa del coordinatore…';
+  try{
+    const{data:sess}=await sb.auth.getSession();
+    const jwt=sess?.session?.access_token;
+    if(!jwt)throw new Error('Sessione non valida');
+    const resp=await fetch(SUPA_URL+'/functions/v1/mymaps-kml',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+jwt,'apikey':SUPA_KEY,'content-type':'application/json'},
+      body:JSON.stringify({mid:INWIT_MID})
+    });
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||('HTTP '+resp.status));}
+    const kml=await resp.text();
+    const dom=new DOMParser().parseFromString(kml,'text/xml');
+    if(dom.querySelector('parsererror'))throw new Error('KML non interpretabile');
+    gemPts=[];
+    let containers=Array.from(dom.querySelectorAll('Folder'));
+    if(!containers.length)containers=[dom.querySelector('Document')].filter(Boolean);
+    containers.forEach(f=>{
+      let fname='Piano';
+      for(const ch of f.children){if(ch.localName==='name'){fname=(ch.textContent||'').trim();break;}}
+      Array.from(f.children).forEach(pm=>{
+        if(pm.localName!=='Placemark')return;
+        let nome='',styleUrl='';
+        for(const ch of pm.children){
+          if(ch.localName==='name')nome=(ch.textContent||'').trim();
+          if(ch.localName==='styleUrl')styleUrl=(ch.textContent||'').trim();
+        }
+        const coordEl=pm.querySelector('coordinates');
+        if(!coordEl)return;
+        const parts=(coordEl.textContent||'').trim().split(',');
+        const lng=parseFloat(parts[0]),lat=parseFloat(parts[1]);
+        if(isNaN(lat)||isNaN(lng))return;
+        const cm=styleUrl.match(/-([0-9A-Fa-f]{6})/);
+        const color=cm?('#'+cm[1]):'#0D9488';
+        const dati={};
+        pm.querySelectorAll('Data').forEach(d=>{
+          const k=d.getAttribute('name');
+          const v=(d.querySelector('value')?.textContent||'').trim();
+          if(k&&v)dati[k]=v;
+        });
+        gemPts.push({folder:fname,nome,lat,lng,color,dati});
+      });
+    });
+    if(!gemPts.length)throw new Error('Nessun punto trovato nella mappa');
+    // Mappa
+    if(!gemMap){
+      gemMap=L.map('inwit-gemella-map',{preferCanvas:true}).setView([43.3,11.9],7);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OSM',maxZoom:19}).addTo(gemMap);
+    }
+    Object.values(gemLayers).forEach(l=>gemMap.removeLayer(l));gemLayers={};
+    const chips=document.getElementById('inwit-gemella-chips');chips.innerHTML='';
+    const folderNames=[...new Set(gemPts.map(p=>p.folder))];
+    const bounds=[];
+    folderNames.forEach(fn=>{
+      const lg=L.layerGroup();
+      gemPts.forEach((p,idx)=>{
+        if(p.folder!==fn)return;
+        bounds.push([p.lat,p.lng]);
+        const m=L.circleMarker([p.lat,p.lng],{radius:8,fillColor:p.color,color:'#fff',weight:2,opacity:1,fillOpacity:.95});
+        m.bindPopup(gemPopupHtml(p,idx),{maxWidth:320});
+        lg.addLayer(m);
+      });
+      lg.addTo(gemMap);gemLayers[fn]=lg;
+      const firstColor=(gemPts.find(p=>p.folder===fn)||{}).color||'#0D9488';
+      const chip=document.createElement('button');
+      chip.className='gem-chip active';
+      chip.innerHTML=`<span class="gem-dot" style="background:${firstColor}"></span>${escG(fn)} (${gemPts.filter(p=>p.folder===fn).length})`;
+      chip.onclick=()=>{
+        const on=chip.classList.toggle('active');
+        if(on)gemLayers[fn].addTo(gemMap);else gemMap.removeLayer(gemLayers[fn]);
+        updateGemCount();
+      };
+      chips.appendChild(chip);
+    });
+    setTimeout(()=>{gemMap.invalidateSize();if(bounds.length)gemMap.fitBounds(bounds,{padding:[30,30]});},80);
+    updateGemCount();
+    st.textContent='';
+    gemLoaded=true;
+  }catch(e){
+    st.textContent='⚠️ Errore lettura mappa: '+(e.message||e);
+  }
+}
+
 function showPage(page){
   document.querySelectorAll('.page-section').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page)?.classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   if(page==='siti'){setTimeout(()=>initDashMap(),100);renderTappe();caricaIndirizzoAzienda();}
-  if(page==='mappa-inwit'){const f=document.getElementById('inwit-map-frame');if(f&&!f.getAttribute('src'))f.setAttribute('src',f.dataset.src);}
+  if(page==='mappa-inwit'){switchInwitView(_inwitView);}
   if(page==='manuali'){loadManuali();}
   if(page==='manuali-apparati'){loadManualiApparati();}
   if(page==='documenti'){loadDocumenti();}
