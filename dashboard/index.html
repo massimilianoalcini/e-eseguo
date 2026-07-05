@@ -5949,7 +5949,7 @@ async function loadGemella(force){
     // Mappa
     if(!gemMap){
       gemMap=L.map('inwit-gemella-map',{preferCanvas:true}).setView([43.3,11.9],7);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OSM',maxZoom:19}).addTo(gemMap);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'&copy; OSM &copy; CARTO',subdomains:'abcd',maxZoom:20}).addTo(gemMap);
     }
     Object.values(gemLayers).forEach(l=>gemMap.removeLayer(l));gemLayers={};
     const chips=document.getElementById('inwit-gemella-chips');chips.innerHTML='';
@@ -7005,7 +7005,7 @@ function exportSpesePDF(){
 function initDashMap(){
   if(dashMap){dashMap.invalidateSize();return;}
   dashMap=L.map('dash-map',{zoomControl:true,preferCanvas:true}).setView([42.56,12.64],6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OSM',maxZoom:19,crossOrigin:true}).addTo(dashMap);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'&copy; OSM &copy; CARTO',subdomains:'abcd',maxZoom:20,crossOrigin:true}).addTo(dashMap);
   dashMarkers=L.layerGroup().addTo(dashMap);
   document.getElementById('siti-count').textContent=(window._sitiTotal||0)+' siti disponibili — cerca per visualizzare';
 }
