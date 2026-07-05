@@ -6006,7 +6006,7 @@ let flottaMap=null,flottaMarkers=null,flottaData=[];
 function initFlottaMap(){
   if(flottaMap){flottaMap.invalidateSize();return;}
   flottaMap=L.map('flotta-map-el',{zoomControl:true}).setView([43.0,12.0],6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OSM',maxZoom:19}).addTo(flottaMap);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'&copy; OSM &copy; CARTO',subdomains:'abcd',maxZoom:20}).addTo(flottaMap);
   flottaMarkers=L.layerGroup().addTo(flottaMap);
 }
 
@@ -6394,7 +6394,7 @@ function gSetErr(msg){
 function initGiornataMap(){
   if(gMap){gMap.invalidateSize();return;}
   gMap=L.map('g-map-el',{zoomControl:true}).setView([43.0,12.0],6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OSM',maxZoom:19}).addTo(gMap);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'&copy; OSM &copy; CARTO',subdomains:'abcd',maxZoom:20}).addTo(gMap);
   gStopMarkers=L.layerGroup().addTo(gMap);
 }
 
