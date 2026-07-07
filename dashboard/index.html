@@ -903,7 +903,8 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
         <div class="stat-card" title="Imponibile fatture attive emesse nel mese (IVA esclusa)"><div class="label">Totale Fatture Attive <small style="font-weight:400;font-size:.65em;color:var(--dim)">(IVA escl.)</small></div><div class="value" id="eco-tot-entrate" style="color:var(--green)">€ 0.00</div></div>
         <div class="stat-card" title="Interventi validati con importo nel mese (produzione tecnici)"><div class="label">Totale Produzione</div><div class="value" id="eco-tot-produzione" style="color:var(--accent)">€ 0.00</div></div>
         <div class="stat-card" title="Imponibile fatture passive ricevute (IVA esclusa)"><div class="label">Totale Fatture Passive <small style="font-weight:400;font-size:.65em;color:var(--dim)">(IVA escl.)</small></div><div class="value" id="eco-tot-passive" style="color:var(--red)">€ 0.00</div></div>
-        <div class="stat-card" title="Margine lordo = Entrate − Passive (imponibili, IVA esclusa)"><div class="label">Margine Lordo <small style="font-weight:400;font-size:.65em;color:var(--dim)">(Entrate − Passive)</small></div><div class="value" id="eco-tot-margine" style="color:#6366F1">€ 0.00</div></div>
+        <div class="stat-card" title="Costo totale del personale nel mese (da PDF Statistica costo orario)"><div class="label">Costi del Personale</div><div class="value" id="eco-tot-personale" style="color:#E8762D">€ 0.00</div></div>
+        <div class="stat-card" title="Margine lordo = Entrate − Fatture Passive − Costi del Personale"><div class="label">Margine Lordo <small style="font-weight:400;font-size:.65em;color:var(--dim)">(Entrate − Passive − Personale)</small></div><div class="value" id="eco-tot-margine" style="color:#6366F1">€ 0.00</div></div>
       </div>
 
       <!-- ★★ MESI GIA CARICATI -->
@@ -1060,6 +1061,28 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <td colspan="2"></td>
         </tr></tfoot>
       </table></div>
+
+      <!-- COSTI DEL PERSONALE (import PDF paghe) -->
+      <div style="background:linear-gradient(135deg,rgba(232,118,45,0.05),rgba(217,119,6,0.05));border:1.5px solid rgba(232,118,45,0.2);border-radius:14px;padding:18px;margin:18px 0">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.02em;color:#C2410C">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Costi del Personale
+            <span id="pers-badge" style="font-size:.72em;font-weight:700;color:var(--dim);padding:3px 8px;background:rgba(232,118,45,0.08);border-radius:8px"></span>
+          </div>
+          <label class="btn-action" style="cursor:pointer;font-weight:700;font-size:.85em;padding:8px 16px;background:linear-gradient(135deg,#E8762D,#D97706);color:#fff;border:none">
+            📄 Carica PDF paghe<input type="file" id="pers-pdf-input" accept=".pdf" style="display:none" onchange="analizzaPdfPersonale(this)">
+          </label>
+        </div>
+        <div style="font-size:.8em;color:var(--dim);margin-bottom:10px">Carica ogni mese il PDF <strong>"Statistica costo orario"</strong> (Paghe Infinity): il sistema estrae il costo totale di ogni dipendente, verifica la quadratura col totale aziendale e aggiorna il Margine Lordo.</div>
+        <div id="pers-status" style="display:none;font-size:.85em;padding:10px 12px;border-radius:8px;margin-bottom:10px"></div>
+        <div id="pers-preview" style="display:none;background:#fff;border:1px solid rgba(232,118,45,0.25);border-radius:10px;padding:12px 14px;margin-bottom:10px"></div>
+        <table style="background:#fff;border-radius:10px;overflow:hidden">
+          <thead><tr><th>Dipendente</th><th style="text-align:right;width:140px">Costo totale</th><th style="width:80px">Fonte</th><th style="width:50px"></th></tr></thead>
+          <tbody id="pers-table"><tr><td colspan="4" style="text-align:center;color:var(--dim);padding:24px">Nessun costo del personale per questo mese — carica il PDF paghe</td></tr></tbody>
+          <tfoot><tr><td style="font-weight:700;color:#C2410C;text-align:right">TOTALE PERSONALE</td><td id="pers-footer" style="text-align:right;font-weight:800;color:#C2410C">€ 0.00</td><td></td><td></td></tr></tfoot>
+        </table>
+      </div>
 
       <!-- TABELLA ALTRI COSTI (manuali) -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px">
@@ -2102,6 +2125,7 @@ function slidePanel(){document.getElementById('tealPanel').classList.toggle('mov
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-image@0.4.0/leaflet-image.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -3349,6 +3373,127 @@ async function loadMesiCaricati(){
   }catch(e){box.innerHTML='<span style="color:var(--dim);font-size:.85em">Impossibile caricare il riepilogo mesi.</span>';}
 }
 
+/* === COSTI DEL PERSONALE: import PDF "Statistica costo orario" (Paghe Infinity) === */
+const MESI_IT={gennaio:1,febbraio:2,marzo:3,aprile:4,maggio:5,giugno:6,luglio:7,agosto:8,settembre:9,ottobre:10,novembre:11,dicembre:12};
+
+async function _parsePdfPersonale(file){
+  if(typeof pdfjsLib==='undefined')throw new Error('Libreria PDF non caricata: ricarica la pagina (Ctrl+F5)');
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+  let periodo=null,totAz=null,xTot=null;const dips=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const page=await pdf.getPage(p);
+    // Il report Paghe Infinity e' in orizzontale: pagina RUOTATA (rotate 90)
+    // -> le coordinate riga/colonna vanno scambiate.
+    const rot=(((page.rotate||0)%360)+360)%360;
+    const swap=(rot===90||rot===270);
+    const tc=await page.getTextContent();
+    const its=tc.items.map(i=>({
+      s:(i.str||'').trim(),
+      row:swap?i.transform[4]:i.transform[5],
+      col:swap?i.transform[5]:i.transform[4],
+    })).filter(i=>i.s);
+    its.sort((a,b)=>((rot===90)?(a.row-b.row):(b.row-a.row))||a.col-b.col);
+    const rows=[];
+    its.forEach(it=>{
+      const r=rows.find(r=>Math.abs(r.row-it.row)<=2.5);
+      if(r)r.its.push(it);else rows.push({row:it.row,its:[it]});
+    });
+    rows.forEach(r=>r.its.sort((a,b)=>a.col-b.col));
+    // Colonna "Totale" dall'intestazione (layout costante: la riporto tra pagine)
+    for(const r of rows){
+      if(/Costo retribuzione/.test(r.its.map(i=>i.s).join(' '))){
+        const h=r.its.find(i=>i.s==='Totale');
+        if(h)xTot=h.col;
+      }
+    }
+    let corrente=null;
+    for(const r of rows){
+      const txt=r.its.map(i=>i.s).join(' ');
+      if(!periodo){
+        const m=txt.match(/Dal\s+([A-Za-zà-ù]+)\s+(\d{4})/i);
+        if(m&&MESI_IT[m[1].toLowerCase()])periodo={anno:+m[2],mese:MESI_IT[m[1].toLowerCase()]};
+      }
+      if(/Totale aziendale/i.test(txt)){corrente='__AZIENDA__';continue;}
+      const mD=txt.match(/^0*(\d{4,7})\s+([A-ZÀ-Ù'’\. ]{3,}?)(?:\s+1\s+Costi.*)?$/);
+      if(mD){corrente=mD[2].trim();continue;}
+      if(/^Totale\b/.test(txt)&&!/aziendale/i.test(txt)&&corrente){
+        const nums=r.its.filter(i=>/^-?\d{1,3}(\.\d{3})*,\d{2}$/.test(i.s))
+          .map(i=>({v:parseFloat(i.s.replace(/\./g,'').replace(',','.')),col:i.col}));
+        if(!nums.length)continue;
+        let val=null;
+        if(xTot!=null){
+          const cand=nums.filter(n=>Math.abs(n.col-xTot)<60).sort((a,b)=>Math.abs(a.col-xTot)-Math.abs(b.col-xTot));
+          if(cand.length)val=cand[0].v;
+        }
+        if(val==null){corrente=null;continue;}
+        if(corrente==='__AZIENDA__')totAz=val;
+        else if(!dips.find(d=>d.nome===corrente))dips.push({nome:corrente,totale:val});
+        corrente=null;
+      }
+    }
+  }
+  return{periodo,dips,totAz};
+}
+
+async function analizzaPdfPersonale(input){
+  const st=document.getElementById('pers-status'),pv=document.getElementById('pers-preview');
+  const file=input.files&&input.files[0];input.value='';
+  if(!file)return;
+  st.style.display='block';st.style.background='rgba(232,118,45,0.08)';st.style.color='#7C2D12';
+  st.textContent='Analisi del PDF in corso…';pv.style.display='none';
+  try{
+    const d=await _parsePdfPersonale(file);
+    if(!d.periodo)throw new Error('Periodo non riconosciuto nel PDF');
+    if(!d.dips.length)throw new Error('Nessun dipendente riconosciuto nel PDF');
+    const somma=+(d.dips.reduce((s,x)=>s+x.totale,0)).toFixed(2);
+    const quadra=d.totAz!=null&&Math.abs(somma-d.totAz)<0.05;
+    window._persParsed=d;
+    const meseLabel=Object.keys(MESI_IT).find(k=>MESI_IT[k]===d.periodo.mese);
+    pv.style.display='block';
+    pv.innerHTML=`
+      <div style="font-weight:800;color:#C2410C;margin-bottom:6px">Anteprima import — ${meseLabel? meseLabel.charAt(0).toUpperCase()+meseLabel.slice(1):''} ${d.periodo.anno} · ${d.dips.length} dipendenti</div>
+      <table style="font-size:.85em"><thead><tr><th>Dipendente</th><th style="text-align:right;width:130px">Costo totale</th></tr></thead>
+      <tbody>${d.dips.map(x=>`<tr><td>${x.nome}</td><td style="text-align:right;font-weight:700">€ ${x.totale.toFixed(2)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td style="text-align:right;font-weight:700">SOMMA</td><td style="text-align:right;font-weight:800">€ ${somma.toFixed(2)}</td></tr></tfoot></table>
+      <div style="margin-top:8px;font-size:.85em;${quadra?'color:#14532D':'color:#991b1b;font-weight:700'}">
+        ${d.totAz!=null?(quadra?'✅ Quadratura OK col Totale aziendale del PDF (€ '+d.totAz.toFixed(2)+')':'⚠️ NON quadra col Totale aziendale del PDF (€ '+d.totAz.toFixed(2)+'): controllare prima di importare'):'ℹ️ Totale aziendale non trovato nel PDF: verificare la somma'}
+      </div>
+      <button onclick="importaCostiPersonale()" style="margin-top:10px;width:100%;padding:10px;background:linear-gradient(135deg,#E8762D,#D97706);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer">✅ Importa ${d.dips.length} dipendenti (€ ${somma.toFixed(2)})</button>`;
+    st.style.display='none';
+  }catch(e){
+    st.textContent='Errore: '+(e.message||e);
+    st.style.background='rgba(220,38,38,0.08)';st.style.color='#991b1b';
+  }
+}
+
+async function importaCostiPersonale(){
+  const d=window._persParsed;if(!d)return;
+  const st=document.getElementById('pers-status'),pv=document.getElementById('pers-preview');
+  const meseDate=`${d.periodo.anno}-${String(d.periodo.mese).padStart(2,'0')}-01`;
+  try{
+    const{data:vecchi}=await sb.from('costi_mensili').select('id').eq('fonte','paghe').eq('mese',meseDate);
+    if(vecchi&&vecchi.length){
+      if(!confirm(`Per questo mese ci sono già ${vecchi.length} voci di costo personale importate.\nVerranno SOSTITUITE con quelle del nuovo PDF. Continuare?`))return;
+      await sb.from('costi_mensili').delete().eq('fonte','paghe').eq('mese',meseDate);
+    }
+    const rows=d.dips.map(x=>({mese:meseDate,voce:'Costo personale',categoria:'personale',fonte:'paghe',persona:x.nome,importo:x.totale,note:'Import PDF Statistica costo orario'}));
+    const{error}=await sb.from('costi_mensili').insert(rows);
+    if(error)throw error;
+    pv.style.display='none';window._persParsed=null;
+    st.style.display='block';st.style.background='rgba(22,163,74,0.1)';st.style.color='#14532D';
+    st.textContent=`✅ Importati ${rows.length} dipendenti. Cruscotto e Margine Lordo aggiornati.`;
+    // Porta il selettore sul mese importato e ricarica
+    const sel=document.getElementById('eco-mese');
+    const ym=meseDate.slice(0,7);
+    if(sel&&[...sel.options].some(o=>o.value===ym))sel.value=ym;
+    loadEconomia();
+  }catch(e){
+    st.style.display='block';st.style.background='rgba(220,38,38,0.08)';st.style.color='#991b1b';
+    st.textContent='Errore import: '+(e.message||e);
+  }
+}
+
 async function loadEconomia(){
   const mese=document.getElementById('eco-mese').value;if(!mese)return;
 
@@ -3374,17 +3519,33 @@ async function loadEconomia(){
   // 3) PASSIVE = somma costi_mensili da fonte aruba/ai
   const passive=allCosti.filter(c=>c.fonte==='aruba'||c.fonte==='ai');
   const altri=allCosti.filter(c=>c.fonte==='manuale'||c.fonte==='soldo'||!c.fonte);
+  const personale=allCosti.filter(c=>c.fonte==='paghe');
   const totPassive=passive.reduce((s,c)=>s+(+c.importo||0),0);
   const totAltri=altri.reduce((s,c)=>s+(+c.importo||0),0);
-  // 4) MARGINE LORDO = Entrate − Passive
-  const totMargine=totEntrate-totPassive;
+  const totPersonale=personale.reduce((s,c)=>s+(+c.importo||0),0);
+  // 4) MARGINE LORDO = Entrate − Passive − Costi del Personale
+  const totMargine=totEntrate-totPassive-totPersonale;
 
   document.getElementById('eco-tot-entrate').textContent='€ '+totEntrate.toFixed(2);
   document.getElementById('eco-tot-produzione').textContent='€ '+totProduzione.toFixed(2);
   document.getElementById('eco-tot-passive').textContent='€ '+totPassive.toFixed(2);
+  document.getElementById('eco-tot-personale').textContent='€ '+totPersonale.toFixed(2);
   const elMargine=document.getElementById('eco-tot-margine');
   elMargine.textContent='€ '+totMargine.toFixed(2);
   elMargine.style.color = totMargine>=0 ? 'var(--green)' : 'var(--red)';
+
+  // === Tabella COSTI DEL PERSONALE (import PDF paghe) ===
+  const tbPers=document.getElementById('pers-table');
+  if(tbPers){
+    tbPers.innerHTML=personale.length?personale.slice().sort((a,b)=>(a.persona||'').localeCompare(b.persona||'')).map(c=>`<tr>
+      <td style="font-weight:600">${c.persona||c.voce||'—'}</td>
+      <td style="text-align:right;font-weight:700;color:#C2410C">€ ${parseFloat(c.importo).toFixed(2)}</td>
+      <td><span style="font-size:.7em;background:rgba(232,118,45,0.1);color:#C2410C;padding:2px 6px;border-radius:4px;font-weight:700">paghe</span></td>
+      <td><button class="btn-action" onclick="deleteCosto('${c.id}')" title="Elimina" style="color:var(--red);border-color:rgba(255,69,58,0.3);font-size:.75em;padding:5px 8px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button></td>
+    </tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--dim);padding:24px">Nessun costo del personale per questo mese — carica il PDF paghe</td></tr>';
+    document.getElementById('pers-footer').textContent='€ '+totPersonale.toFixed(2);
+    document.getElementById('pers-badge').textContent=personale.length?personale.length+' dipendenti':'';
+  }
 
   // === Tabella FATTURE ATTIVE ===
   const tbA=document.getElementById('eco-attive-table');
@@ -3487,10 +3648,11 @@ async function renderEcoCharts(meseCorrente){
     const ent=attTutte.filter(f=>f.data_emissione>=start&&f.data_emissione<=end).reduce((s,f)=>s+(+f.imponibile||0),0);
     const prod=allInterventi.filter(i=>i.stato==='validato'&&i.importo!=null&&+i.importo>0&&(i.created_at||'').startsWith(ym)).reduce((s,i)=>s+(+i.importo),0);
     const pas=costiTutti.filter(c=>(c.fonte==='aruba'||c.fonte==='ai')&&(c.mese||'').startsWith(ym)).reduce((s,c)=>s+(+c.importo||0),0);
+    const pers=costiTutti.filter(c=>c.fonte==='paghe'&&(c.mese||'').startsWith(ym)).reduce((s,c)=>s+(+c.importo||0),0);
     datasets.ent.push(ent);
     datasets.prod.push(prod);
     datasets.pas.push(pas);
-    datasets.mar.push(ent-pas);
+    datasets.mar.push(ent-pas-pers);
   });
 
   // Grafico 1: Trend 6 mesi (line)
