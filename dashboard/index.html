@@ -3578,7 +3578,8 @@ async function loadEconomia(){
   document.getElementById('eco-attive-footer-iva').textContent='€ '+totIvaAttive.toFixed(2);
   document.getElementById('eco-attive-footer-totale').textContent='€ '+totLordoAttive.toFixed(2);
   document.getElementById('eco-attive-badge').textContent=`${fattureAttiveMese.length} fatture`;
-  document.getElementById('eco-attive-sum').textContent='€ '+totLordoAttive.toFixed(2);
+  // Richiesta Max 07/07: accanto al titolo sezione mostrare l'IMPONIBILE (IVA esclusa), coerente con le passive
+  document.getElementById('eco-attive-sum').textContent='€ '+totEntrate.toFixed(2);
 
   // === Tabella FATTURE PASSIVE (Aruba/AI) ===
   const tbP=document.getElementById('eco-passive-table');
