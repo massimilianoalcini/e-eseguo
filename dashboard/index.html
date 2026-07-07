@@ -819,8 +819,9 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
 
       <div class="stats-row" id="prod-stats">
         <div class="stat-card" title="Interventi validati nel mese (con importo confermato dal coordinatore)"><div class="label">Interventi Validati</div><div class="value" id="prod-tot-int" style="color:var(--green)">0</div></div>
-        <div class="stat-card" title="Interventi inviati dai tecnici in attesa di validazione coordinatore"><div class="label">Interventi Da Validare</div><div class="value" id="prod-tot-da-validare" style="color:#E8762D">0</div></div>
-        <div class="stat-card" title="Importo totale interventi validati nel mese"><div class="label">Totale Produzione</div><div class="value" id="prod-tot-entrate" style="color:#6366F1">€ 0.00</div></div>
+        <div class="stat-card" title="Interventi inviati dai tecnici in attesa di validazione coordinatore"><div class="label">Interventi Da Validare</div><div class="value" id="prod-tot-da-validare" style="color:#6366F1">0</div></div>
+        <div class="stat-card" title="Somma importi degli interventi VALIDATI nel mese"><div class="label">Totale Interventi Validati</div><div class="value" id="prod-tot-entrate" style="color:var(--green)">€ 0.00</div></div>
+        <div class="stat-card" title="Somma degli importi già assegnati agli interventi ancora DA VALIDARE nel mese"><div class="label">Totale Interventi Da Validare</div><div class="value" id="prod-tot-importo-dav" style="color:#6366F1">€ 0.00</div></div>
       </div>
 
       <!-- BOX ESPORTAZIONE PRODUZIONE -->
@@ -4068,6 +4069,8 @@ async function loadProduzione(){
   document.getElementById('prod-tot-int').textContent=meseValidati.length;
   document.getElementById('prod-tot-entrate').textContent='€ '+totEntrate.toFixed(2);
   document.getElementById('prod-tot-da-validare').textContent=meseDaValidare.length;
+  const totImpDaValidare=meseDaValidare.reduce((s,i)=>s+(+i.importo||0),0);
+  document.getElementById('prod-tot-importo-dav').textContent='€ '+totImpDaValidare.toFixed(2);
 
   // Banner pending
   const banner=document.getElementById('prod-banner-mese');
