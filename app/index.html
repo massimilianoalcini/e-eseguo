@@ -313,6 +313,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
       <div class="form-group"><label class="form-label">Sito *</label><div class="site-picker"><input class="form-input" id="int-site-search" placeholder="Cerca codice PCN o citta..." autocomplete="off" oninput="searchSiteForForm()"><div class="site-picker-results" id="site-picker-results"></div></div><div id="selected-site-box"></div></div>
       <div class="form-group"><label class="form-label">Cliente finale *</label><select class="form-select" id="int-cliente"><option value="">Seleziona cliente...</option></select></div>
       <div class="form-group"><label class="form-label">Lavorazione *</label><select class="form-select" id="int-lavorazione" onchange="toggleLavorazioneAltro()"><option value="">Seleziona lavorazione...</option></select><input class="form-input" id="int-lavorazione-altro" placeholder="Descrivi la lavorazione..." style="display:none;margin-top:8px;"></div>
+      <div class="form-group"><label class="form-label">W.O.</label><input class="form-input" id="int-wo" placeholder="Work Order (opzionale)..." autocomplete="off"></div>
       <div class="form-group"><label class="form-label">Report</label><textarea class="form-textarea" id="int-note" placeholder="Report intervento (opzionale)..."></textarea></div>
       <div class="form-group"><label class="form-label">Segnalazioni</label><textarea class="form-textarea" id="int-segnalazioni" placeholder="Segnalazioni (opzionale)..." style="min-height:60px"></textarea></div>
       <div class="form-group"><label class="form-label">Tecnici di supporto</label><select class="form-select" id="tecnici-select" onchange="addTecnico(this.value)"><option value="">Caricamento tecnici…</option></select><div class="sel-pills" id="tecnici-selected"></div></div>
@@ -1130,6 +1131,7 @@ async function submitIntervento(){
       lavorazione:lavorazione,
       note:note||null,
       segnalazioni:segnalazioni||null,
+      wo:document.getElementById('int-wo').value.trim()||null,
       lat_invio:myLat||null,
       lng_invio:myLng||null,
       n_foto:formPhotos.length,
@@ -1174,6 +1176,7 @@ function resetForm(){
   document.getElementById('int-lavorazione-altro').value='';document.getElementById('int-lavorazione-altro').style.display='none';
   document.getElementById('int-note').value='';
   document.getElementById('int-segnalazioni').value='';
+  document.getElementById('int-wo').value='';
   document.getElementById('photo-preview').innerHTML='';
   formTecnici=[];formMezzi=[];renderTecniciSelect();renderTecniciSelected();renderMezziSelect();renderMezziSelected();
   prefillOraInizio();

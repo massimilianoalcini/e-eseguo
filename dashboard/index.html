@@ -2575,7 +2575,7 @@ function esportaProduzioneCSV(){
   ].join(';'));
   lines.push('');
   lines.push('Dettaglio interventi;;;;;;;;');
-  lines.push(['Data','Codice sito','Sito','Cliente','Lavorazione','Stato','Foto','Durata (min)','Importo (EUR)','Note'].join(';'));
+  lines.push(['Data','Codice sito','Sito','Cliente','Lavorazione','W.O.','Stato','Foto','Durata (min)','Importo (EUR)','Note'].join(';'));
   ctx.interventi.forEach(i=>{
     const dRaw=i.ora_inizio||i.created_at||'';
     const d=dRaw?new Date(dRaw):null;
@@ -2586,6 +2586,7 @@ function esportaProduzioneCSV(){
       esc(i.nome_sito||''),
       esc(i.cliente_finale||''),
       esc(i.lavorazione||''),
+      esc(i.wo||''),
       esc(i.stato||''),
       i.n_foto||0,
       i.durata_minuti||0,
@@ -4266,8 +4267,8 @@ function esportaProdCSV(){
     ctx.totImporto.toFixed(2)
   ].join(';'));
   lines.push('');
-  lines.push('Dettaglio interventi;;;;;;;;;;');
-  lines.push(['Data','Tecnico','Codice sito','Sito','Cliente','Lavorazione','Stato','Foto','Durata (min)','Importo (EUR)'].join(';'));
+  lines.push('Dettaglio interventi;;;;;;;;;;;');
+  lines.push(['Data','Tecnico','Codice sito','Sito','Cliente','Lavorazione','W.O.','Stato','Foto','Durata (min)','Importo (EUR)'].join(';'));
   ctx.interventi.forEach(i=>{
     const dRaw=i.ora_inizio||i.created_at||'';
     const d=dRaw?new Date(dRaw):null;
@@ -4279,6 +4280,7 @@ function esportaProdCSV(){
       esc(i.nome_sito||''),
       esc(i.cliente_finale||''),
       esc(i.lavorazione||''),
+      esc(i.wo||''),
       esc(i.stato||''),
       i.n_foto||0,
       i.durata_minuti||0,
