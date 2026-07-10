@@ -6074,7 +6074,8 @@ function _gem(key){return gemState[key]||(gemState[key]={map:null,layers:{},pts:
 /* Icone Google ORIGINALI (decisione 3 Cristiano: colori E icone dalla mappa Drive).
    Il KML dà forma+colore nello styleUrl (icon-<shape>-<color>); il PNG renderizzato arriva dall'endpoint icone My Maps.
    Forme non-pin note (badge tondo con simbolo) — estendibile: */
-const GEM_SHAPES={'1594':'1594-help','1595':'1595-hiking-duo','1596':'1596-hiking-solo'};
+// solo forme VERIFICATE (endpoint icona → 200). Forme ignote → fallback pin colorato in _gemIconUrl (sicuro, mai icona rotta).
+const GEM_SHAPES={'1594':'1594-help','1595':'1595-hiking-duo','1596':'1596-hiking-solo','1887':'1887-tree-palm'};
 function _gemIconUrl(shape,color){
   const c=String(color||'0D9488').replace('#','');
   if(shape&&GEM_SHAPES[shape])return 'https://mt.google.com/vt/icon/name=icons/onion/SHARED-mymaps-container-bg_4x.png,icons/onion/SHARED-mymaps-container_4x.png,icons/onion/'+GEM_SHAPES[shape]+'_4x.png&highlight=ff000000,'+c+'&scale=2.0';
