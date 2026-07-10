@@ -244,6 +244,8 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
 .siti-row:hover{background:rgba(0,0,0,0.03)}
 .siti-row.selected{background:rgba(13,148,136,0.08);border-color:rgba(13,148,136,0.2)}
 .sr-code{font-weight:700;color:var(--accent);font-size:.92em}
+.badge-wind{display:inline-block;background:#7C3AED;color:#fff;font-size:.68em;font-weight:800;padding:1px 7px;border-radius:8px;margin-left:6px;vertical-align:middle;letter-spacing:.3px}
+.badge-nuovo{display:inline-block;background:rgba(255,159,10,.15);color:#B45309;border:1px solid rgba(255,159,10,.4);font-size:.68em;font-weight:800;padding:1px 7px;border-radius:8px;margin-left:4px;vertical-align:middle}
 .sr-city{font-size:.85em;color:var(--mid)}
 .sr-addr{font-size:.78em;color:var(--dim)}
 .sr-actions{margin-left:auto;display:flex;gap:6px}
@@ -7252,7 +7254,7 @@ async function doSearchSiti(){
 
   document.getElementById('siti-count').textContent=arr.length+' siti trovati';
   document.getElementById('siti-results').innerHTML=arr.map(s=>`<div class="siti-row" id="sr-${s.codice_sito}" onclick="selectDashSite('${s.codice_sito}')">
-    <div style="flex:1;min-width:0"><div class="sr-code">${s.codice_sito}</div><div class="sr-city">${s.citta||s.provincia||''}</div><div class="sr-addr">${s.nome_sito||''}</div></div>
+    <div style="flex:1;min-width:0"><div class="sr-code">${s.codice_sito}${s.fonte==='wind'?'<span class="badge-wind">WIND</span>':''}${s.is_nuovo?'<span class="badge-nuovo" title="Sito nuovo: presente solo sulla mappa del coordinatore, dati da completare">⚠️ nuovo</span>':''}</div><div class="sr-city">${s.citta||s.provincia||''}</div><div class="sr-addr">${s.nome_sito||''}</div></div>
     <div class="sr-actions">${s.latitudine&&s.longitudine?`<a class="btn-action primary" href="https://www.google.com/maps/dir/?api=1&destination=${s.latitudine},${s.longitudine}" target="_blank" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:4px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/></svg>Naviga</a>`:`<span class="btn-action" style="opacity:.3;pointer-events:none;font-size:.75em">No GPS</span>`}</div>
   </div>`).join('');
 
@@ -7262,7 +7264,7 @@ async function doSearchSiti(){
     arr.filter(s=>s.latitudine&&s.longitudine).forEach(s=>{
       const la=+s.latitudine,lo=+s.longitudine;
       bounds.push([la,lo]);
-      const m=L.circleMarker([la,lo],{radius:7,fillColor:'#0D9488',color:'#fff',weight:2,fillOpacity:.85});
+      const m=L.circleMarker([la,lo],{radius:7,fillColor:s.fonte==='wind'?'#7C3AED':'#0D9488',color:'#fff',weight:2,fillOpacity:.85});
       m.bindPopup(`<div style="font-weight:700;color:#0D9488">${s.codice_sito}</div><div style="color:#57534E;font-size:.88em">${s.nome_sito||''}</div><div style="color:#A8A29E;font-size:.85em">${s.citta||''}</div><div style="margin-top:8px"><a href="https://www.google.com/maps/dir/?api=1&destination=${la},${lo}" target="_blank" style="color:#4285F4;font-weight:700;font-size:.85em;text-decoration:none">📍 Google Maps</a> &nbsp; <a href="https://waze.com/ul?ll=${la},${lo}&navigate=yes" target="_blank" style="color:#33CCFF;font-weight:700;font-size:.85em;text-decoration:none">🚗 Waze</a></div>`);
       m.on('click',()=>selectDashSite(s.codice_sito));
       dashMarkers.addLayer(m);
@@ -7273,8 +7275,8 @@ async function doSearchSiti(){
 
 async function selectDashSite(codice){
   let s=allSiti.find(x=>x.codice_sito===codice);if(!s)return;
-  // Load full details on demand if missing fields
-  if(!s._full){
+  // Load full details on demand if missing fields (solo operativi: il catalogo WIND arriva già completo dalla RPC)
+  if(!s._full&&s.fonte!=='wind'){
     const{data:full}=await sb.from('siti').select('*').eq('codice_sito',codice).single();
     if(full){Object.assign(s,full);s._full=true;}
   }
@@ -7289,7 +7291,7 @@ async function selectDashSite(codice){
   const fields=[['Territorio',s.territorio],['Regione',s.regione],['Provincia',s.provincia],['Citta',s.citta],['Indirizzo',s.indirizzo],['CAP',s.cap],['Tipo Impianto',s.tipo_impianto],['Stato',s.stato_sito],['Struttura',s.struttura_civile],['Manutenzione',s.tipologia_manutenzione],['Coordinate',s.latitudine&&s.longitudine?`${(+s.latitudine).toFixed(5)}, ${(+s.longitudine).toFixed(5)}`:null]];
   const access=[s.itinerario,s.descrizione_accesso,s.note_accesso].filter(Boolean);
 
-  det.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-weight:700;color:var(--accent);font-size:1.1em">${s.codice_sito}</div><div style="color:var(--mid);font-size:.9em">${s.nome_sito||''}</div></div><button class="btn-action" onclick="closeSitiDetail()" style="flex-shrink:0">✕</button></div>
+  det.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-weight:700;color:var(--accent);font-size:1.1em">${s.codice_sito}${s.fonte==='wind'?'<span class="badge-wind">WIND</span>':''}${s.is_nuovo?'<span class="badge-nuovo">⚠️ nuovo</span>':''}</div><div style="color:var(--mid);font-size:.9em">${s.nome_sito||''}</div></div><button class="btn-action" onclick="closeSitiDetail()" style="flex-shrink:0">✕</button></div>
   <div class="sd-grid">${fields.filter(f=>f[1]).map(f=>`<div class="lbl">${f[0]}</div><div class="val">${f[1]}</div>`).join('')}</div>
   ${access.length?`<div style="background:rgba(255,159,10,0.08);border:1px solid rgba(255,159,10,0.2);border-radius:10px;padding:12px;font-size:.82em;color:var(--orange);margin-top:8px"><strong>Accesso:</strong><br>${access.join('<br>')}</div>`:''}
   <div class="sd-nav-btns">${s.latitudine&&s.longitudine?`<a class="gmaps" href="https://www.google.com/maps/dir/?api=1&destination=${s.latitudine},${s.longitudine}" target="_blank"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>Google Maps</a><a class="waze" href="https://waze.com/ul?ll=${s.latitudine},${s.longitudine}&navigate=yes" target="_blank"><svg width="16" height="16" viewBox="0 0 24 24" fill="#000"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>Waze</a>`:'<span style="color:var(--dim);font-size:.85em">Coordinate non disponibili</span>'}</div>`;
