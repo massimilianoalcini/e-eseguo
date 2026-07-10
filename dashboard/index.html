@@ -527,6 +527,7 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
     <div class="nav-section">Territorio</div>
     <button class="nav-btn" data-page="siti" onclick="showPage('siti')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>Siti & Mappa</button>
     <button class="nav-btn" data-page="mappa-inwit" onclick="showPage('mappa-inwit')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>Mappa Inwit</button>
+    <button class="nav-btn" data-page="mappa-wind" onclick="showPage('mappa-wind')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>Mappa WIND</button>
     <button class="nav-btn" data-page="flotta" onclick="showPage('flotta')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>Mezzi</button>
     <button class="nav-btn" data-page="impostazioni" onclick="showPage('impostazioni')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Impostazioni</button>
     <div style="flex:1"></div>
@@ -1759,8 +1760,8 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <div style="font-size:.82em;color:var(--dim)">Piano di pianificazione del coordinatore &middot; sempre aggiornata in tempo reale</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <button class="inwit-toggle active" id="btn-inwit-google" onclick="switchInwitView('google')">Vista Google</button>
-          <button class="inwit-toggle" id="btn-inwit-eseguo" onclick="switchInwitView('eseguo')">Vista ESEGUO</button>
+          <button class="inwit-toggle active" id="btn-inwit-google" onclick="switchGemView('inwit','google')">Vista Google</button>
+          <button class="inwit-toggle" id="btn-inwit-eseguo" onclick="switchGemView('inwit','eseguo')">Vista ESEGUO</button>
           <a href="https://www.google.com/maps/d/viewer?mid=1zbtSLYqTVJ_hwME5xrganeEMuYKiaiU" target="_blank" class="btn-action" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-weight:700"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Apri in Google Maps</a>
         </div>
       </div>
@@ -1772,13 +1773,13 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
           <div id="inwit-gemella-chips" style="display:flex;gap:8px;flex-wrap:wrap"></div>
           <div style="flex:1"></div>
           <span id="inwit-gemella-count" style="font-size:.82em;color:var(--dim);font-weight:700"></span>
-          <button class="btn-action" onclick="loadGemella(true)" title="Rileggi la mappa del coordinatore" style="font-size:.8em;padding:6px 12px">🔄 Aggiorna</button>
+          <button class="btn-action" onclick="loadGemella('inwit',true)" title="Rileggi la mappa del coordinatore" style="font-size:.8em;padding:6px 12px">🔄 Aggiorna</button>
         </div>
         <div id="inwit-gemella-status" style="font-size:.85em;color:var(--dim);margin-bottom:8px"></div>
         <div style="background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;align-items:stretch">
           <div id="inwit-gemella-panel" style="width:310px;flex-shrink:0;display:none;flex-direction:column;border-right:1px solid rgba(0,0,0,0.08);height:calc(100vh - 250px);min-height:440px;background:#fff">
             <div style="background:var(--accent);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0">
-              <button onclick="gemClosePanel()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1em;flex-shrink:0;line-height:1">&#8592;</button>
+              <button onclick="gemClosePanel('inwit')" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1em;flex-shrink:0;line-height:1">&#8592;</button>
               <div id="inwit-gemella-panel-title" style="font-weight:800;font-size:1.05em"></div>
             </div>
             <div id="inwit-gemella-panel-body" style="flex:1;overflow-y:auto;padding:12px 16px"></div>
@@ -1787,6 +1788,46 @@ tr.row-validato:hover td{background:rgba(22,163,74,0.08)}
             </div>
           </div>
           <div id="inwit-gemella-map" style="flex:1;height:calc(100vh - 250px);min-height:440px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAPPA WIND (My Maps del coordinatore, consultazione live — stesse modalità della Mappa Inwit) -->
+    <div class="page-section" id="page-mappa-wind">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div>
+          <div style="font-size:1.15em;font-weight:800;color:var(--text)">Mappa WIND</div>
+          <div style="font-size:.82em;color:var(--dim)">Piano di pianificazione del coordinatore &middot; sempre aggiornata in tempo reale</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="inwit-toggle active" id="btn-wind-google" onclick="switchGemView('wind','google')">Vista Google</button>
+          <button class="inwit-toggle" id="btn-wind-eseguo" onclick="switchGemView('wind','eseguo')">Vista ESEGUO</button>
+          <a href="https://www.google.com/maps/d/viewer?mid=1ctKuIogv4snoOaR2uATBkENvX_SDbfA" target="_blank" class="btn-action" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-weight:700"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Apri in Google Maps</a>
+        </div>
+      </div>
+      <div id="wind-vista-google" style="background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+        <iframe id="wind-map-frame" data-src="https://www.google.com/maps/d/embed?mid=1ctKuIogv4snoOaR2uATBkENvX_SDbfA" style="width:100%;height:calc(100vh - 190px);min-height:480px;border:0;display:block" loading="lazy" title="Mappa WIND"></iframe>
+      </div>
+      <div id="wind-vista-eseguo" style="display:none">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <div id="wind-gemella-chips" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+          <div style="flex:1"></div>
+          <span id="wind-gemella-count" style="font-size:.82em;color:var(--dim);font-weight:700"></span>
+          <button class="btn-action" onclick="loadGemella('wind',true)" title="Rileggi la mappa del coordinatore" style="font-size:.8em;padding:6px 12px">🔄 Aggiorna</button>
+        </div>
+        <div id="wind-gemella-status" style="font-size:.85em;color:var(--dim);margin-bottom:8px"></div>
+        <div style="background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;align-items:stretch">
+          <div id="wind-gemella-panel" style="width:310px;flex-shrink:0;display:none;flex-direction:column;border-right:1px solid rgba(0,0,0,0.08);height:calc(100vh - 250px);min-height:440px;background:#fff">
+            <div style="background:var(--accent);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+              <button onclick="gemClosePanel('wind')" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1em;flex-shrink:0;line-height:1">&#8592;</button>
+              <div id="wind-gemella-panel-title" style="font-weight:800;font-size:1.05em"></div>
+            </div>
+            <div id="wind-gemella-panel-body" style="flex:1;overflow-y:auto;padding:12px 16px"></div>
+            <div style="padding:10px 12px;border-top:1px solid rgba(0,0,0,0.06);flex-shrink:0">
+              <button id="wind-gemella-panel-btn" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer">&#10133; Aggiungi al percorso</button>
+            </div>
+          </div>
+          <div id="wind-gemella-map" style="flex:1;height:calc(100vh - 250px);min-height:440px"></div>
         </div>
       </div>
     </div>
@@ -6021,55 +6062,62 @@ function renderPercorsoOnMap(){
 }
 
 /* Navigation */
-/* === MAPPA INWIT — vista gemella ESEGUO (punti letti dal KML, pin cliccabili) === */
-const INWIT_MID='1zbtSLYqTVJ_hwME5xrganeEMuYKiaiU';
-let gemMap=null,gemLayers={},gemPts=[],gemLoaded=false,_inwitView='google';
+/* === MAPPE COORDINATORE (Inwit + WIND) — vista gemella ESEGUO (punti letti dal KML, pin cliccabili) === */
+const GEM_MAPS={
+  inwit:{mid:'1zbtSLYqTVJ_hwME5xrganeEMuYKiaiU'},
+  wind:{mid:'1ctKuIogv4snoOaR2uATBkENvX_SDbfA'}
+};
+const gemState={};
+function _gem(key){return gemState[key]||(gemState[key]={map:null,layers:{},pts:[],loaded:false,view:'google'});}
 function escG(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function switchInwitView(v){
-  _inwitView=v;
-  document.getElementById('inwit-vista-google').style.display=v==='google'?'':'none';
-  document.getElementById('inwit-vista-eseguo').style.display=v==='eseguo'?'':'none';
-  document.getElementById('btn-inwit-google').classList.toggle('active',v==='google');
-  document.getElementById('btn-inwit-eseguo').classList.toggle('active',v==='eseguo');
-  if(v==='google'){const f=document.getElementById('inwit-map-frame');if(f&&!f.getAttribute('src'))f.setAttribute('src',f.dataset.src);}
-  if(v==='eseguo'){if(!gemLoaded)loadGemella();else setTimeout(()=>{if(gemMap)gemMap.invalidateSize();},80);}
+function switchGemView(key,v){
+  const g=_gem(key);g.view=v;
+  document.getElementById(key+'-vista-google').style.display=v==='google'?'':'none';
+  document.getElementById(key+'-vista-eseguo').style.display=v==='eseguo'?'':'none';
+  document.getElementById('btn-'+key+'-google').classList.toggle('active',v==='google');
+  document.getElementById('btn-'+key+'-eseguo').classList.toggle('active',v==='eseguo');
+  if(v==='google'){const f=document.getElementById(key+'-map-frame');if(f&&!f.getAttribute('src'))f.setAttribute('src',f.dataset.src);}
+  if(v==='eseguo'){if(!g.loaded)loadGemella(key);else setTimeout(()=>{if(g.map)g.map.invalidateSize();},80);}
 }
 function _gemGet(dati,...names){
   for(const n of names){for(const k in dati){if(k.toLowerCase().replace(/[^a-z]/g,'')===n)return dati[k];}}
   return '';
 }
 /* Scheda laterale COMPLETA (stile pannello Google My Maps): tutti i campi del punto */
-function gemShowPanel(idx){
-  const p=gemPts[idx];if(!p)return;
-  document.getElementById('inwit-gemella-panel-title').textContent=p.nome;
+function gemShowPanel(key,idx){
+  const g=_gem(key);const p=g.pts[idx];if(!p)return;
+  document.getElementById(key+'-gemella-panel-title').textContent=p.nome;
   const rows=Object.entries(p.dati).map(([k,v])=>
     `<div style="margin-top:13px"><div style="font-size:.7em;color:#A8A29E;font-weight:700;letter-spacing:.3px">${escG(k)}</div><div style="font-size:.9em;color:var(--text);white-space:pre-wrap;word-break:break-word;line-height:1.4;margin-top:2px">${escG(v)}</div></div>`
   ).join('');
-  document.getElementById('inwit-gemella-panel-body').innerHTML=
+  document.getElementById(key+'-gemella-panel-body').innerHTML=
     `<div style="font-size:.75em;color:#78756E;font-weight:700">${escG(p.folder)}</div>`+
     (rows||'<div style="margin-top:10px;color:#A8A29E;font-size:.85em">Nessun dettaglio disponibile</div>');
-  document.getElementById('inwit-gemella-panel-btn').onclick=()=>inwitAddPercorso(idx);
-  document.getElementById('inwit-gemella-panel').style.display='flex';
-  setTimeout(()=>{if(gemMap)gemMap.invalidateSize();},60);
+  document.getElementById(key+'-gemella-panel-btn').onclick=()=>gemAddPercorso(key,idx);
+  document.getElementById(key+'-gemella-panel').style.display='flex';
+  setTimeout(()=>{if(g.map)g.map.invalidateSize();},60);
 }
-function gemClosePanel(){
-  document.getElementById('inwit-gemella-panel').style.display='none';
-  setTimeout(()=>{if(gemMap)gemMap.invalidateSize();},60);
+function gemClosePanel(key){
+  document.getElementById(key+'-gemella-panel').style.display='none';
+  const g=_gem(key);
+  setTimeout(()=>{if(g.map)g.map.invalidateSize();},60);
 }
-function inwitAddPercorso(idx){
-  const p=gemPts[idx];if(!p)return;
-  if(percorsoTappe.find(t=>t.codice===p.nome)){alert(p.nome+' è già tra le tappe del percorso.');return;}
-  addTappa(p.nome,_gemGet(p.dati,'citt','citta')||'',p.lat,p.lng);
-  alert('✅ '+p.nome+' aggiunto al percorso ('+percorsoTappe.length+' tappe).\nLo trovi in Siti & Mappa → Calcola Percorso.');
+function gemAddPercorso(key,idx){
+  const g=_gem(key);const p=g.pts[idx];if(!p)return;
+  if(percorsoTappe.find(t=>t.codice===p.codice)){alert(p.codice+' è già tra le tappe del percorso.');return;}
+  addTappa(p.codice,_gemGet(p.dati,'citt','citta','comune')||'',p.lat,p.lng);
+  alert('✅ '+p.codice+' aggiunto al percorso ('+percorsoTappe.length+' tappe).\nLo trovi in Siti & Mappa → Calcola Percorso.');
 }
-function updateGemCount(){
-  const el=document.getElementById('inwit-gemella-count');if(!el)return;
+function updateGemCount(key){
+  const g=_gem(key);
+  const el=document.getElementById(key+'-gemella-count');if(!el)return;
   let vis=0;
-  for(const fn in gemLayers){if(gemMap&&gemMap.hasLayer(gemLayers[fn]))vis+=gemPts.filter(p=>p.folder===fn).length;}
-  el.textContent=vis+' / '+gemPts.length+' punti visibili';
+  for(const fn in g.layers){if(g.map&&g.map.hasLayer(g.layers[fn]))vis+=g.pts.filter(p=>p.folder===fn).length;}
+  el.textContent=vis+' / '+g.pts.length+' punti visibili';
 }
-async function loadGemella(force){
-  const st=document.getElementById('inwit-gemella-status');
+async function loadGemella(key,force){
+  const g=_gem(key);
+  const st=document.getElementById(key+'-gemella-status');
   st.textContent='Caricamento punti dalla mappa del coordinatore…';
   try{
     const{data:sess}=await sb.auth.getSession();
@@ -6078,13 +6126,13 @@ async function loadGemella(force){
     const resp=await fetch(SUPA_URL+'/functions/v1/mymaps-kml',{
       method:'POST',
       headers:{'Authorization':'Bearer '+jwt,'apikey':SUPA_KEY,'content-type':'application/json'},
-      body:JSON.stringify({mid:INWIT_MID})
+      body:JSON.stringify({mid:GEM_MAPS[key].mid})
     });
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||('HTTP '+resp.status));}
     const kml=await resp.text();
     const dom=new DOMParser().parseFromString(kml,'text/xml');
     if(dom.querySelector('parsererror'))throw new Error('KML non interpretabile');
-    gemPts=[];
+    g.pts=[];
     let containers=Array.from(dom.querySelectorAll('Folder'));
     if(!containers.length)containers=[dom.querySelector('Document')].filter(Boolean);
     containers.forEach(f=>{
@@ -6110,45 +6158,47 @@ async function loadGemella(force){
           const v=(d.querySelector('value')?.textContent||'').trim();
           if(k&&v)dati[k]=v;
         });
-        gemPts.push({folder:fname,nome,lat,lng,color,dati});
+        // codice sito = prima parola del nome (Inwit: nome=codice "I026PS"; WIND: "PO054- Skylotech..." → "PO054")
+        const codice=(nome.split(/[\s-]/)[0]||nome).trim()||nome;
+        g.pts.push({folder:fname,nome,codice,lat,lng,color,dati});
       });
     });
-    if(!gemPts.length)throw new Error('Nessun punto trovato nella mappa');
+    if(!g.pts.length)throw new Error('Nessun punto trovato nella mappa');
     // Mappa
-    if(!gemMap){
-      gemMap=L.map('inwit-gemella-map',{preferCanvas:true}).setView([43.3,11.9],7);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'&copy; OSM &copy; CARTO',subdomains:'abcd',maxZoom:20}).addTo(gemMap);
+    if(!g.map){
+      g.map=L.map(key+'-gemella-map',{preferCanvas:true}).setView([43.3,11.9],7);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'&copy; OSM &copy; CARTO',subdomains:'abcd',maxZoom:20}).addTo(g.map);
     }
-    Object.values(gemLayers).forEach(l=>gemMap.removeLayer(l));gemLayers={};
-    const chips=document.getElementById('inwit-gemella-chips');chips.innerHTML='';
-    const folderNames=[...new Set(gemPts.map(p=>p.folder))];
+    Object.values(g.layers).forEach(l=>g.map.removeLayer(l));g.layers={};
+    const chips=document.getElementById(key+'-gemella-chips');chips.innerHTML='';
+    const folderNames=[...new Set(g.pts.map(p=>p.folder))];
     const bounds=[];
     folderNames.forEach(fn=>{
       const lg=L.layerGroup();
-      gemPts.forEach((p,idx)=>{
+      g.pts.forEach((p,idx)=>{
         if(p.folder!==fn)return;
         bounds.push([p.lat,p.lng]);
         const m=L.circleMarker([p.lat,p.lng],{radius:8,fillColor:p.color,color:'#fff',weight:2,opacity:1,fillOpacity:.95});
         m.bindTooltip(p.nome,{direction:'top'});
-        m.on('click',()=>gemShowPanel(idx));
+        m.on('click',()=>gemShowPanel(key,idx));
         lg.addLayer(m);
       });
-      lg.addTo(gemMap);gemLayers[fn]=lg;
-      const firstColor=(gemPts.find(p=>p.folder===fn)||{}).color||'#0D9488';
+      lg.addTo(g.map);g.layers[fn]=lg;
+      const firstColor=(g.pts.find(p=>p.folder===fn)||{}).color||'#0D9488';
       const chip=document.createElement('button');
       chip.className='gem-chip active';
-      chip.innerHTML=`<span class="gem-dot" style="background:${firstColor}"></span>${escG(fn)} (${gemPts.filter(p=>p.folder===fn).length})`;
+      chip.innerHTML=`<span class="gem-dot" style="background:${firstColor}"></span>${escG(fn)} (${g.pts.filter(p=>p.folder===fn).length})`;
       chip.onclick=()=>{
         const on=chip.classList.toggle('active');
-        if(on)gemLayers[fn].addTo(gemMap);else gemMap.removeLayer(gemLayers[fn]);
-        updateGemCount();
+        if(on)g.layers[fn].addTo(g.map);else g.map.removeLayer(g.layers[fn]);
+        updateGemCount(key);
       };
       chips.appendChild(chip);
     });
-    setTimeout(()=>{gemMap.invalidateSize();if(bounds.length)gemMap.fitBounds(bounds,{padding:[30,30]});},80);
-    updateGemCount();
+    setTimeout(()=>{g.map.invalidateSize();if(bounds.length)g.map.fitBounds(bounds,{padding:[30,30]});},80);
+    updateGemCount(key);
     st.textContent='';
-    gemLoaded=true;
+    g.loaded=true;
   }catch(e){
     st.textContent='⚠️ Errore lettura mappa: '+(e.message||e);
   }
@@ -6159,7 +6209,8 @@ function showPage(page){
   document.getElementById('page-'+page)?.classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   if(page==='siti'){setTimeout(()=>initDashMap(),100);renderTappe();caricaIndirizzoAzienda();}
-  if(page==='mappa-inwit'){switchInwitView(_inwitView);}
+  if(page==='mappa-inwit'){switchGemView('inwit',_gem('inwit').view);}
+  if(page==='mappa-wind'){switchGemView('wind',_gem('wind').view);}
   if(page==='manuali'){loadManuali();}
   if(page==='manuali-apparati'){loadManualiApparati();}
   if(page==='documenti'){loadDocumenti();}
