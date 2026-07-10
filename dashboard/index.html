@@ -6071,6 +6071,34 @@ const GEM_MAPS={
 };
 const gemState={};
 function _gem(key){return gemState[key]||(gemState[key]={map:null,layers:{},pts:[],loaded:false,view:'google'});}
+/* Icone Google ORIGINALI (decisione 3 Cristiano: colori E icone dalla mappa Drive).
+   Il KML dà forma+colore nello styleUrl (icon-<shape>-<color>); il PNG renderizzato arriva dall'endpoint icone My Maps.
+   Forme non-pin note (badge tondo con simbolo) — estendibile: */
+const GEM_SHAPES={'1594':'1594-help','1595':'1595-hiking-duo','1596':'1596-hiking-solo'};
+function _gemIconUrl(shape,color){
+  const c=String(color||'0D9488').replace('#','');
+  if(shape&&GEM_SHAPES[shape])return 'https://mt.google.com/vt/icon/name=icons/onion/SHARED-mymaps-container-bg_4x.png,icons/onion/SHARED-mymaps-container_4x.png,icons/onion/'+GEM_SHAPES[shape]+'_4x.png&highlight=ff000000,'+c+'&scale=2.0';
+  return 'https://mt.google.com/vt/icon/name=icons/onion/SHARED-mymaps-pin-container-bg_4x.png,icons/onion/SHARED-mymaps-pin-container_4x.png,icons/onion/1899-blank-shape_pin_4x.png&highlight=ff000000,'+c+'&scale=2.0';
+}
+const GEM_MESI={GENNAIO:1,FEBBRAIO:2,MARZO:3,APRILE:4,MAGGIO:5,GIUGNO:6,LUGLIO:7,AGOSTO:8,SETTEMBRE:9,OTTOBRE:10,NOVEMBRE:11,DICEMBRE:12};
+/* Àncora temporale spegnimento (decisione 07/07): inizio periodo del punto.
+   Priorità: WOP "_MM_YYYY" (WIND) → mese italiano in pianificazione/cartella → Week NN (Inwit) → fallback 60gg */
+function _gemPeriodStart(p){
+  const wop=String(_gemGet(p.dati,'wopcodunivoco')||'');
+  let m=wop.match(/_(\d{1,2})_(\d{4})\s*$/);
+  if(m)return new Date(+m[2],+m[1]-1,1);
+  const txt=(String(_gemGet(p.dati,'pianificazionewmese')||'')+' '+p.folder).toUpperCase();
+  for(const nome in GEM_MESI){
+    if(txt.includes(nome)){
+      const now=new Date();const d=new Date(now.getFullYear(),GEM_MESI[nome]-1,1);
+      if(d.getTime()-now.getTime()>150*864e5)d.setFullYear(d.getFullYear()-1); // mese lontano nel futuro → era dell'anno scorso
+      return d;
+    }
+  }
+  const wk=(String(_gemGet(p.dati,'weekdiscadenza')||'')+' '+p.folder).match(/week\s*_?(\d{1,2})/i);
+  if(wk){const y=new Date().getFullYear();const jan4=new Date(y,0,4);const mon=new Date(jan4);mon.setDate(jan4.getDate()-((jan4.getDay()+6)%7)+(+wk[1]-1)*7);return mon;}
+  return new Date(Date.now()-60*864e5);
+}
 function escG(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function switchGemView(key,v){
   const g=_gem(key);g.view=v;
@@ -6114,8 +6142,9 @@ function updateGemCount(key){
   const g=_gem(key);
   const el=document.getElementById(key+'-gemella-count');if(!el)return;
   let vis=0;
-  for(const fn in g.layers){if(g.map&&g.map.hasLayer(g.layers[fn]))vis+=g.pts.filter(p=>p.folder===fn).length;}
-  el.textContent=vis+' / '+g.pts.length+' punti visibili';
+  for(const fn in g.layers){if(g.map&&g.map.hasLayer(g.layers[fn]))vis+=g.pts.filter(p=>p.folder===fn&&!p.fatto).length;}
+  const fatti=g.pts.filter(p=>p.fatto).length;
+  el.textContent=vis+' / '+g.pts.length+' punti visibili'+(fatti?' · ✓ '+fatti+' completati':'');
 }
 async function loadGemella(key,force){
   const g=_gem(key);
@@ -6152,8 +6181,9 @@ async function loadGemella(key,force){
         const parts=(coordEl.textContent||'').trim().split(',');
         const lng=parseFloat(parts[0]),lat=parseFloat(parts[1]);
         if(isNaN(lat)||isNaN(lng))return;
-        const cm=styleUrl.match(/-([0-9A-Fa-f]{6})/);
-        const color=cm?('#'+cm[1]):'#0D9488';
+        const sm=styleUrl.match(/icon-(\d+)-([0-9A-Fa-f]{6})/);
+        const shape=sm?sm[1]:null;
+        const color=sm?('#'+sm[2]):'#0D9488';
         const dati={};
         pm.querySelectorAll('Data').forEach(d=>{
           const k=d.getAttribute('name');
@@ -6162,10 +6192,23 @@ async function loadGemella(key,force){
         });
         // codice sito = prima parola del nome (Inwit: nome=codice "I026PS"; WIND: "PO054- Skylotech..." → "PO054")
         const codice=(nome.split(/[\s-]/)[0]||nome).trim()||nome;
-        g.pts.push({folder:fname,nome,codice,lat,lng,color,dati});
+        g.pts.push({folder:fname,nome,codice,lat,lng,color,shape,icon:_gemIconUrl(shape,color),iconRound:!!(shape&&GEM_SHAPES[shape]),dati});
       });
     });
     if(!g.pts.length)throw new Error('Nessun punto trovato nella mappa');
+    // Spegnimento pallini (decisione 07/07: sparisce all'INVIO del tecnico; àncora = inizio periodo del punto)
+    try{
+      const codes=[...new Set(g.pts.map(p=>p.codice))];
+      const since=new Date(Date.now()-370*864e5).toISOString();
+      const{data:intv}=await sb.from('interventi').select('codice_sito,created_at,stato').in('codice_sito',codes).in('stato',['inviato','validato']).gte('created_at',since);
+      const byCode={};(intv||[]).forEach(i=>{(byCode[i.codice_sito]=byCode[i.codice_sito]||[]).push(new Date(i.created_at));});
+      g.pts.forEach(p=>{
+        p.fatto=false;
+        const arr=byCode[p.codice];if(!arr)return;
+        const start=_gemPeriodStart(p);
+        p.fatto=arr.some(d=>d>=start);
+      });
+    }catch(_e){/* best-effort: senza dati interventi i punti restano tutti accesi */}
     // Mappa
     if(!g.map){
       g.map=L.map(key+'-gemella-map',{preferCanvas:true}).setView([43.3,11.9],7);
@@ -6178,9 +6221,9 @@ async function loadGemella(key,force){
     folderNames.forEach(fn=>{
       const lg=L.layerGroup();
       g.pts.forEach((p,idx)=>{
-        if(p.folder!==fn)return;
+        if(p.folder!==fn||p.fatto)return; // punti completati = spenti (spariscono dalla gemella)
         bounds.push([p.lat,p.lng]);
-        const m=L.circleMarker([p.lat,p.lng],{radius:8,fillColor:p.color,color:'#fff',weight:2,opacity:1,fillOpacity:.95});
+        const m=L.marker([p.lat,p.lng],{icon:L.icon({iconUrl:p.icon,iconSize:p.iconRound?[28,28]:[32,32],iconAnchor:p.iconRound?[14,14]:[16,30],tooltipAnchor:[0,p.iconRound?-16:-28]})});
         m.bindTooltip(p.nome,{direction:'top'});
         m.on('click',()=>gemShowPanel(key,idx));
         lg.addLayer(m);
@@ -6189,7 +6232,7 @@ async function loadGemella(key,force){
       const firstColor=(g.pts.find(p=>p.folder===fn)||{}).color||'#0D9488';
       const chip=document.createElement('button');
       chip.className='gem-chip active';
-      chip.innerHTML=`<span class="gem-dot" style="background:${firstColor}"></span>${escG(fn)} (${g.pts.filter(p=>p.folder===fn).length})`;
+      chip.innerHTML=`<span class="gem-dot" style="background:${firstColor}"></span>${escG(fn)} (${g.pts.filter(p=>p.folder===fn&&!p.fatto).length})`;
       chip.onclick=()=>{
         const on=chip.classList.toggle('active');
         if(on)g.layers[fn].addTo(g.map);else g.map.removeLayer(g.layers[fn]);
