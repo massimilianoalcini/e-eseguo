@@ -2174,8 +2174,8 @@ function slidePanel(){document.getElementById('tealPanel').classList.toggle('mov
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-const SUPA_URL='https://gohtmuxaidwzijzrgzfh.supabase.co';
-const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvaHRtdXhhaWR3emlqenJnemZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwODQzNzQsImV4cCI6MjA4OTY2MDM3NH0.TOVZgCuRiCk9B50zTd_BpOKZGpIaHEXFwA2L7TKFJVQ';
+const SUPA_URL='https://tilicjkxgasujxdfopmu.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpbGljamt4Z2FzdWp4ZGZvcG11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwOTM2ODYsImV4cCI6MjEwMTY2OTY4Nn0.A_Sz_I-9MLrpbrMejAtGCXguMCGMaA_qKaGdQiF7DXc';
 const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
 
 let currentUser=null,userProfile=null,allInterventi=[],allProfiles=[],editingIntervento=null;
@@ -2905,7 +2905,7 @@ async function creaNuovoUtente(){
 
   try{
     const{data:{session}}=await sb.auth.getSession();
-    const resp=await fetch('https://gohtmuxaidwzijzrgzfh.supabase.co/functions/v1/create-user',{
+    const resp=await fetch('https://tilicjkxgasujxdfopmu.supabase.co/functions/v1/create-user',{
       method:'POST',
       headers:{
         'Content-Type':'application/json',
@@ -6278,7 +6278,7 @@ function initFlottaMap(){
 async function verizonProxyCall(path){
   const{data:{session}}=await sb.auth.getSession();
   if(!session)throw new Error('Sessione scaduta, rifai login');
-  const resp=await fetch('https://gohtmuxaidwzijzrgzfh.supabase.co/functions/v1/verizon-proxy',{
+  const resp=await fetch('https://tilicjkxgasujxdfopmu.supabase.co/functions/v1/verizon-proxy',{
     method:'POST',
     headers:{
       'Authorization':'Bearer '+session.access_token,
