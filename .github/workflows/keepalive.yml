@@ -1,0 +1,26 @@
+name: keepalive-supabase-opentech
+
+# Tiene sveglio il progetto Supabase Free di Open Tech (tilicjkxgasujxdfopmu):
+# il piano Free si mette in pausa dopo 7 giorni di inattivita'. Questo ping
+# giornaliero conta come attivita' e impedisce la pausa (anche col PC di Max spento).
+# Quando Open Tech passera' al piano Pro, questo workflow si puo' rimuovere.
+
+on:
+  schedule:
+    - cron: "17 7 * * *"   # ogni giorno alle 07:17 UTC
+  workflow_dispatch:        # + avvio manuale dal tab Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping DB Supabase Open Tech
+        run: |
+          URL="https://tilicjkxgasujxdfopmu.supabase.co/rest/v1/siti?select=id&limit=1"
+          KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpbGljamt4Z2FzdWp4ZGZvcG11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwOTM2ODYsImV4cCI6MjEwMTY2OTY4Nn0.A_Sz_I-9MLrpbrMejAtGCXguMCGMaA_qKaGdQiF7DXc"
+          code=$(curl -s -o /dev/null -w "%{http_code}" "$URL" -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
+          echo "Risposta Supabase: HTTP $code"
+          if [ "$code" = "000" ] || [ "$code" -ge 500 ]; then
+            echo "::error::Progetto non raggiungibile (potrebbe essere in pausa)"; exit 1
+          fi
+          echo "Progetto attivo. Keepalive OK."
