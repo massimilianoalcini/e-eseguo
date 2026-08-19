@@ -1,26 +1,43 @@
 name: keepalive-supabase-opentech
 
 # Tiene sveglio il progetto Supabase Free di Open Tech (tilicjkxgasujxdfopmu):
-# il piano Free si mette in pausa dopo 7 giorni di inattivita'. Questo ping
-# giornaliero conta come attivita' e impedisce la pausa (anche col PC di Max spento).
+# il piano Free si mette in pausa dopo 7 giorni di inattivita'.
+#
+# ⚠️ IMPORTANTE (lezione 19/08/2026): una semplice LETTURA (GET) NON basta —
+# Supabase la serve dalla cache CDN senza toccare il database, quindi non conta
+# come attivita' e il progetto veniva comunque segnalato per la pausa.
+# Ora facciamo una SCRITTURA (PATCH su tabella _keepalive): non e' memorizzabile
+# in cache e arriva per forza al database = attivita' reale garantita.
+# Due volte al giorno per margine. Anon key = pubblica, safe; la tabella
+# _keepalive non contiene dati sensibili (policy anon dedicata).
 # Quando Open Tech passera' al piano Pro, questo workflow si puo' rimuovere.
 
 on:
   schedule:
-    - cron: "17 7 * * *"   # ogni giorno alle 07:17 UTC
-  workflow_dispatch:        # + avvio manuale dal tab Actions
+    - cron: "17 7 * * *"    # ogni giorno 07:17 UTC
+    - cron: "17 19 * * *"   # + 19:17 UTC (doppio battito per sicurezza)
+  workflow_dispatch:         # + avvio manuale dal tab Actions
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping DB Supabase Open Tech
+      - name: Heartbeat DB Supabase Open Tech (SCRITTURA)
         run: |
-          URL="https://tilicjkxgasujxdfopmu.supabase.co/rest/v1/siti?select=id&limit=1"
+          BASE="https://tilicjkxgasujxdfopmu.supabase.co"
           KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpbGljamt4Z2FzdWp4ZGZvcG11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwOTM2ODYsImV4cCI6MjEwMTY2OTY4Nn0.A_Sz_I-9MLrpbrMejAtGCXguMCGMaA_qKaGdQiF7DXc"
-          code=$(curl -s -o /dev/null -w "%{http_code}" "$URL" -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
-          echo "Risposta Supabase: HTTP $code"
-          if [ "$code" = "000" ] || [ "$code" -ge 500 ]; then
-            echo "::error::Progetto non raggiungibile (potrebbe essere in pausa)"; exit 1
+          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          code=$(curl -s -o /tmp/out -w "%{http_code}" --max-time 30 -X PATCH \
+            "$BASE/rest/v1/_keepalive?id=eq.1" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+            -H "Content-Type: application/json" \
+            -H "Cache-Control: no-cache" \
+            -H "Prefer: return=minimal" \
+            -d "{\"last_ping\":\"$NOW\",\"note\":\"keepalive GitHub Action\"}")
+          echo "Heartbeat scrittura: HTTP $code (ora $NOW)"
+          if [ "$code" != "200" ] && [ "$code" != "204" ]; then
+            echo "::error::Scrittura keepalive fallita (HTTP $code) — progetto forse in pausa"
+            cat /tmp/out 2>/dev/null || true
+            exit 1
           fi
-          echo "Progetto attivo. Keepalive OK."
+          echo "Keepalive OK — database toccato con una scrittura reale."
