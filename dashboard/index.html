@@ -6213,7 +6213,7 @@ async function loadGemella(key,force){
     // Mappa
     if(!g.map){
       g.map=L.map(key+'-gemella-map',{preferCanvas:true}).setView([43.3,11.9],7);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'&copy; OSM &copy; CARTO',subdomains:'abcd',maxZoom:20}).addTo(g.map);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',maxZoom:19}).addTo(g.map);
     }
     Object.values(g.layers).forEach(l=>g.map.removeLayer(l));g.layers={};
     const chips=document.getElementById(key+'-gemella-chips');chips.innerHTML='';
@@ -6271,7 +6271,7 @@ let flottaMap=null,flottaMarkers=null,flottaData=[];
 function initFlottaMap(){
   if(flottaMap){flottaMap.invalidateSize();return;}
   flottaMap=L.map('flotta-map-el',{zoomControl:true}).setView([43.0,12.0],6);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'&copy; OSM &copy; CARTO',subdomains:'abcd',maxZoom:20}).addTo(flottaMap);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',maxZoom:19}).addTo(flottaMap);
   flottaMarkers=L.layerGroup().addTo(flottaMap);
 }
 
@@ -6659,7 +6659,7 @@ function gSetErr(msg){
 function initGiornataMap(){
   if(gMap){gMap.invalidateSize();return;}
   gMap=L.map('g-map-el',{zoomControl:true}).setView([43.0,12.0],6);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'&copy; OSM &copy; CARTO',subdomains:'abcd',maxZoom:20}).addTo(gMap);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',maxZoom:19}).addTo(gMap);
   gStopMarkers=L.layerGroup().addTo(gMap);
 }
 
@@ -7270,7 +7270,7 @@ function exportSpesePDF(){
 function initDashMap(){
   if(dashMap){dashMap.invalidateSize();return;}
   dashMap=L.map('dash-map',{zoomControl:true,preferCanvas:true}).setView([42.56,12.64],6);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'&copy; OSM &copy; CARTO',subdomains:'abcd',maxZoom:20,crossOrigin:true}).addTo(dashMap);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',maxZoom:19,crossOrigin:true}).addTo(dashMap);
   dashMarkers=L.layerGroup().addTo(dashMap);
   document.getElementById('siti-count').textContent=(window._sitiTotal||0)+' siti disponibili — cerca per visualizzare';
 }

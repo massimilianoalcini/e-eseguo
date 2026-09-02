@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eeseguo-v20';
+const CACHE_NAME = 'eeseguo-v21';
 const ASSETS = [
   './',
   './index.html',
