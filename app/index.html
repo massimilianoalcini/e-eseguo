@@ -1378,13 +1378,24 @@ function showToast(msg, type='info'){
 // ── E.ESEGUO AI ASSISTANT ──────────────────────────────────
 let OPENAI_KEY='' // caricata da Supabase config → non hardcodata nel codice
 
+// La chiave OpenAI NON sta piu' nel client: vive come secret della edge function
+// 'ai-proxy'. Prima era in tabella config, leggibile da QUALUNQUE utente
+// autenticato (tecnici compresi). Ora serve solo una sessione valida.
 async function loadOpenAIKey(){
-  if(OPENAI_KEY)return true
   try{
-    const{data}=await sb.from('config').select('value').eq('key','openai_api_key').single()
-    if(data?.value){OPENAI_KEY=data.value;return true}
-  }catch(e){}
-  return false
+    const{data:s}=await sb.auth.getSession()
+    return !!s?.session?.access_token
+  }catch(e){return false}
+}
+// Inoltra a OpenAI passando dal proxy lato server. Risposta identica a prima
+// (JSON per le chat, blob audio per la sintesi vocale).
+async function aiProxyFetch(path,payload){
+  const{data:s}=await sb.auth.getSession()
+  return fetch(SUPABASE_URL+'/functions/v1/ai-proxy',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+(s?.session?.access_token||'')},
+    body:JSON.stringify({path:path,payload:payload})
+  })
 }
 
 const AI_BASE_PROMPT=`Sei E.ESEGUO AI, l'assistente tecnico intelligente di E.ESEGUO.
@@ -1538,10 +1549,7 @@ async function sendAIMessage(){
   btn.disabled=true;btn.textContent='...'
   appendAIMessage('bot','<span class="ai-typing">● ● ●</span>')
   try{
-    const res=await fetch('https://api.openai.com/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+OPENAI_KEY},
-      body:JSON.stringify({
+    const res=await aiProxyFetch('/v1/chat/completions',{
         model:'gpt-4o-mini',
         messages:[
           {role:'system',content:AI_BASE_PROMPT+(aiManualeText?'\n\n'+aiManualeText:'')+modeDirective},
@@ -1549,7 +1557,6 @@ async function sendAIMessage(){
         ],
         max_tokens:600,temperature:0.3
       })
-    })
     const data=await res.json()
     const reply=data.choices?.[0]?.message?.content||'Errore nella risposta.'
     aiChatHistory.push({role:'assistant',content:reply})
@@ -1569,11 +1576,7 @@ async function speakAIResponse(html){
   const clean=html.replace(/<[^>]*>/g,'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').trim()
   if(!clean)return
   try{
-    const res=await fetch('https://api.openai.com/v1/audio/speech',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+OPENAI_KEY},
-      body:JSON.stringify({model:'tts-1',input:clean.slice(0,1000),voice:'shimmer'})
-    })
+    const res=await aiProxyFetch('/v1/audio/speech',{model:'tts-1',input:clean.slice(0,1000),voice:'shimmer'})
     if(!res.ok)throw new Error()
     const blob=await res.blob()
     const url=URL.createObjectURL(blob)

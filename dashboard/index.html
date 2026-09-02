@@ -2177,6 +2177,17 @@ function slidePanel(){document.getElementById('tealPanel').classList.toggle('mov
 const SUPA_URL='https://tilicjkxgasujxdfopmu.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpbGljamt4Z2FzdWp4ZGZvcG11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwOTM2ODYsImV4cCI6MjEwMTY2OTY4Nn0.A_Sz_I-9MLrpbrMejAtGCXguMCGMaA_qKaGdQiF7DXc';
 const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+// Chiamate a OpenAI: passano dal proxy lato server (edge function 'ai-proxy'),
+// dove vive la chiave. Prima stava in tabella config, leggibile da qualunque
+// utente autenticato. La risposta e' identica a prima.
+async function aiProxyFetch(path,payload){
+  const{data:s}=await sb.auth.getSession();
+  return fetch(SUPA_URL+'/functions/v1/ai-proxy',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+(s?.session?.access_token||'')},
+    body:JSON.stringify({path:path,payload:payload})
+  });
+}
 
 let currentUser=null,userProfile=null,allInterventi=[],allProfiles=[],editingIntervento=null;
 let allSiti=[],dashMap=null,dashMarkers=null,selectedDashSite=null;
@@ -7531,12 +7542,10 @@ async function avviaAnalisiAI(){
   const mese=document.getElementById('eco-mese').value
   if(!mese){alert('Seleziona prima il mese');return}
 
-  // Verifica chiave OpenAI
-  const{data:cfgData}=await sb.from('config').select('value').eq('key','openai_api_key').single()
-  const openaiKey=cfgData?.value
-  if(!openaiKey){
-    alert('Chiave OpenAI non configurata. Vai in Impostazioni e inseriscila.')
-    return
+  // Chiave OpenAI lato server: qui basta una sessione valida
+  {
+    const{data:_s}=await sb.auth.getSession()
+    if(!_s?.session?.access_token){ alert('Sessione scaduta: ricarica la pagina e rientra.'); return }
   }
 
   btn.disabled=true;btn.textContent='⏳ Analisi in corso...'
@@ -7599,15 +7608,11 @@ Note:
 FATTURE:
 ${bundleText}`
 
-      const res=await fetch('https://api.openai.com/v1/chat/completions',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+openaiKey},
-        body:JSON.stringify({
+      const res=await aiProxyFetch('/v1/chat/completions',{
           model:'gpt-4o-mini',
           messages:[{role:'user',content:prompt}],
           max_tokens:6000,temperature:0
         })
-      })
       const aiData=await res.json()
       if(aiData.error){
         throw new Error('OpenAI: '+(aiData.error.message||'Errore sconosciuto'))
@@ -7809,22 +7814,21 @@ function parseDataIT(str){
 
 // ── IMPOSTAZIONI ──────────────────────────────────────────
 async function loadImpostazioni(){
-  const{data}=await sb.from('config').select('value').eq('key','openai_api_key').single()
-  if(data?.value){
-    document.getElementById('cfg-openai-key').value=data.value
-    document.getElementById('cfg-key-msg').style.color='#16a34a'
-    document.getElementById('cfg-key-msg').textContent='✅ Chiave configurata'
-  }
+  // La chiave OpenAI non e' piu' nel database: vive come secret della edge
+  // function 'ai-proxy' e non e' piu' leggibile dai browser degli utenti.
+  const inp=document.getElementById('cfg-openai-key')
+  const msg=document.getElementById('cfg-key-msg')
+  if(inp){ inp.value=''; inp.placeholder='gestita sul server'; inp.disabled=true }
+  if(msg){ msg.style.color='#16a34a'; msg.textContent='🔒 Chiave protetta sul server — non modificabile da qui' }
 }
 
 async function saveOpenAIKey(){
-  const key=document.getElementById('cfg-openai-key').value.trim()
+  // Non si salva piu' la chiave dal browser: sta nei secret del progetto Supabase.
   const msg=document.getElementById('cfg-key-msg')
-  if(!key){msg.style.color='#dc2626';msg.textContent='Inserisci la chiave';return}
-  if(!key.startsWith('sk-')){msg.style.color='#dc2626';msg.textContent='Chiave non valida (deve iniziare con sk-)';return}
-  const{error}=await sb.from('config').upsert({key:'openai_api_key',value:key,updated_at:new Date().toISOString()},{onConflict:'key'})
-  if(error){msg.style.color='#dc2626';msg.textContent='Errore: '+error.message;return}
-  msg.style.color='#16a34a';msg.textContent='✅ Chiave salvata!'
+  if(msg){
+    msg.style.color='#0d9488'
+    msg.textContent='🔒 Chiave custodita sul server. Per cambiarla: Supabase → Edge Functions → Secrets → OPENAI_API_KEY'
+  }
 }
 
 function toggleShowKey(){
@@ -7884,12 +7888,10 @@ async function sendDashAIMessage(){
   appendDashAIMsg('user',text.replace(/</g,'&lt;'))
   inp.value=''
 
-  // Carica chiave OpenAI
-  const{data:cfgData}=await sb.from('config').select('value').eq('key','openai_api_key').single()
-  const openaiKey=cfgData?.value
-  if(!openaiKey){
-    appendDashAIMsg('bot','❌ Chiave OpenAI non configurata. Vai in <strong>Impostazioni</strong> e inseriscila.')
-    return
+  // Chiave OpenAI lato server: qui basta una sessione valida
+  {
+    const{data:_s}=await sb.auth.getSession()
+    if(!_s?.session?.access_token){ appendDashAIMsg('bot','❌ Sessione scaduta. Ricarica la pagina e rientra.'); return }
   }
 
   // Carica manuali se non ancora fatto
@@ -7911,10 +7913,7 @@ Se il tecnico ha un problema specifico, indica anche le precauzioni di sicurezza
   appendDashAIMsg('bot','<span style="opacity:.5">● ● ●</span>')
 
   try{
-    const res=await fetch('https://api.openai.com/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+openaiKey},
-      body:JSON.stringify({
+    const res=await aiProxyFetch('/v1/chat/completions',{
         model:'gpt-4o-mini',
         messages:[
           {role:'system',content:basePrompt+(dashAIManualeText?'\n\n'+dashAIManualeText:'')+modeDirective},
@@ -7922,7 +7921,6 @@ Se il tecnico ha un problema specifico, indica anche le precauzioni di sicurezza
         ],
         max_tokens:800,temperature:0.3
       })
-    })
     const data=await res.json()
     const reply=data.choices?.[0]?.message?.content||'Errore nella risposta.'
     dashAIChatHistory.push({role:'assistant',content:reply})
