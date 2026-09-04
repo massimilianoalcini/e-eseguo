@@ -2229,14 +2229,14 @@ function showDataError(msg){
   if(!b){
     b=document.createElement('div');
     b.id='data-error-banner';
-    b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#b91c1c;color:#fff;padding:12px 46px 12px 16px;font:600 14px/1.45 system-ui,-apple-system,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.35)';
+    b.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#b91c1c;color:#fff;padding:12px 46px 12px 16px;font:600 14px/1.45 system-ui,-apple-system,sans-serif;box-shadow:0 -2px 10px rgba(0,0,0,.35)';
     const t=document.createElement('span');
     t.id='data-error-text';
     b.appendChild(t);
     const x=document.createElement('span');
     x.textContent='✕';
     x.title='Chiudi';
-    x.style.cssText='position:absolute;right:14px;top:10px;cursor:pointer;font-size:16px;opacity:.9';
+    x.style.cssText='position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:16px;opacity:.9';
     x.onclick=function(){b.remove();};
     b.appendChild(x);
     document.body.appendChild(b);
@@ -3740,6 +3740,10 @@ async function renderEcoCharts(meseCorrente){
     sb.from('fatture_attive').select('data_emissione,imponibile,cliente').gte('data_emissione',periodoStart).lte('data_emissione',periodoEnd),
     sb.from('costi_mensili').select('mese,importo,fonte,categoria,persona').gte('mese',periodoStart).lte('mese',periodoEnd)
   ]);
+  if(attRes.error||costiRes.error){
+    const em=(attRes.error||costiRes.error).message||'errore';
+    showDataError('grafici Economia – '+em);
+  }
   const attTutte=attRes.data||[];
   const costiTutti=costiRes.data||[];
 
