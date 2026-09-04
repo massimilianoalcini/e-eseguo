@@ -2256,6 +2256,14 @@ function _ymLoc(ts){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
 }
 
+// Giorno (YYYY-MM-DD) di un timestamp letto in ORA LOCALE.
+function _ymdLoc(ts){
+  if(!ts)return '';
+  const d=new Date(ts);
+  if(isNaN(d))return String(ts).slice(0,10);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
 // Scarica TUTTE le righe di una tabella.
 // PostgREST/Supabase taglia a 1000 righe SENZA errore: senza paginazione, oltre
 // quella soglia KPI, Economia ed export mostrerebbero numeri piu' bassi del vero.
@@ -2309,7 +2317,7 @@ function populateFilters(){
   tecnici.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.full_name||t.id;tecSel.appendChild(o);});
   const clienti=[...new Set(allInterventi.map(i=>i.cliente_finale).filter(Boolean))];
   clienti.sort().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;cliSel.appendChild(o);});
-  const mesi=[...new Set(allInterventi.map(i=>i.created_at?.slice(0,7)).filter(Boolean))];
+  const mesi=[...new Set(allInterventi.map(i=>_ymLoc(i.created_at)).filter(Boolean))];
   mesi.sort().reverse().forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=formatMese(m);meseSel.appendChild(o);});
 }
 
@@ -2651,7 +2659,7 @@ function _produzioneFiltra(){
   // Filtra interventi del tecnico nel range (uso ora_inizio se c'e, altrimenti created_at)
   const interventi=allInterventi.filter(i=>{
     if(i.tecnico_id!==tecId)return false;
-    const d=(i.ora_inizio||i.created_at||'').slice(0,10);
+    const d=_ymdLoc(i.ora_inizio||i.created_at);
     return d>=da&&d<=a;
   }).sort((x,y)=>(x.ora_inizio||x.created_at||'').localeCompare(y.ora_inizio||y.created_at||''));
   const tec=allProfiles.find(p=>p.id===tecId);
@@ -2697,7 +2705,7 @@ function esportaProduzioneCSV(){
   const lines=[];
   // Riga riassuntiva
   const ore=Math.floor(ctx.totDurata/60),min=ctx.totDurata%60;
-  lines.push(['Tecnico','Da','A','Interventi totali','Validati','Da validare','Foto totali','Durata totale','Importo totale (EUR)'].join(';'));
+  lines.push(['Tecnico','Da','A','Interventi totali','Validati','Da validare','Foto totali','Durata totale','Importo validato (EUR)'].join(';'));
   lines.push([
     esc(ctx.tecNome),
     esc(ctx.da),
@@ -2745,7 +2753,7 @@ function esportaProduzioneCSV(){
   status.style.display='block';
   status.style.background='rgba(22,163,74,0.1)';
   status.style.color='#14532D';
-  status.textContent=`✓ CSV esportato: ${ctx.interventi.length} interventi · € ${ctx.totImporto.toFixed(2)}`;
+  status.textContent=`✓ CSV esportato: ${ctx.interventi.length} interventi · € ${ctx.totImporto.toFixed(2)} validati`;
 }
 
 // Export PDF Produzione Tecnico (jsPDF + autoTable)
@@ -2851,7 +2859,7 @@ function esportaProduzionePDF(){
   // Riga totale
   const totRowStyle={fontStyle:'bold',fillColor:[240,253,244]};
   body.push([
-    {content:'TOTALE',styles:totRowStyle},
+    {content:'TOTALE VALIDATI',styles:totRowStyle},
     {content:'',styles:totRowStyle},
     {content:'',styles:totRowStyle},
     {content:'',styles:totRowStyle},
@@ -2897,7 +2905,7 @@ function esportaProduzionePDF(){
   status.style.display='block';
   status.style.background='rgba(22,163,74,0.1)';
   status.style.color='#14532D';
-  status.textContent=`✓ PDF esportato: ${ctx.interventi.length} interventi · € ${ctx.totImporto.toFixed(2)}`;
+  status.textContent=`✓ PDF esportato: ${ctx.interventi.length} interventi · € ${ctx.totImporto.toFixed(2)} validati`;
 }
 
 function renderTecnici(){
@@ -3587,21 +3595,25 @@ async function importaCostiPersonale(){
   if(_importPagheInCorso)return;
   _importPagheInCorso=true;
   const st=document.getElementById('pers-status'),pv=document.getElementById('pers-preview');
+  const btn=document.getElementById('btn-import-paghe');
+  const btnTxt=btn?btn.textContent:'';
+  const sbloccaBottone=()=>{_importPagheInCorso=false;if(btn){btn.disabled=false;btn.style.opacity='';btn.textContent=btnTxt;}};
+  if(btn){btn.disabled=true;btn.style.opacity='.6';btn.textContent='⏳ Importazione in corso...';}
   const meseDate=`${d.periodo.anno}-${String(d.periodo.mese).padStart(2,'0')}-01`;
   try{
     const{data:vecchi,error:errSel}=await sb.from('costi_mensili').select('id').eq('fonte','paghe').eq('mese',meseDate);
     if(errSel)throw errSel;
     if(vecchi&&vecchi.length){
-      if(!confirm(`Per questo mese ci sono già ${vecchi.length} voci di costo personale importate.\nVerranno SOSTITUITE con quelle del nuovo PDF. Continuare?`)){_importPagheInCorso=false;return;}
-      const{error:errDel}=await sb.from('costi_mensili').delete().eq('fonte','paghe').eq('mese',meseDate);
-      if(errDel)throw new Error('cancellazione delle voci precedenti fallita ('+(errDel.message||errDel)+'): nessun dato importato');
+      if(!confirm(`Per questo mese ci sono già ${vecchi.length} voci di costo personale importate.\nVerranno SOSTITUITE con quelle del nuovo PDF. Continuare?`)){sbloccaBottone();return;}
     }
-    const rows=d.dips.map(x=>({mese:meseDate,voce:'Costo personale',categoria:'personale',fonte:'paghe',persona:x.nome,importo:x.totale,note:'Import PDF Statistica costo orario'}));
-    const{error}=await sb.from('costi_mensili').insert(rows);
+    const rows=d.dips.map(x=>({voce:'Costo personale',categoria:'personale',persona:x.nome,importo:x.totale,note:'Import PDF Statistica costo orario'}));
+    // 04/09/2026: delete+insert erano due chiamate separate; se l'insert falliva dopo
+    // una delete riuscita il mese restava vuoto. Ora e' una sola transazione lato DB.
+    const{data:nIns,error}=await sb.rpc('importa_costi_paghe',{p_mese:meseDate,p_rows:rows});
     if(error)throw error;
     pv.style.display='none';window._persParsed=null;
     st.style.display='block';st.style.background='rgba(22,163,74,0.1)';st.style.color='#14532D';
-    st.textContent=`✅ Importati ${rows.length} dipendenti. Cruscotto e Margine Lordo aggiornati.`;
+    st.textContent=`✅ Importati ${nIns!=null?nIns:rows.length} dipendenti. Cruscotto e Margine Lordo aggiornati.`;
     // Porta il selettore sul mese importato e ricarica
     const sel=document.getElementById('eco-mese');
     const ym=meseDate.slice(0,7);
@@ -3611,7 +3623,7 @@ async function importaCostiPersonale(){
     st.style.display='block';st.style.background='rgba(220,38,38,0.08)';st.style.color='#991b1b';
     st.textContent='Errore import: '+(e.message||e);
   }finally{
-    _importPagheInCorso=false;
+    sbloccaBottone();
   }
 }
 
@@ -3994,7 +4006,7 @@ async function generaGraficoCustom(){
     return({entrate:ent,passive:pas,soldo:sol,carburante:car,produzione:pro,margine:ent-pas,interventi:(allInterventi||[]).filter(i=>_ymLoc(i.created_at)===ym).length,costi_tot:sum(cos.filter(c=>(c.mese||'').startsWith(ym)).map(c=>+c.importo||0))})[metric];
   };
   let labels=[],data=[],title='';
-  const intv=(allInterventi||[]).filter(i=>(i.created_at||'')>=start);
+  const intv=(allInterventi||[]).filter(i=>_ymdLoc(i.created_at)>=start);
   const intvProd=intv.filter(i=>i.stato==='validato'&&+i.importo>0);
   const tecNome=id=>{const p=(allProfiles||[]).find(x=>x.id===id);return (p&&(p.full_name||p.email))||'(sconosciuto)';};
   const grp=(items,kf,vf)=>{const g={};items.forEach(it=>{const k=((kf(it)||'(n.d.)')+'').trim()||'(n.d.)';g[k]=(g[k]||0)+vf(it);});return Object.entries(g).sort((a,b)=>b[1]-a[1]);};
@@ -4453,7 +4465,7 @@ function _prodFiltra(){
   if(!da||!a){status.style.display='block';status.style.background='rgba(220,38,38,0.08)';status.style.color='#991b1b';status.textContent='Seleziona "Da" e "A"';return null;}
   if(da>a){status.style.display='block';status.style.background='rgba(220,38,38,0.08)';status.style.color='#991b1b';status.textContent='Date invertite';return null;}
   const interventi=allInterventi.filter(i=>{
-    const d=(i.ora_inizio||i.created_at||'').slice(0,10);
+    const d=_ymdLoc(i.ora_inizio||i.created_at);
     if(d<da||d>a)return false;
     if(cli&&i.cliente_finale!==cli)return false;
     if(tec&&i.tecnico_id!==tec)return false;
@@ -4558,7 +4570,7 @@ function esportaProdCSV(){
   const esc=(v)=>{const s=String(v??'');return /[;"\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
   const lines=[];
   const ore=Math.floor(ctx.totDurata/60),min=ctx.totDurata%60;
-  lines.push(['Periodo Da','Periodo A','Cliente','Tecnico','Interventi','Validati','Da validare','Foto','Durata totale','Importo totale (EUR)'].join(';'));
+  lines.push(['Periodo Da','Periodo A','Cliente','Tecnico','Interventi','Validati','Da validare','Foto','Durata totale','Importo validato (EUR)'].join(';'));
   lines.push([
     ctx.da,ctx.a,
     esc(ctx.cli||'Tutti'),
@@ -4602,7 +4614,7 @@ function esportaProdCSV(){
   setTimeout(()=>URL.revokeObjectURL(url),1000);
   const s=document.getElementById('prod-export-status');
   s.style.display='block';s.style.background='rgba(22,163,74,0.1)';s.style.color='#14532D';
-  s.textContent=`✓ CSV esportato: ${ctx.interventi.length} interventi · € ${ctx.totImporto.toFixed(2)}`;
+  s.textContent=`✓ CSV esportato: ${ctx.interventi.length} interventi · € ${ctx.totImporto.toFixed(2)} validati`;
 }
 
 function esportaProdPDF(){
@@ -4688,7 +4700,7 @@ function esportaProdPDF(){
   });
   const totRowStyle={fontStyle:'bold',fillColor:[240,253,244]};
   body.push([
-    {content:'TOTALE',styles:totRowStyle},
+    {content:'TOTALE VALIDATI',styles:totRowStyle},
     {content:'',styles:totRowStyle},
     {content:'',styles:totRowStyle},
     {content:'',styles:totRowStyle},
@@ -4730,7 +4742,7 @@ function esportaProdPDF(){
   doc.save(`produzione_${slug}_${ctx.da}_${ctx.a}.pdf`);
   const s=document.getElementById('prod-export-status');
   s.style.display='block';s.style.background='rgba(22,163,74,0.1)';s.style.color='#14532D';
-  s.textContent=`✓ PDF esportato: ${ctx.interventi.length} interventi · € ${ctx.totImporto.toFixed(2)}`;
+  s.textContent=`✓ PDF esportato: ${ctx.interventi.length} interventi · € ${ctx.totImporto.toFixed(2)} validati`;
 }
 
 /* === IMPORTA REPORT ARUBA XLS (FattureRicevute) === */
