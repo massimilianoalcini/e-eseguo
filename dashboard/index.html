@@ -2221,18 +2221,61 @@ function showApp(){
   loadAllData();
 }
 
-async function loadAllData(){
-  // Load profiles (include email)
-  const{data:profiles}=await sb.from('profiles').select('*').order('full_name');
-  allProfiles=profiles||[];
+// --- Banner errore dati (04/09/2026) ---------------------------------------
+// Se una query fallisce l'utente DEVE accorgersene: prima la dashboard mostrava
+// 0 e EUR 0,00 come se fossero i dati veri.
+function showDataError(msg){
+  let b=document.getElementById('data-error-banner');
+  if(!b){
+    b=document.createElement('div');
+    b.id='data-error-banner';
+    b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#b91c1c;color:#fff;padding:12px 46px 12px 16px;font:600 14px/1.45 system-ui,-apple-system,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.35)';
+    const t=document.createElement('span');
+    t.id='data-error-text';
+    b.appendChild(t);
+    const x=document.createElement('span');
+    x.textContent='✕';
+    x.title='Chiudi';
+    x.style.cssText='position:absolute;right:14px;top:10px;cursor:pointer;font-size:16px;opacity:.9';
+    x.onclick=function(){b.remove();};
+    b.appendChild(x);
+    document.body.appendChild(b);
+  }
+  document.getElementById('data-error-text').textContent=
+    'ATTENZIONE: dati non caricati correttamente ('+msg+'). I numeri a schermo possono essere incompleti o a zero. Ricarica con Ctrl+Shift+R; se resta, avvisa l’assistenza.';
+}
 
-  // Load interventi
-  const{data:int}=await sb.from('interventi').select('*').order('created_at',{ascending:false});
-  allInterventi=int||[];
+// Scarica TUTTE le righe di una tabella.
+// PostgREST/Supabase taglia a 1000 righe SENZA errore: senza paginazione, oltre
+// quella soglia KPI, Economia ed export mostrerebbero numeri piu' bassi del vero.
+async function fetchAllRows(table,cols,orderCol,desc){
+  const PAGE=1000;
+  let out=[],from=0;
+  for(;;){
+    let q=sb.from(table).select(cols).range(from,from+PAGE-1);
+    if(orderCol)q=q.order(orderCol,{ascending:!desc}).order('id',{ascending:true});
+    const{data,error}=await q;
+    if(error){showDataError('tabella '+table+' – '+(error.message||'errore'));return{rows:out,error:error};}
+    out=out.concat(data||[]);
+    if(!data||data.length<PAGE)break;
+    from+=PAGE;
+  }
+  return{rows:out,error:null};
+}
+
+async function loadAllData(){
+  // Load profiles (include email) - paginato + errore visibile
+  const rp=await fetchAllRows('profiles','*','full_name',false);
+  allProfiles=rp.rows;
+
+  // Load interventi - paginato + errore visibile
+  const ri=await fetchAllRows('interventi','*','created_at',true);
+  allInterventi=ri.rows;
 
   // Siti: search on-demand via RPC (no bulk download needed)
   // Get total count for display
-  const{data:sitiCount}=await sb.rpc('get_siti_count');
+  const{data:sitiCount,error:errSiti}=await sb.rpc('get_siti_count');
+  if(errSiti)showDataError('conteggio siti – '+(errSiti.message||'errore'));
   window._sitiTotal=sitiCount||0;
 
   // Populate filters
@@ -3560,6 +3603,9 @@ async function loadEconomia(){
     sb.from('fatture_attive').select('*').gte('data_emissione',meseStart).lte('data_emissione',meseEnd).order('data_emissione',{ascending:false}),
     sb.from('costi_mensili').select('*').gte('mese',meseStart).lte('mese',meseEnd).order('created_at',{ascending:false})
   ]);
+  // 04/09/2026: se la query fallisce l'utente vedeva EUR 0,00 come dato vero
+  if(attiveEmesseRes.error)showDataError('fatture attive – '+(attiveEmesseRes.error.message||'errore'));
+  if(costiRes.error)showDataError('costi mensili – '+(costiRes.error.message||'errore'));
   const fattureAttiveMese=attiveEmesseRes.data||[];
   const allCosti=costiRes.data||[];
 
@@ -3901,6 +3947,13 @@ async function generaGraficoCustom(){
       sb.from('fatture_attive').select('data_emissione,imponibile,cliente').gte('data_emissione',start).lte('data_emissione',end),
       sb.from('costi_mensili').select('mese,importo,fonte,categoria,persona,fornitore,carta').gte('mese',start).lte('mese',end)
     ]);
+    // 04/09/2026: PostgREST NON rigetta la Promise, ritorna {data:null,error}:
+    // senza questo check il grafico disegnava zeri come se fossero dati reali.
+    if(a.error||c.error){
+      const em=(a.error||c.error).message||'errore';
+      showDataError('dati grafico – '+em);
+      msg.style.color='#991b1b'; msg.textContent='Errore caricamento dati: '+em; return;
+    }
     att=a.data||[]; cos=c.data||[];
   }catch(e){ msg.style.color='#991b1b'; msg.textContent='Errore caricamento dati'; return; }
   const sum=arr=>arr.reduce((s,x)=>s+(+x||0),0);
