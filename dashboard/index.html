@@ -6396,6 +6396,11 @@ function initOvFlottaMap(){
 
 // Disegna TUTTI i mezzi con posizione valida, non solo quelli in movimento:
 // "dove sono i mezzi" vuol dire tutti, anche quelli fermi.
+function ovFlottaModello(v){
+  const combo=[(v.Make||'').trim(),(v.Model||'').trim()].filter(Boolean).join(' ').replace(/\s+/g,' ');
+  return combo?combo.replace(/\w/g,c=>c.toUpperCase()):(v.Name||'');
+}
+
 function ovFlottaDisegnaMappa(){
   const box=document.getElementById('ov-flotta-map');
   const conPos=(flottaData||[]).filter(r=>r.loc&&r.loc.Latitude!=null&&r.loc.Longitude!=null);
@@ -6414,7 +6419,7 @@ function ovFlottaDisegnaMappa(){
     L.circleMarker([la,lo],{radius:9,fillColor:flottaMarkerColor(r.loc.DisplayState),color:'#fff',weight:2,opacity:1,fillOpacity:0.9})
       .bindPopup('<div style="font-family:inherit;min-width:190px">'
         +'<div style="font-weight:800;color:var(--accent)">'+plate+'</div>'
-        +'<div style="color:#57534E;font-size:.9em">'+cleanModel(r.v)+'</div>'
+        +'<div style="color:#57534E;font-size:.9em">'+ovFlottaModello(r.v)+'</div>'
         +(drv?'<div style="font-size:.85em;margin-top:4px">Autista: <strong>'+drv+'</strong></div>':'')
         +'<div style="margin-top:6px">'+flottaStatusChip(r.loc.DisplayState)+'</div>'
         +'<div style="font-size:.82em;margin-top:6px">'+(addr||'-')+'</div>'
